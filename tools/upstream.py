@@ -258,6 +258,11 @@ def merge_skill(old: Path, new: Path, local: Path) -> list[str]:
     """Three-way merge one skill in place. Return the files that need a human."""
     for directory in (old, new, local):
         _validate_tree(directory)
+    removed_directories = [
+        path.relative_to(old) for path in old.rglob("*")
+        if path.is_dir() and not (new / path.relative_to(old)).exists()
+        and (local / path.relative_to(old)).is_dir() and _same_tree(path, local / path.relative_to(old))
+    ]
     problems = []
     blocked = []
     for path in sorted(files(old) | files(new) | files(local)):
@@ -265,6 +270,11 @@ def merge_skill(old: Path, new: Path, local: Path) -> list[str]:
             continue
         o, n, l = old / path, new / path, local / path
         name = f"{local.name}/{path}"
+        changed_shape = (o.is_file() and n.is_dir()) or (o.is_dir() and n.is_file())
+        if changed_shape and not l.exists():
+            problems.append(f"{name}: changed upstream but removed locally; not restored")
+            blocked.append(path)
+            continue
         if n.is_file() and l.is_dir():
             if o.is_dir() and _same_tree(o, l):
                 shutil.rmtree(l)
@@ -310,6 +320,10 @@ def merge_skill(old: Path, new: Path, local: Path) -> list[str]:
                 problems.append(f"{name}: removed upstream but changed locally; local file kept")
         elif o.is_file() and n.is_file() and not _same_file(o, n):
             problems.append(f"{name}: changed upstream but removed locally; not restored")
+    for relative in sorted(removed_directories, key=lambda path: len(path.parts), reverse=True):
+        directory = local / relative
+        if directory.is_dir() and not any(directory.iterdir()):
+            directory.rmdir()
     return problems
 
 

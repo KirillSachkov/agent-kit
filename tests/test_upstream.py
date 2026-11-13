@@ -126,6 +126,33 @@ class MergeSkill(unittest.TestCase):
         self.assertEqual(self.merge(), ["skill/guide: replaced upstream but changed locally; local tree kept"])
         self.assertEqual((self.local / "guide").read_text(), "local adaptation\n")
 
+    def test_local_file_deletion_is_kept_when_upstream_changes_it_to_a_directory(self) -> None:
+        write(self.old / "guide", "old flat guide\n")
+        write(self.new / "guide/new.md", "new nested guide\n")
+        write(self.local / "keep.md", "local note\n")
+        self.assertEqual(self.merge(), ["skill/guide: changed upstream but removed locally; not restored"])
+        self.assertFalse((self.local / "guide").exists())
+        self.assertEqual((self.local / "keep.md").read_text(), "local note\n")
+
+    def test_local_directory_deletion_is_kept_when_upstream_changes_it_to_a_file(self) -> None:
+        write(self.old / "guide/old.md", "old nested guide\n")
+        write(self.new / "guide", "new flat guide\n")
+        write(self.local / "keep.md", "local note\n")
+        self.assertEqual(self.merge(), ["skill/guide: changed upstream but removed locally; not restored"])
+        self.assertFalse((self.local / "guide").exists())
+        self.assertEqual((self.local / "keep.md").read_text(), "local note\n")
+
+    def test_unadapted_removed_directory_disappears_after_its_files_are_removed(self) -> None:
+        for directory in (self.old, self.local):
+            write(directory / "guide/nested/old.md", "old nested guide\n")
+            write(directory / "kept/old.md", "old guide\n")
+        (self.local / "kept/local-empty-directory").mkdir()
+        write(self.local / "keep.md", "local note\n")
+        self.assertEqual(self.merge(), [])
+        self.assertFalse((self.local / "guide").exists())
+        self.assertTrue((self.local / "kept/local-empty-directory").is_dir())
+        self.assertEqual((self.local / "keep.md").read_text(), "local note\n")
+
     def test_symlink_is_rejected_before_any_file_or_external_target_changes(self) -> None:
         for directory in (self.old, self.local):
             write(directory / "a.md", "old a\n")
