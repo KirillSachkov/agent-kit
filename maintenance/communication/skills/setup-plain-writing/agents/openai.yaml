@@ -1,0 +1,5 @@
+interface:
+  display_name: "Set up plain writing"
+  short_description: "Add the plain-writing block to global instructions"
+policy:
+  allow_implicit_invocation: false
