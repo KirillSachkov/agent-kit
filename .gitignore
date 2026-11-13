@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.DS_Store
+.state/
+.scratch/
+.reports/
+node_modules/
+.venv/
+.env*
+*.pem
+*.p12
+*.key
+.agents/skills-lock.json
+.agents/skills-backups/
+.agents/skills-sync.lock

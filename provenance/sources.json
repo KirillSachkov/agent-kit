@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "repository": "https://github.com/KirillSachkov/agent-harness",
+      "main": "5e051a49287724bff80a2568d73512d9b334d692",
+      "preserved_refs": [
+        {
+          "ref": "refs/heads/history/agent-harness/draft/domain-design-kit",
+          "sha": "8ca732395375415001900f8a0d9521919651bd4a"
+        },
+        {
+          "ref": "refs/heads/history/agent-harness/main",
+          "sha": "5e051a49287724bff80a2568d73512d9b334d692"
+        },
+        {
+          "ref": "refs/heads/history/agent-harness/research/agents-md-practices",
+          "sha": "ce4bb51d77e645b6c445ad5d31f14ec09d14316c"
+        }
+      ]
+    },
+    {
+      "repository": "https://github.com/KirillSachkov/agent-clarity",
+      "main": "a8b3f408ab5373667680b3622048eecfdf41c47f",
+      "preserved_refs": [
+        {
+          "ref": "refs/heads/history/agent-clarity/main",
+          "sha": "a8b3f408ab5373667680b3622048eecfdf41c47f"
+        }
+      ]
+    }
+  ]
+}

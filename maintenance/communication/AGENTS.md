@@ -1,4 +1,4 @@
-# agent-clarity
+# Communication skill maintenance
 
 Skills that make a coding agent's work easy to understand. Write skills, code and commits in English.
 
@@ -6,9 +6,9 @@ Session mode: main
 
 ## Layout
 
-- `skills/`: ready skills. `skills/in-progress/`: skills under rework, hidden from the installer by `metadata.internal: true`.
+- Canonical source: `../../skills/communication/`. Skills marked `metadata.internal: true` remain in progress and require explicit selection.
 - Each skill folder is self-contained: `SKILL.md`, `references/`, `examples/`, `assets/`, so it installs on its own. Name another skill in backticks; never link into its folder.
-- `tests/` and `scripts/check.py`: run before every commit.
+- `tests/` and `scripts/check.py` verify the shared source from this maintenance directory; run before relevant commits.
 
 ## Rules
 

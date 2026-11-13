@@ -3,30 +3,30 @@
 [Русский](upstream.ru.md)
 
 The repository keeps editable skill copies, not a runtime dependency on another repository.
-Matt’s pinned source revision is recorded once, in `.agents/upstream/mattpocock/SOURCE`.
+Matt’s pinned source revision is recorded once, in `provenance/upstream/mattpocock/SOURCE` at the Agent Kit root.
 The starting local adaptations came through [ai-first-platform](https://github.com/KirillSachkov/ai-first-platform/commit/53c0b946506b41839e255806144c3289680061c8).
 
 ## Pristine copy
 
-`.agents/upstream/mattpocock/skills/` holds the borrowed skills exactly as upstream has them at the pinned revision, in upstream’s `skills/<group>/<skill>` layout.
-Clients do not discover skills there; they read `.agents/skills`.
-`SOURCE` records the repository, revision, date and directory hash. `scripts/check.py` fails when the copy differs from that hash, so nobody edits it by hand. It also fails when the snapshot links in `.agents/skills/README.md` and `NOTICE` name another revision.
+`provenance/upstream/mattpocock/skills.tar.gz` at the Agent Kit root holds the borrowed skills exactly as upstream has them at the pinned revision, in upstream’s `skills/<group>/<skill>` layout. The lossless archive keeps pristine `SKILL.md` files outside agent discovery. `SOURCE` keeps the original directory digest; `ARCHIVE.json` records the compressed artifact and every file. Maintenance extracts it only into an owned temporary directory.
+Clients use this example’s `.agents/skills` links to the canonical `skills/engineering` folders.
+`SOURCE` records the repository, revision, date and original directory hash. `scripts/check.py` fails when the unpacked copy differs from that hash. The root Agent Kit `NOTICE` names the current pinned revision; original imported inventories remain historical source records.
 
 Show our adaptations: `python3 scripts/upstream.py diff`, or `python3 scripts/upstream.py diff --stat` for a summary, optionally with skill names.
 
-When we rename a borrowed skill, an `upstream-name: local-name` line in `.agents/upstream/mattpocock/RENAMES` links it to the original. The file is ours and is not part of the copy's hash. `diff` and `update` use it to find the local directory, and `check.py` verifies that the upstream skill and the local directory both exist.
+When we rename a borrowed skill, an `upstream-name: local-name` line in `provenance/upstream/mattpocock/RENAMES` links it to the original. The file is ours and is not part of the copy's hash. `diff` and `update` use it to find the local directory, and `check.py` verifies that the upstream skill and the local directory both exist.
 
 ## Select an update
 
 1. Open an issue describing the upstream change, desired benefit, boundaries and verification.
-2. Commit or discard pending changes under `.agents`.
+2. Commit or preserve pending changes under the Agent Kit `skills/engineering` and `provenance/upstream` paths.
 3. Run `python3 scripts/upstream.py update <revision>`. It fetches upstream into a temporary directory and runs `git merge-file` for every file of each borrowed skill: our file, the old upstream and the new upstream.
 4. Resolve conflict markers and the files the script reports. To decline an upstream change, keep our text; the difference then shows as a local adaptation.
-5. Update the snapshot links in `.agents/skills/README.md` and `NOTICE`, the adaptation list and the directory hashes, run repository checks and review the result through a PR.
+5. Update the root Agent Kit `NOTICE`, maintained catalogue hashes and adaptation notes, run repository checks and review the result through a PR. Preserve the historical imported inventories unchanged.
 
 The update moves the whole pristine copy to one revision; there are no per-skill source exceptions.
 New upstream skills are listed but not adopted. A borrowed skill missing upstream stops the update before any change.
-If an update stops halfway, discard it with `git restore --staged --worktree -- .agents` and `git clean -fd -- .agents`; step 2 keeps that safe.
+If an update stops halfway, inspect the partial diff and restore only this update’s owned files through Git; step 2 separates earlier changes. The tool does not remove unrelated files or rewrite project policy.
 Matching hashes establish identity, not quality.
 No scheduled synchronization, update bot, submodule or installer runs here.
 

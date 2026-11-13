@@ -1,67 +1,39 @@
-# agent-clarity
+# Communication skills
 
-Скиллы, чтобы работу агента было легко понять: агент пишет понятным русским и сдаёт работу ясным отчётом.
-
-Это короткие инструкции, а не фреймворк. Они в формате Agent Skills, поэтому работают в Claude Code, Claude Desktop, Codex, OpenCode, Cursor и других агентах, которые читают скиллы.
-
-## Скиллы
+Сохранённая библиотека Agent Clarity стала разделом Agent Kit. Исходники находятся в `skills/communication/` корня; эта папка хранит проверки и пример глобальных инструкций.
 
 | Скилл | Что делает |
-|---|---|
-| [`plain-writing`](skills/plain-writing/SKILL.md) | Любой текст для человека агент пишет так, как хороший коллега объясняет вслух: сначала результат, коротко, все решения в одном блоке в конце. Общие правила и отдельный файл для русского. |
-| [`recap`](skills/recap/SKILL.md) | Отчёт о законченной работе: итог, что сделано, как проверено, что решить. Один текст на Markdown годится для ответа в чате, описания PR, файла или страницы. |
-| [`setup-plain-writing`](skills/setup-plain-writing/SKILL.md) | Запускается один раз вручную. Вписывает в глобальные инструкции агента короткий блок, после которого агент открывает `plain-writing` перед первым ответом. |
-
-Скилл [`explain`](skills/in-progress/explain/SKILL.md) рисует схемы по коду. Он ещё в работе, установщик его не ставит.
+| --- | --- |
+| [plain-writing](../../skills/communication/plain-writing/SKILL.md) | Понятный текст для человека, общие правила и отдельный файл русского языка |
+| [recap](../../skills/communication/recap/SKILL.md) | Отчёт о законченной работе со ссылками на результат и проверками |
+| [setup-plain-writing](../../skills/communication/setup-plain-writing/SKILL.md) | Добавление согласованного блока в глобальные инструкции выбранных агентов |
+| [explain](../../skills/communication/explain/SKILL.md) | Схемы по коду; скилл остаётся в работе и выбирается явно |
 
 ## Установка
 
-Проще всего вставить любому агенту этот промпт:
+Из корня Agent Kit выбери полный SHA текущего коммита и подготовь manifest для целевого проекта:
 
-```text
-Поставь скиллы agent-clarity и настрой их для меня.
-1. Запусти: npx skills add KirillSachkov/agent-clarity -g -y -a '*'
-2. Найди установленный скилл setup-plain-writing, прочитай его SKILL.md и сделай по нему: спроси, на каком языке мне отвечать, покажи блок для глобальных инструкций каждого моего агента и запиши его только после моего согласия.
-3. Скажи, какие файлы ты поменял и как отменить каждую правку.
+```bash
+python3 tools/skills.py select --project /path/to/project --ref FULL_SHA --skill plain-writing --skill recap --skill setup-plain-writing --client both --apply
+python3 tools/skills.py preview --project /path/to/project
+python3 tools/skills.py install --project /path/to/project
+python3 tools/skills.py check --project /path/to/project
 ```
 
-Вручную:
+`FULL_SHA` можно получить командой `git rev-parse HEAD`. Без `--apply` выбор только показывает план. Существующие точные копии сначала сверяют через команду `adopt`; изменённые копии установщик сохраняет для отдельного разбора.
 
-1. Поставь скиллы:
+После установки запусти `/setup-plain-writing`. Этот разговор выясняет язык и показывает блок глобальных инструкций, затем меняет только согласованные файлы. [Пример](docs/example-global-instructions.md) показывает блок рядом с личными настройками. Выбор и установка скилла не разрешает менять глобальные настройки автоматически.
 
-   ```bash
-   npx skills add KirillSachkov/agent-clarity
-   ```
+Скиллы сохраняют формат Agent Skills. Generic `npx skills add` для нового layout пока не подтверждён; здесь документирован установщик Agent Kit.
 
-   Обновление: `npx skills update`. В Claude Desktop скилл загружают архивом с папкой скилла в настройках приложения.
-   Другой способ: склонировать репозиторий и сделать ссылки на нужные папки в `~/.claude/skills/` для Claude Code и в `~/.agents/skills/` для Codex, OpenCode и других. Со ссылками у тебя всегда последняя версия.
-2. Запусти `/setup-plain-writing` или сам вставь [блок](skills/setup-plain-writing/block.md) в глобальные инструкции агента. Без блока агент откроет `plain-writing`, только если сам решит, что скилл подходит к задаче.
-   [Пример полных глобальных инструкций](docs/example-global-instructions.md) показывает блок рядом с личными настройками.
+## Проверки
 
-`recap` пишет описание PR через `gh`. Страницы отчёта загружают Mermaid с cdn.jsdelivr.net, без сети схемы остаются текстом.
+Из корня Agent Kit:
 
-## Свой стиль
+```bash
+python3 maintenance/communication/scripts/check.py
+```
 
-Правила скиллов работают по умолчанию. Твои глобальные или проектные инструкции важнее их, поэтому стиль меняют там, а не в файлах скилла: обновление их перезапишет.
-Достаточно дописать строку в блок, например «Пиши без таблиц» или «Без эмодзи».
+Проверка запускает прежние текстовые и rendering tests по новым путям. Рисование Mermaid требует Node, Chromium и playwright-core; эти зависимости не устанавливаются нашей миграцией. Готовый `recap` загружает Mermaid из CDN; `explain` встраивает схемы при сборке.
 
-Для другого языка хватит общих правил. Чтобы добавить его слова и пунктуацию, положи `skills/plain-writing/references/<язык>.md` в своём форке или пришли PR.
-
-Скиллы пользуются возможностями приложения. Если в нём есть окно вопроса с вариантами, агент задаёт вопросы через него. Ссылки он даёт в том виде, по которому в приложении можно кликнуть. Страницу отчёта он показывает прямо в чате, если приложение это умеет.
-
-## Как они связаны
-
-- `plain-writing` решает, как читается текст. Глобальные инструкции говорят агенту открыть его перед первым ответом.
-- `recap` решает, что входит в отчёт и куда он попадает, а текст пишет по `plain-writing`. Когда писать отчёт, решает твой процесс: по просьбе, на шаге PR или при приёмке.
-
-## Участие
-
-Открой issue или PR. `python3 scripts/check.py` должен напечатать OK, CI запускает его на каждом PR.
-
-## In English
-
-Agent skills for clear writing (`plain-writing`) and clear recaps of finished work (`recap`). The skills themselves are in English and work for any language; Russian has its own rules file. Install with `npx skills add KirillSachkov/agent-clarity`, then run `/setup-plain-writing`.
-
-## Лицензия
-
-MIT
+Сохранены MIT-лицензия, примеры, assets и история Git прежнего Agent Clarity. Его README до переноса доступен в [первоначальном публичном commit](https://github.com/KirillSachkov/agent-clarity/blob/a8b3f408ab5373667680b3622048eecfdf41c47f/README.md).

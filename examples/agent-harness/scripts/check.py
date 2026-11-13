@@ -35,62 +35,16 @@ def anchors(text: str) -> set[str]:
     return result
 
 
-def identity(directory: Path) -> str:
-    digest = hashlib.sha256()
-    for file in sorted(directory.rglob("*"), key=lambda file: file.relative_to(directory).as_posix()):
-        if file.is_file():
-            digest.update(file.relative_to(directory).as_posix().encode() + b"\0" + file.read_bytes() + b"\0")
-    return digest.hexdigest()
-
-
-UPSTREAM = Path(".agents/upstream/mattpocock")
-
-
-def read_source(root: Path) -> dict[str, str]:
-    """Read the `key: value` lines of the pristine upstream copy's SOURCE file."""
-    lines = (root / UPSTREAM / "SOURCE").read_text().splitlines()
-    return dict(line.split(": ", 1) for line in lines if ": " in line)
-
-
-def local_names(root: Path) -> dict[str, str]:
-    """Map renamed upstream skills to their local names, from `upstream-name: local-name` lines in RENAMES."""
-    file = root / UPSTREAM / "RENAMES"
-    if not file.is_file():
-        return {}
-    lines = [line.split("#", 1)[0].strip() for line in file.read_text().splitlines()]
-    return dict(tuple(part.strip() for part in line.split(":", 1)) for line in lines if ":" in line)
-
-
-def check_upstream(root: Path, skills: Path) -> list[str]:
-    errors, upstream = [], root / UPSTREAM
-    if not (upstream / "SOURCE").is_file():
-        return [f"{UPSTREAM}/SOURCE: missing"]
-    source = read_source(root)
-    if not (upstream / "skills").is_dir() or identity(upstream / "skills") != source.get("sha256"):
-        errors.append(f"{UPSTREAM}: pristine copy differs from SOURCE; never edit it by hand")
-    names = local_names(root)
-    borrowed = {directory.name for directory in (upstream / "skills").glob("*/*")}
-    for name in sorted(set(names) - borrowed):
-        errors.append(f"{UPSTREAM}/RENAMES: {name} is not a borrowed skill")
-    for directory in sorted((upstream / "skills").glob("*/*")):
-        if not (skills / names.get(directory.name, directory.name) / "SKILL.md").is_file():
-            errors.append(f"{directory.relative_to(root)}: no local skill with this name")
-    revision = source.get("revision", "")
-    if not re.fullmatch(r"[0-9a-f]{40}", revision):
-        errors.append(f"{UPSTREAM}/SOURCE: revision must be a full commit SHA")
-    else:
-        for name in [".agents/skills/README.md", "NOTICE"]:
-            pinned = set(re.findall(r"mattpocock/skills/tree/([0-9a-f]{40})", (root / name).read_text()))
-            if pinned != {revision}:
-                errors.append(f"{name}: Matt's snapshot link must name the SOURCE revision {revision}")
-    return errors
+KIT_ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(KIT_ROOT / "tools"))
+from upstream import check_pristine, identity
 
 
 def check(root: Path) -> tuple[list[str], dict[str, int]]:
     root = root.resolve()
     errors, counts = [], {"skills": 0, "local_links": 0}
-    skills = root / ".agents/skills"
-    inventory = (skills / "README.md").read_text()
+    example = root / "examples/agent-harness"
+    skills = root / "skills/engineering"
     for directory in sorted(skills.iterdir()):
         file = directory / "SKILL.md"
         if not file.is_file():
@@ -114,16 +68,11 @@ def check(root: Path) -> tuple[list[str], dict[str, int]]:
             user_only = bool(re.search(r"^disable-model-invocation:\s*true\s*$", frontmatter, re.M))
             if (implicit is None or implicit[1] == "true") == user_only:
                 errors.append(f"{directory.name}: invocation policies disagree")
-        row = f"| `{directory.name}` | `{identity(directory)}` |"
-        if row not in inventory:
-            errors.append(f"{directory.name}: directory identity differs from inventory")
 
-    errors += check_upstream(root, skills)
-    upstream = root / UPSTREAM
+    errors += check_pristine(root)
 
-    for file in sorted(root.rglob("*.md")):
-        if ".git" in file.relative_to(root).parts or file.is_relative_to(upstream):
-            continue
+    documents = [*example.rglob("*.md"), *skills.rglob("*.md")]
+    for file in sorted(documents):
         for raw in re.findall(r"(?<!!)\[[^\]\n]*\]\(([^)\n]+)\)", prose(file.read_text())):
             url = urlsplit(raw.strip().split(' "')[0].strip("<>"))
             if url.scheme or url.netloc:
@@ -137,25 +86,24 @@ def check(root: Path) -> tuple[list[str], dict[str, int]]:
             elif url.fragment and target.suffix == ".md" and unquote(url.fragment) not in anchors(target.read_text()):
                 errors.append(f"{file.relative_to(root)}: missing anchor {raw}")
 
-    for file in root.rglob("CLAUDE.md"):
-        if ".git" not in file.relative_to(root).parts and not file.is_relative_to(upstream):
-            errors.append(f"{file.relative_to(root)}: use native AGENTS.md instead of CLAUDE.md")
-    pointer = root / ".claude/skills"
-    if not pointer.is_symlink() or pointer.resolve() != (root / ".agents/skills").resolve():
+    for file in example.rglob("CLAUDE.md"):
+        errors.append(f"{file.relative_to(example)}: use native AGENTS.md instead of CLAUDE.md")
+    pointer = example / ".claude/skills"
+    if not pointer.is_symlink() or pointer.resolve() != (example / ".agents/skills").resolve():
         errors.append(".claude/skills: incorrect client pointer")
-    if not re.search(r"^Human language: (en|ru)\.$", (root / "AGENTS.md").read_text(), re.M):
+    if not re.search(r"^Human language: (en|ru)\.$", (example / "AGENTS.md").read_text(), re.M):
         errors.append("AGENTS.md: choose an explicit en or ru human language")
-    for file in root.rglob("*.en.md"):
+    for file in [*example.rglob("*.en.md"), *skills.rglob("*.en.md")]:
         if not file.with_name(file.name.replace(".en.md", ".ru.md")).is_file():
             errors.append(f"{file.relative_to(root)}: missing Russian peer")
-    for file in root.rglob("*.ru.md"):
+    for file in [*example.rglob("*.ru.md"), *skills.rglob("*.ru.md")]:
         if not file.with_name(file.name.replace(".ru.md", ".en.md")).is_file():
             errors.append(f"{file.relative_to(root)}: missing English peer")
     return errors, counts
 
 
 if __name__ == "__main__":
-    problems, checked = check(Path(__file__).resolve().parents[1])
+    problems, checked = check(KIT_ROOT)
     print(f"Checked {checked['skills']} skills and {checked['local_links']} local links/anchors.")
     for problem in problems:
         print(problem, file=sys.stderr)

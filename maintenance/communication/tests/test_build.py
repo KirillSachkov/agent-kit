@@ -10,13 +10,13 @@ import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-KIT = ROOT / "skills/in-progress/explain/kit"
+ROOT = Path(__file__).resolve().parents[3]
+KIT = ROOT / "skills/communication/explain/kit"
 sys.path.insert(0, str(KIT))
 
 import build  # noqa: E402
 
-EXAMPLES = sorted((ROOT / "skills/in-progress/explain/examples").glob("*/*.md"))
+EXAMPLES = sorted((ROOT / "skills/communication/explain/examples").glob("*/*.md"))
 
 
 def page(text: str):

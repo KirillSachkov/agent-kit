@@ -1,0 +1,285 @@
+{
+  "schema_version": 1,
+  "providers": {
+    "agent-kit": {
+      "owner": "Agent Kit contributors",
+      "visibility": "public",
+      "repository": ".",
+      "remote": "https://github.com/KirillSachkov/agent-kit.git",
+      "skill_paths": {
+        "ask": "skills/engineering/ask",
+        "code-review": "skills/engineering/code-review",
+        "codebase-design": "skills/engineering/codebase-design",
+        "diagnosing-bugs": "skills/engineering/diagnosing-bugs",
+        "domain-modeling": "skills/engineering/domain-modeling",
+        "grill-me": "skills/engineering/grill-me",
+        "grill-with-docs": "skills/engineering/grill-with-docs",
+        "grilling": "skills/engineering/grilling",
+        "handoff": "skills/engineering/handoff",
+        "implement": "skills/engineering/implement",
+        "implement-spec": "skills/engineering/implement-spec",
+        "improve-codebase-architecture": "skills/engineering/improve-codebase-architecture",
+        "pr": "skills/engineering/pr",
+        "prototype": "skills/engineering/prototype",
+        "research": "skills/engineering/research",
+        "retro": "skills/engineering/retro",
+        "setup-matt-pocock-skills": "skills/engineering/setup-matt-pocock-skills",
+        "ship": "skills/engineering/ship",
+        "tdd": "skills/engineering/tdd",
+        "teach": "skills/engineering/teach",
+        "to-questionnaire": "skills/engineering/to-questionnaire",
+        "to-spec": "skills/engineering/to-spec",
+        "to-tickets": "skills/engineering/to-tickets",
+        "triage": "skills/engineering/triage",
+        "wait-what": "skills/engineering/wait-what",
+        "wayfinder": "skills/engineering/wayfinder",
+        "wizard": "skills/engineering/wizard",
+        "writing-for-agents": "skills/engineering/writing-for-agents",
+        "explain": "skills/communication/explain",
+        "plain-writing": "skills/communication/plain-writing",
+        "recap": "skills/communication/recap",
+        "setup-plain-writing": "skills/communication/setup-plain-writing"
+      },
+      "notices": {
+        "LICENSE": {
+          "source_path": "LICENSE"
+        },
+        "NOTICE": {
+          "source_path": "NOTICE"
+        },
+        "LICENSE.mattpocock": {
+          "source_path": "provenance/engineering/LICENSE.mattpocock"
+        },
+        "LICENSE.humanlayer": {
+          "source_path": "provenance/engineering/LICENSE.humanlayer"
+        }
+      }
+    }
+  },
+  "skills": [
+    {
+      "provider": "agent-kit",
+      "skill": "ask",
+      "group": "engineering",
+      "source": "engineering/ask",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "code-review",
+      "group": "engineering",
+      "source": "engineering/code-review",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "codebase-design",
+      "group": "engineering",
+      "source": "engineering/codebase-design",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "diagnosing-bugs",
+      "group": "engineering",
+      "source": "engineering/diagnosing-bugs",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "domain-modeling",
+      "group": "engineering",
+      "source": "engineering/domain-modeling",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "grill-me",
+      "group": "engineering",
+      "source": "engineering/grill-me",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "grill-with-docs",
+      "group": "engineering",
+      "source": "engineering/grill-with-docs",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "grilling",
+      "group": "engineering",
+      "source": "engineering/grilling",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "handoff",
+      "group": "engineering",
+      "source": "engineering/handoff",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "implement",
+      "group": "engineering",
+      "source": "engineering/implement",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "implement-spec",
+      "group": "engineering",
+      "source": "engineering/implement-spec",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "improve-codebase-architecture",
+      "group": "engineering",
+      "source": "engineering/improve-codebase-architecture",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "pr",
+      "group": "engineering",
+      "source": "engineering/pr",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "prototype",
+      "group": "engineering",
+      "source": "engineering/prototype",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "research",
+      "group": "engineering",
+      "source": "engineering/research",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "retro",
+      "group": "engineering",
+      "source": "engineering/retro",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "setup-matt-pocock-skills",
+      "group": "engineering",
+      "source": "engineering/setup-matt-pocock-skills",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "ship",
+      "group": "engineering",
+      "source": "engineering/ship",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "tdd",
+      "group": "engineering",
+      "source": "engineering/tdd",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "teach",
+      "group": "engineering",
+      "source": "engineering/teach",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "to-questionnaire",
+      "group": "engineering",
+      "source": "engineering/to-questionnaire",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "to-spec",
+      "group": "engineering",
+      "source": "engineering/to-spec",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "to-tickets",
+      "group": "engineering",
+      "source": "engineering/to-tickets",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "triage",
+      "group": "engineering",
+      "source": "engineering/triage",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "wait-what",
+      "group": "engineering",
+      "source": "engineering/wait-what",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "wayfinder",
+      "group": "engineering",
+      "source": "engineering/wayfinder",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "wizard",
+      "group": "engineering",
+      "source": "engineering/wizard",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "writing-for-agents",
+      "group": "engineering",
+      "source": "engineering/writing-for-agents",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "explain",
+      "group": "communication",
+      "source": "communication/explain",
+      "internal": true
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "plain-writing",
+      "group": "communication",
+      "source": "communication/plain-writing",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "recap",
+      "group": "communication",
+      "source": "communication/recap",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "setup-plain-writing",
+      "group": "communication",
+      "source": "communication/setup-plain-writing",
+      "internal": false
+    }
+  ]
+}

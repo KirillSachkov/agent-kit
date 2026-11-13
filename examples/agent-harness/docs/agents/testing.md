@@ -7,13 +7,12 @@ It has no product runtime, application tests or live-agent evaluation suite.
 
 Run from the repository root:
 
-- `python3 scripts/check.py`: local Markdown links/anchors, skill identity and invocation metadata, directory hashes, the pristine upstream copy and client pointers.
-- `python3 -m unittest discover -s scripts`: regression tests for `scripts/upstream.py`, the upstream checks and the client pointer checks.
+- `python3 scripts/check.py`: local Markdown links/anchors, canonical skill names and invocation metadata, the frozen upstream digest and client pointers.
+- `python3 -m unittest discover -s ../../tests`: shared regression tests for upstream maintenance and the example client pointers, when run from this example directory.
 - `git diff --check`: whitespace errors in the change.
 
 Before a PR, run all three commands and report their actual results.
-CI runs the same three checks on the PR result.
-`harness-check` is the job name; repository protection settings are not implied by its existence.
+Root Agent Kit CI invokes the shared checks on the PR result. The original example used the job name `harness-check`; repository protection settings are separate from the written process.
 
 ## Appropriate evidence
 

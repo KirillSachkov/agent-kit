@@ -7,14 +7,15 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[3]
+MAINTENANCE = ROOT / "maintenance/communication"
 LINK = re.compile(r"\]\(([^)]+)\)")
 
 
 def main() -> int:
     errors = []
-    docs = [p for p in (ROOT / "AGENTS.md", ROOT / "README.md") if p.exists()]
-    for card in sorted((ROOT / "skills").rglob("SKILL.md")):
+    docs = [p for p in (MAINTENANCE / "AGENTS.md", MAINTENANCE / "README.md") if p.exists()]
+    for card in sorted((ROOT / "skills/communication").rglob("SKILL.md")):
         skill = card.parent
         head = card.read_text(encoding="utf-8").split("---", 2)
         if len(head) < 3 or f"\nname: {skill.name}\n" not in head[1] or "\ndescription:" not in head[1]:
@@ -30,7 +31,7 @@ def main() -> int:
                 errors.append(f"{doc.relative_to(ROOT)}: broken link {target}")
     pythons = dict.fromkeys(p for p in (sys.executable, "/usr/bin/python3") if Path(p).exists())
     for python in pythons:
-        tests = subprocess.run([python, "-m", "unittest", "discover", "-s", str(ROOT / "tests"), "-q"], capture_output=True, text=True)
+        tests = subprocess.run([python, "-m", "unittest", "discover", "-s", str(MAINTENANCE / "tests"), "-q"], capture_output=True, text=True)
         if tests.returncode:
             errors.append(f"tests failed ({python}):\n{tests.stderr.strip()}")
     for error in errors:
