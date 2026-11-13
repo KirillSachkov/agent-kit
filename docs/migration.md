@@ -29,6 +29,10 @@ The PR skill's legal reference is made self-contained. Style setup points at thi
 
 Installed project copies remain usable at their selected versions. Exact copies can be adopted under a manifest; intentional adaptations remain project-owned. A source relocation does not authorize replacing local policy or editing installed provider packages.
 
-Old repositories are archived after verified publication and controlled consumer switching. Archived commits and issue redirects retain the historical links used by existing installations. The open Agent Harness board-skill issue is transferred without changing its requirements; consolidation itself does not start that work.
+On 2026-11-13, Agent Kit was published publicly and its bootstrap CI passed. Both original repositories were then archived; their commits remain readable. Their local checkouts remain in place because existing application registrations still refer to those paths.
+
+The open Agent Harness board-skill issue was transferred to [Agent Kit #1](https://github.com/KirillSachkov/agent-kit/issues/1) without changing its requirements. Consolidation itself does not start that work.
+
+The private Home consumer switched to the reviewed source commit `b0570c6006289437cd587a362d26b4594c987e26`. Six project branches prepared adoption of 69 exact shared copies. Their independent reviews and project checks passed; integration follows each project's own merge rules. Eighty intentional project variants were left unchanged. Publication does not imply that every consumer branch has merged.
 
 Checks cover structure, source identities, complete folders and installer behavior. They do not prove that every external user or unindexed third-party installation has switched sources.
