@@ -16,6 +16,7 @@ import os
 import re
 import tarfile
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -166,8 +167,64 @@ def files(directory: Path) -> set[str]:
     return {file.relative_to(directory).as_posix() for file in directory.rglob("*") if file.is_file()}
 
 
+def _validate_tree(directory: Path) -> None:
+    if directory.is_symlink():
+        raise ValueError(f"refusing symlink in skill tree: {directory}")
+    if not directory.exists():
+        return
+    if not directory.is_dir():
+        raise ValueError(f"skill tree must be a directory: {directory}")
+    for path in directory.rglob("*"):
+        mode = path.lstat().st_mode
+        if stat.S_ISLNK(mode):
+            raise ValueError(f"refusing symlink in skill tree: {path}")
+        if not (stat.S_ISREG(mode) or stat.S_ISDIR(mode)):
+            raise ValueError(f"refusing special file in skill tree: {path}")
+
+
+def _validate_owned_tree(root: Path, directory: Path) -> None:
+    try:
+        relative = directory.relative_to(root)
+    except ValueError as error:
+        raise ValueError(f"skill path escapes the repository: {directory}") from error
+    if ".." in relative.parts:
+        raise ValueError(f"skill path escapes the repository: {directory}")
+    current = root
+    for part in relative.parts:
+        current = current / part
+        if current.is_symlink():
+            raise ValueError(f"refusing symlink in skill path: {current}")
+    _validate_tree(directory)
+
+
 def same(left: Path, right: Path) -> bool:
     return filecmp.cmp(left, right, shallow=False)
+
+
+def _merged_mode(old: Path, new: Path, local: Path) -> int:
+    mode = local.stat().st_mode & 0o777
+    old_executable = bool(old.stat().st_mode & 0o111)
+    new_executable = bool(new.stat().st_mode & 0o111)
+    if old_executable != new_executable and bool(mode & 0o111) == old_executable:
+        return (mode & ~0o111) | (new.stat().st_mode & 0o111)
+    return mode
+
+
+def _same_file(left: Path, right: Path) -> bool:
+    return same(left, right) and bool(left.stat().st_mode & 0o111) == bool(right.stat().st_mode & 0o111)
+
+
+def _same_tree(left: Path, right: Path) -> bool:
+    entries = {path.relative_to(left) for path in left.rglob("*")}
+    if entries != {path.relative_to(right) for path in right.rglob("*")}:
+        return False
+    for entry in entries:
+        first, second = left / entry, right / entry
+        if first.is_dir() != second.is_dir():
+            return False
+        if first.is_file() and not _same_file(first, second):
+            return False
+    return True
 
 
 def pairs(root: Path, names: list[str]) -> list[tuple[Path, Path]]:
@@ -199,15 +256,39 @@ def diff(root: Path, names: list[str], stat: bool) -> int:
 
 def merge_skill(old: Path, new: Path, local: Path) -> list[str]:
     """Three-way merge one skill in place. Return the files that need a human."""
+    for directory in (old, new, local):
+        _validate_tree(directory)
     problems = []
+    blocked = []
     for path in sorted(files(old) | files(new) | files(local)):
+        if any(path.startswith(prefix + "/") for prefix in blocked):
+            continue
         o, n, l = old / path, new / path, local / path
         name = f"{local.name}/{path}"
+        if n.is_file() and l.is_dir():
+            if o.is_dir() and _same_tree(o, l):
+                shutil.rmtree(l)
+                shutil.copy(n, l)
+            else:
+                problems.append(f"{name}: replaced upstream but changed locally; local tree kept")
+            blocked.append(path)
+            continue
+        if n.is_dir() and l.is_file():
+            if o.is_file() and _same_file(o, l):
+                l.unlink()
+                shutil.copytree(n, l)
+            else:
+                problems.append(f"{name}: replaced upstream but changed locally; local tree kept")
+            blocked.append(path)
+            continue
         if o.is_file() and n.is_file() and l.is_file():
+            mode = _merged_mode(o, n, l)
             if same(o, n):
+                l.chmod(mode)
                 continue
             if same(o, l):
-                shutil.copy(n, l)
+                shutil.copyfile(n, l)
+                l.chmod(mode)
                 continue
             labels = ["-L", "local", "-L", "old upstream", "-L", "new upstream"]
             code = subprocess.run(["git", "merge-file", *labels, l, o, n]).returncode
@@ -215,23 +296,28 @@ def merge_skill(old: Path, new: Path, local: Path) -> list[str]:
                 problems.append(f"{name}: git merge-file failed (binary or unreadable file); local file kept")
             elif code:
                 problems.append(f"{name}: conflict markers left in the file")
+            l.chmod(mode)
         elif n.is_file() and not o.is_file():
             if not l.is_file():
                 l.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy(n, l)
-            elif not same(n, l):
+            elif not _same_file(n, l):
                 problems.append(f"{name}: added both upstream and locally; local file kept")
         elif o.is_file() and not n.is_file() and l.is_file():
-            if same(o, l):
+            if _same_file(o, l):
                 l.unlink()
             else:
                 problems.append(f"{name}: removed upstream but changed locally; local file kept")
-        elif o.is_file() and n.is_file() and not same(o, n):
+        elif o.is_file() and n.is_file() and not _same_file(o, n):
             problems.append(f"{name}: changed upstream but removed locally; not restored")
     return problems
 
 
 def update(root: Path, checkout: Path, revision: str, date: str) -> list[str]:
+    root = root.resolve()
+    _validate_owned_tree(root, root / LOCAL)
+    _validate_owned_tree(root, root / UPSTREAM)
+    _validate_tree(checkout / "skills")
     new = borrowed(checkout / "skills")
     with pristine_skills(root) as directory:
         old = borrowed(directory)
@@ -239,6 +325,8 @@ def update(root: Path, checkout: Path, revision: str, date: str) -> list[str]:
         if missing:
             raise SystemExit(f"skills missing upstream, nothing changed: {', '.join(missing)}")
         problems, local = [], local_names(root)
+        for name in sorted(old):
+            _validate_owned_tree(root, root / LOCAL / local.get(name, name))
         for name in sorted(old):
             problems += merge_skill(old[name], new[name], root / LOCAL / local.get(name, name))
         with tempfile.TemporaryDirectory(prefix="agent-kit-new-pristine-") as temporary:

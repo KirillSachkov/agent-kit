@@ -65,7 +65,7 @@ def check_structure():
             candidates = [reference["ref"], reference["ref"].replace("refs/heads/", "refs/remotes/origin/", 1)]
             if not any(git("rev-parse", "--verify", candidate).stdout.strip() == reference["sha"] for candidate in candidates):
                 errors.append(f"retained branch ref missing: {reference['ref']}")
-    docs = [ROOT / name for name in ("README.md", "README.en.md", "AGENTS.md", "CODING_STANDARDS.md", "skills/README.md")]
+    docs = [ROOT / name for name in ("README.md", "README.en.md", "AGENTS.md", "CODING_STANDARDS.md", "skills/README.md", "provenance/engineering/README.md")]
     docs.extend((ROOT / "docs").glob("*.md"))
     for doc in docs:
         if not doc.is_file():

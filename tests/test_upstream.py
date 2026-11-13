@@ -79,6 +79,68 @@ class MergeSkill(unittest.TestCase):
         self.assertEqual((self.local / "REFERENCE.md").read_text(), "new\n")
         self.assertTrue(os.access(self.local / "run.sh", os.X_OK))
 
+    def test_mode_only_change_updates_unadapted_mode_without_losing_local_text(self) -> None:
+        for directory in (self.old, self.new):
+            write(directory / "run.sh", "#!/bin/sh\necho source\n")
+        write(self.local / "run.sh", "#!/bin/sh\necho local adaptation\n")
+        (self.old / "run.sh").chmod(0o644)
+        (self.new / "run.sh").chmod(0o755)
+        (self.local / "run.sh").chmod(0o644)
+        self.assertEqual(self.merge(), [])
+        self.assertTrue(os.access(self.local / "run.sh", os.X_OK))
+        self.assertEqual((self.local / "run.sh").read_text(), "#!/bin/sh\necho local adaptation\n")
+
+    def test_local_mode_adaptation_is_kept_when_upstream_removes_the_file(self) -> None:
+        for directory in (self.old, self.local):
+            write(directory / "run.sh", "#!/bin/sh\n")
+        (self.old / "run.sh").chmod(0o644)
+        (self.local / "run.sh").chmod(0o755)
+        self.assertEqual(self.merge(), ["skill/run.sh: removed upstream but changed locally; local file kept"])
+        self.assertTrue(os.access(self.local / "run.sh", os.X_OK))
+
+    def test_upstream_directory_becomes_a_file_at_the_exact_path(self) -> None:
+        write(self.old / "guide/old.md", "old guide\n")
+        write(self.local / "guide/old.md", "old guide\n")
+        write(self.local / "keep.md", "local note\n")
+        write(self.new / "guide", "new flat guide\n")
+        (self.new / "guide").chmod(0o755)
+        self.assertEqual(self.merge(), [])
+        self.assertTrue((self.local / "guide").is_file())
+        self.assertEqual((self.local / "guide").read_text(), "new flat guide\n")
+        self.assertTrue(os.access(self.local / "guide", os.X_OK))
+        self.assertEqual((self.local / "keep.md").read_text(), "local note\n")
+
+    def test_adapted_directory_is_kept_whole_when_upstream_flattens_it(self) -> None:
+        write(self.old / "guide/unchanged.md", "old guide\n")
+        write(self.local / "guide/unchanged.md", "old guide\n")
+        write(self.local / "guide/local.md", "local note\n")
+        write(self.new / "guide", "new flat guide\n")
+        self.assertEqual(self.merge(), ["skill/guide: replaced upstream but changed locally; local tree kept"])
+        self.assertEqual((self.local / "guide/unchanged.md").read_text(), "old guide\n")
+        self.assertEqual((self.local / "guide/local.md").read_text(), "local note\n")
+
+    def test_adapted_file_is_kept_when_upstream_replaces_it_with_a_directory(self) -> None:
+        write(self.old / "guide", "old guide\n")
+        write(self.local / "guide", "local adaptation\n")
+        write(self.new / "guide/new.md", "new nested guide\n")
+        self.assertEqual(self.merge(), ["skill/guide: replaced upstream but changed locally; local tree kept"])
+        self.assertEqual((self.local / "guide").read_text(), "local adaptation\n")
+
+    def test_symlink_is_rejected_before_any_file_or_external_target_changes(self) -> None:
+        for directory in (self.old, self.local):
+            write(directory / "a.md", "old a\n")
+        write(self.new / "a.md", "new a\n")
+        write(self.old / "guide.md", "old guide\n")
+        write(self.new / "guide.md", "new guide\n")
+        outside = Path(self.temporary.name) / "protected.md"
+        outside.write_text("old guide\n")
+        (self.local / "guide.md").symlink_to(outside)
+        with self.assertRaisesRegex(ValueError, "symlink"):
+            self.merge()
+        self.assertEqual(outside.read_text(), "old guide\n")
+        self.assertEqual((self.local / "a.md").read_text(), "old a\n")
+        self.assertTrue((self.local / "guide.md").is_symlink())
+
     def test_file_removed_upstream_is_removed_only_when_unadapted(self) -> None:
         write(self.old / "plain.md", "a\n")
         write(self.local / "plain.md", "a\n")
@@ -90,6 +152,45 @@ class MergeSkill(unittest.TestCase):
 
 
 class Update(unittest.TestCase):
+    def test_committed_symlink_rejects_the_whole_update_and_preserves_source_pointer(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            source, root, baseline = base / "source", base / "root", base / "baseline"
+            write(source / "skills/group/a/SKILL.md", "old a\n")
+            write(source / "skills/group/b/SKILL.md", "old b\n")
+            write(source / "skills/group/b/guide.md", "old guide\n")
+            shutil.copytree(source / "skills", baseline)
+            git(source, "init", "-q")
+            git(source, "add", ".")
+            git(source, "commit", "-qm", "old")
+            old_revision = git(source, "rev-parse", "HEAD")
+            write(source / "skills/group/a/SKILL.md", "new a\n")
+            write(source / "skills/group/b/guide.md", "new guide\n")
+            git(source, "commit", "-qam", "new")
+            new_revision = git(source, "rev-parse", "HEAD")
+            upstream.write_snapshot(root, baseline, old_revision, "2026-01-01")
+            for name in ("a", "b"):
+                shutil.copytree(baseline / "group" / name, root / upstream.LOCAL / name)
+            outside = base / "protected.md"
+            outside.write_text("old guide\n")
+            link = root / upstream.LOCAL / "b/guide.md"
+            link.unlink()
+            link.symlink_to(outside)
+            git(root, "init", "-q")
+            git(root, "add", ".")
+            git(root, "commit", "-qm", "stored invalid tree")
+            pointer = (root / upstream.UPSTREAM / "SOURCE").read_bytes()
+            process = subprocess.run(
+                [sys.executable, "-c", "import sys; from pathlib import Path; import upstream; raise SystemExit(upstream.main(sys.argv[2:], Path(sys.argv[1])))", str(root), "update", new_revision, "--repository", str(source)],
+                env=dict(os.environ, PYTHONPATH=str(ROOT / "tools")), capture_output=True, text=True,
+            )
+            self.assertNotEqual(process.returncode, 0)
+            self.assertIn("symlink", process.stderr)
+            self.assertEqual(outside.read_text(), "old guide\n")
+            self.assertEqual((root / upstream.LOCAL / "a/SKILL.md").read_text(), "old a\n")
+            self.assertEqual((root / upstream.UPSTREAM / "SOURCE").read_bytes(), pointer)
+            self.assertTrue(link.is_symlink())
+
     def update(self, base: Path, local_name: str) -> tuple[int, Path, str]:
         """Merge a new upstream revision of `skill` into the local copy named `local_name`."""
         source = base / "source"
