@@ -4,7 +4,7 @@
     "agent-kit": {
       "owner": "Agent Kit contributors",
       "visibility": "public",
-      "repository": ".",
+      "repository": "..",
       "remote": "https://github.com/KirillSachkov/agent-kit.git",
       "skill_paths": {
         "ask": "skills/engineering/ask",

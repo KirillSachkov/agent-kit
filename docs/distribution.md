@@ -53,6 +53,16 @@ Updates require a new explicit SHA selection. Installed local edits stop install
 
 The catalog maps skill names to source folders. Current-working-tree edits do not change the Git revision selected by an installation. A consumer can also use verified grouped snapshots through `snapshot_paths`, `snapshot_ref` and per-folder SHA-256 identities. Those snapshots work without a provider checkout.
 
+Relative provider `repository` paths resolve from the catalog file's directory,
+including license lookups. The canonical `skills/catalog.json` therefore uses `..`
+for this checkout. Absolute paths retain their explicit meaning. The same engine
+can use another authorized catalog without interpreting its relative paths against
+the executable's installation directory.
+
+Public Agent Kit distributions use `PROVIDER-NOTICES/LICENSE`, `NOTICE`,
+`LICENSE.mattpocock` and `LICENSE.humanlayer`. Private offline catalogs retain their
+own snapshot filenames while mapping to those same installed destination names.
+
 The digest includes sorted relative paths, Git executable modes and bytes. Provider notices are part of the installed lock. Identity checks do not establish the correctness of a skill or an agent's output.
 
 Installation preflights selected destinations and refuses unsafe paths, symlinks, submodules, special files, unmanaged copies and local edits. A cooperating-installer lock excludes parallel writers. This does not sandbox an adversarial process changing directories concurrently; use the project's assigned idle checkout.

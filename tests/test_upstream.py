@@ -9,6 +9,7 @@ import importlib.util
 import sys
 import os
 import io
+import re
 import shutil
 import subprocess
 import tempfile
@@ -241,8 +242,12 @@ class Update(unittest.TestCase):
         git(root, "add", ".")
         git(root, "commit", "-qm", "root")
 
-        with contextlib.redirect_stdout(io.StringIO()):
+        preview = io.StringIO()
+        with contextlib.redirect_stdout(preview):
             code = upstream.main(["update", new_revision, "--repository", str(source)], root)
+        token = re.search(r"Input fingerprint: ([0-9a-f]{64})", preview.getvalue()).group(1)
+        with contextlib.redirect_stdout(io.StringIO()):
+            code = upstream.main(["update", new_revision, "--repository", str(source), "--apply", "--expected-input", token], root)
         return code, root, new_revision
 
     def test_update_merges_new_revision_and_records_it(self) -> None:

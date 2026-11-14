@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import filecmp
 import contextlib
+import difflib
 import gzip
 import hashlib
 import io
@@ -63,7 +64,7 @@ def _atomic(path: Path, content: bytes) -> None:
             os.unlink(name)
 
 
-def write_snapshot(root: Path, skills: Path, revision: str, date: str) -> None:
+def write_snapshot(root: Path, skills: Path, revision: str, date: str, repository: str = REPOSITORY) -> None:
     """Pack exact pristine bytes and modes; keep SKILL.md out of discovery trees."""
     output = io.BytesIO()
     files = []
@@ -85,7 +86,7 @@ def write_snapshot(root: Path, skills: Path, revision: str, date: str) -> None:
     proof = {"format": "tar+gzip", "sha256": hashlib.sha256(payload).hexdigest(), "directory_sha256": identity(skills), "files": files}
     _atomic(root / UPSTREAM / "skills.tar.gz", payload)
     _atomic(root / UPSTREAM / "ARCHIVE.json", (json.dumps(proof, indent=2) + "\n").encode())
-    _atomic(root / UPSTREAM / "SOURCE", f"repository: {REPOSITORY}\nrevision: {revision}\ndate: {date}\nsha256: {identity(skills)}\n".encode())
+    _atomic(root / UPSTREAM / "SOURCE", f"repository: {repository}\nrevision: {revision}\ndate: {date}\nsha256: {identity(skills)}\n".encode())
 
 
 @contextlib.contextmanager
@@ -123,7 +124,8 @@ def check_pristine(root: Path) -> list[str]:
         errors.append(f"{UPSTREAM}/SOURCE: revision must be a full commit SHA")
     notice = root / "NOTICE"
     if notice.is_file() and revision:
-        pinned = set(re.findall(r"mattpocock/skills/tree/([0-9a-f]{40})", notice.read_text()))
+        repository = source.get("repository", REPOSITORY)
+        pinned = set(re.findall(re.escape(repository) + r"/tree/([0-9a-f]{40})", notice.read_text()))
         if pinned != {revision}:
             errors.append(f"NOTICE: Matt's snapshot link must name the SOURCE revision {revision}")
     try:
@@ -327,7 +329,8 @@ def merge_skill(old: Path, new: Path, local: Path) -> list[str]:
     return problems
 
 
-def update(root: Path, checkout: Path, revision: str, date: str) -> list[str]:
+def _merge_update(root: Path, checkout: Path, revision: str, date: str, repository: str) -> list[str]:
+    """Merge only inside a disposable proposal tree, never the accepted checkout."""
     root = root.resolve()
     _validate_owned_tree(root, root / LOCAL)
     _validate_owned_tree(root, root / UPSTREAM)
@@ -337,29 +340,182 @@ def update(root: Path, checkout: Path, revision: str, date: str) -> list[str]:
         old = borrowed(directory)
         missing = sorted(set(old) - set(new))
         if missing:
-            raise SystemExit(f"skills missing upstream, nothing changed: {', '.join(missing)}")
+            raise ValueError(f"skills missing upstream, nothing changed: {', '.join(missing)}")
         problems, local = [], local_names(root)
         for name in sorted(old):
             _validate_owned_tree(root, root / LOCAL / local.get(name, name))
         for name in sorted(old):
             problems += merge_skill(old[name], new[name], root / LOCAL / local.get(name, name))
+        if problems:
+            return problems
         with tempfile.TemporaryDirectory(prefix="agent-kit-new-pristine-") as temporary:
             selected = Path(temporary)
             for name in sorted(old):
                 shutil.copytree(new[name], selected / new[name].relative_to(checkout / "skills"))
-            write_snapshot(root, selected, revision, date)
+            previous = read_source(root)
+            write_snapshot(root, selected, revision, date, repository)
+            notice = root / "NOTICE"
+            if notice.is_file():
+                old_link = previous.get("repository", REPOSITORY) + "/tree/" + previous["revision"]
+                notice.write_text(notice.read_text().replace(old_link, repository + "/tree/" + revision))
     adopted = sorted(set(new) - set(old))
     if adopted:
         print("New upstream skills, not adopted: " + ", ".join(adopted))
     return problems
 
 
+SECTIONS = (LOCAL, UPSTREAM, Path("NOTICE"))
+
+
+def input_fingerprint(root: Path) -> str:
+    """Identity of all update inputs, including paths, file bytes and permissions."""
+    for relative in (LOCAL, UPSTREAM):
+        _validate_owned_tree(root, root / relative)
+    notice = root / "NOTICE"
+    if notice.is_symlink() or (notice.exists() and not notice.is_file()):
+        raise ValueError("NOTICE must be a regular file")
+    digest = hashlib.sha256()
+    head = subprocess.run(["git", "-C", str(root), "rev-parse", "--verify", "HEAD"],
+                          capture_output=True, check=False)
+    digest.update(b"library-head\0" + (head.stdout.strip() if head.returncode == 0 else b"no-head") + b"\0")
+    for relative in SECTIONS:
+        folder = root / relative
+        entries = [folder, *sorted(folder.rglob("*"))] if folder.is_dir() else [folder]
+        for path in entries:
+            kind = "directory" if path.is_dir() else "file" if path.is_file() else "absent"
+            digest.update(str(path.relative_to(root)).encode() + b"\0" + kind.encode() + b"\0")
+            if path.exists():
+                digest.update(str(path.stat().st_mode & 0o777).encode() + b"\0")
+            if path.is_file():
+                digest.update(path.read_bytes())
+            digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def _copy_section(source: Path, destination: Path) -> None:
+    if source.is_dir():
+        shutil.copytree(source, destination)
+    elif source.is_file():
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
+
+
+def _remove_owned(path: Path) -> None:
+    if path.is_dir():
+        shutil.rmtree(path)
+    elif path.exists():
+        path.unlink()
+
+
+def _apply_proposal(root: Path, proposal: Path, fingerprint: str) -> None:
+    guard = root / ".upstream-update.lock"
+    try:
+        descriptor = os.open(guard, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+    except FileExistsError:
+        raise ValueError("another updater holds .upstream-update.lock; reconcile its owner before retrying") from None
+    try:
+        with os.fdopen(descriptor, "w") as stream:
+            stream.write(str(os.getpid()) + "\n")
+        # Materialize on the destination filesystem before the first replacement.
+        transaction = Path(tempfile.mkdtemp(prefix=".upstream-apply-", dir=root))
+        retain_recovery = False
+        try:
+            for relative in SECTIONS:
+                _copy_section(proposal / relative, transaction / "new" / relative)
+            if input_fingerprint(root) != fingerprint:
+                raise ValueError("update inputs changed after preview; preview again")
+            journal = []
+            try:
+                for relative in SECTIONS:
+                    target, ready = root / relative, transaction / "new" / relative
+                    backup = transaction / "old" / relative
+                    row = {"target": target, "backup": backup, "old": False, "new": False}
+                    journal.append(row)
+                    if target.exists():
+                        backup.parent.mkdir(parents=True, exist_ok=True)
+                        os.replace(target, backup)
+                        row["old"] = True
+                    if ready.exists():
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        os.replace(ready, target)
+                        row["new"] = True
+            except BaseException as failure:
+                rollback_errors = []
+                for row in reversed(journal):
+                    try:
+                        if row["new"]:
+                            _remove_owned(row["target"])
+                        if row["old"]:
+                            os.replace(row["backup"], row["target"])
+                    except OSError as error:
+                        rollback_errors.append(str(error))
+                if rollback_errors:
+                    retain_recovery = True
+                    raise RuntimeError(f"rollback incomplete; recovery retained at {transaction}: " + "; ".join(rollback_errors)) from failure
+                raise
+        finally:
+            if not retain_recovery:
+                shutil.rmtree(transaction)
+    finally:
+        guard.unlink()
+
+
+def _show_proposal(root: Path, proposal: Path, stat_only: bool) -> None:
+    for relative in SECTIONS:
+        old, new = root / relative, proposal / relative
+        names = files(old) | files(new) if old.is_dir() or new.is_dir() else {""}
+        for name in sorted(names):
+            before, after = old / name if name else old, new / name if name else new
+            a = before.read_bytes() if before.is_file() else b""
+            b = after.read_bytes() if after.is_file() else b""
+            a_mode = before.stat().st_mode & 0o777 if before.is_file() else None
+            b_mode = after.stat().st_mode & 0o777 if after.is_file() else None
+            if a == b and a_mode == b_mode:
+                continue
+            label = str(relative / name) if name else str(relative)
+            print(f"CHANGE {label} ({a_mode!s} -> {b_mode!s})")
+            if not stat_only:
+                try:
+                    print("".join(difflib.unified_diff(a.decode().splitlines(True), b.decode().splitlines(True),
+                                                     fromfile="accepted/" + label, tofile="proposal/" + label)), end="")
+                except UnicodeDecodeError:
+                    print("Binary contents differ")
+
+
+def update(root: Path, checkout: Path, revision: str, date: str, *, apply: bool = False,
+           expected_input: str | None = None, repository: str = REPOSITORY, stat_only: bool = False) -> list[str]:
+    root = root.resolve()
+    fingerprint = input_fingerprint(root)
+    if apply and expected_input != fingerprint:
+        raise ValueError("update inputs changed after preview; use its --expected-input fingerprint")
+    with tempfile.TemporaryDirectory(prefix="agent-kit-upstream-preview-") as temporary:
+        proposal = Path(temporary)
+        for relative in SECTIONS:
+            _copy_section(root / relative, proposal / relative)
+        problems = _merge_update(proposal, checkout, revision, date, repository)
+        print("Input fingerprint: " + fingerprint)
+        print(f"Incoming: {repository} at {revision} ({date})")
+        _show_proposal(root, proposal, stat_only)
+        if problems:
+            print("Conflicts in proposal only; accepted skills and baseline are unchanged.")
+            return problems
+        if apply:
+            _apply_proposal(root, proposal, fingerprint)
+            print("Applied the reviewed update. Run library checks and independent review before publication.")
+        else:
+            print("Preview only; skills and accepted baseline are unchanged.")
+            print(f"Apply this SHA with --apply --expected-input {fingerprint}")
+    return []
+
+
 def fetch(repository: str, revision: str, target: Path) -> tuple[str, str]:
-    subprocess.run(["git", "clone", "--quiet", repository, str(target)], check=True)
+    subprocess.run(["git", "clone", "--quiet", "--", repository, str(target)], check=True)
     subprocess.run(["git", "-C", str(target), "checkout", "--quiet", revision], check=True)
     output = subprocess.run(
         ["git", "-C", str(target), "log", "-1", "--format=%H %cs"], check=True, capture_output=True, text=True
     ).stdout.split()
+    if output[0] != revision:
+        raise ValueError("fetched revision does not match the requested immutable SHA")
     return output[0], output[1]
 
 
@@ -369,24 +525,41 @@ def main(argv: list[str], root: Path = ROOT) -> int:
     show = commands.add_parser("diff", help="show local adaptations against the pinned upstream copy")
     show.add_argument("skills", nargs="*")
     show.add_argument("--stat", action="store_true")
-    merge = commands.add_parser("update", help="merge a new upstream revision into local skills")
+    merge = commands.add_parser("update", help="preview a three-way upstream update; apply only explicitly")
     merge.add_argument("revision")
     merge.add_argument("--repository", default=REPOSITORY)
+    merge.add_argument("--apply", action="store_true")
+    merge.add_argument("--expected-input", help="input fingerprint printed by the reviewed preview")
+    merge.add_argument("--stat", action="store_true", help="show changed paths without full text diff")
     args = parser.parse_args(argv)
 
     if args.command == "diff":
         return diff(root, args.skills, args.stat)
 
-    dirty = subprocess.run(
-        ["git", "status", "--porcelain", "--", str(LOCAL), str(UPSTREAM)], cwd=root, check=True, capture_output=True, text=True
-    ).stdout
-    if dirty:
-        raise SystemExit("commit or preserve pending engineering/provenance changes before an update")
-    with tempfile.TemporaryDirectory() as temporary:
-        revision, date = fetch(args.repository, args.revision, Path(temporary) / "upstream")
-        problems = update(root, Path(temporary) / "upstream", revision, date)
-    print(f"Merged upstream {revision} ({date}). Review with: git diff -- skills/engineering provenance/upstream")
-    print("Then update the current NOTICE snapshot link, catalogue hashes and adaptation notes; keep historical source records unchanged.")
+    try:
+        if any(os.environ.get(key) for key in ("GIT_DIR", "GIT_COMMON_DIR", "GIT_WORK_TREE")):
+            raise ValueError("unset Git directory selectors before an upstream update")
+        if not re.fullmatch(r"[0-9a-f]{40}", args.revision):
+            raise ValueError("revision must be a full lowercase 40-character commit SHA")
+        if args.apply and not args.expected_input:
+            raise ValueError("--apply requires --expected-input from a reviewed preview")
+        fingerprint = input_fingerprint(root.resolve())
+        if args.apply and args.expected_input != fingerprint:
+            raise ValueError("update inputs changed after preview; preview again")
+        if args.apply:
+            dirty = subprocess.run(
+                ["git", "status", "--porcelain"],
+                cwd=root, check=True, capture_output=True, text=True,
+            ).stdout
+            if dirty:
+                raise ValueError("commit or preserve pending library changes before applying an update")
+        with tempfile.TemporaryDirectory() as temporary:
+            revision, date = fetch(args.repository, args.revision, Path(temporary) / "upstream")
+            problems = update(root, Path(temporary) / "upstream", revision, date, apply=args.apply,
+                              expected_input=args.expected_input, repository=args.repository, stat_only=args.stat)
+    except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as error:
+        print(f"upstream: {error}", file=sys.stderr)
+        return 1
     for problem in problems:
         print(problem, file=sys.stderr)
     return 1 if problems else 0

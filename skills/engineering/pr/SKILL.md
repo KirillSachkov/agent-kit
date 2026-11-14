@@ -9,11 +9,11 @@ metadata:
     url: "https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md"
 ---
 
-Write a report the owner can understand without reading the conversation or every changed line. Root `AGENTS.md` owns audience language, including headings. Preserve technical syntax and use terms from `DOMAIN.md`. `ship` owns PR delivery; this skill owns its description.
+Write a report the owner can understand without reading the conversation or every changed line. Root `AGENTS.md` owns audience language, including headings. Preserve technical syntax and the project's declared domain vocabulary. `ship` owns delivery; this skill owns the PR description and its project-specific contract. `recap` may supply readable narrative, but does not independently create or edit the PR.
 
 ## Build the explanation
 
-1. Read the issue/spec, actual diff, verification results, and independent findings. Follow `docs/agents/human-review.md` for human checks.
+1. Read the issue/spec, actual diff, verification results, and independent findings. Read target `AGENTS.md` and its actual tracker/writing/human-participation pointers; apply inline or linked rules without requiring a particular filename.
 2. Lead with the problem and resulting behavior. Use a concrete before/after example where it helps. Show the affected scope.
 3. Choose the smallest useful structure. For diagrams, visual evidence, or formatting beyond the template, read the relevant [presentation](PRESENTATION.md) section. Use GitHub-supported Markdown to make the result clear and easy to scan.
 4. Show the evidence conclusion and material limits first. Put commands, logs, revision records, and the complete check table in a disclosure.

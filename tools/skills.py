@@ -145,13 +145,16 @@ def snapshot_folder(provider, entry, catalog_dir):
     return safe_path(catalog_dir.resolve(), relative)
 
 
+def provider_repository(provider, catalog_dir):
+    repository = Path(provider["repository"]).expanduser()
+    return repository if repository.is_absolute() else catalog_dir.resolve() / repository
+
+
 def source_files(provider, entry, catalog_dir):
     ref = entry["ref"]
     if not re.fullmatch(r"[0-9a-f]{40}", ref):
         raise SkillsError("ref must be a full lowercase 40-character commit SHA")
-    repo = Path(provider["repository"]).expanduser()
-    if not repo.is_absolute():
-        repo = ROOT / repo
+    repo = provider_repository(provider, catalog_dir)
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", entry["skill"]):
         raise SkillsError("Unsafe skill name")
     snapshot = snapshot_folder(provider, entry, catalog_dir)
@@ -219,9 +222,7 @@ def with_notices(provider, entry, files, catalog_dir):
             source = Path(notice["source_path"])
             if source.is_absolute() or ".." in source.parts:
                 raise SkillsError("Unsafe provider notice path")
-            repository = Path(provider["repository"]).expanduser()
-            if not repository.is_absolute():
-                repository = ROOT / repository
+            repository = provider_repository(provider, catalog_dir)
             data = git(repository, "show", entry["ref"] + ":" + str(source))
         destination = "PROVIDER-NOTICES/" + name
         if destination in files:

@@ -42,7 +42,9 @@ python3 tools/skills.py check --project /path/to/project
 
 Agent Kit объединяет публичные Agent Harness и Agent Clarity с сохранением обеих историй Git. Старые source commits и отдельные draft/research-ветки доступны под `history/agent-harness/*` и `history/agent-clarity/*`. [Перенос и границы](docs/migration.md).
 
-Инженерная библиотека содержит адаптации скиллов Matt Pocock. Атрибуция и полные MIT notices сохранены в [NOTICE](NOTICE) и `provenance/engineering/`. [Обновление upstream](docs/upstream.md).
+Инженерная библиотека содержит адаптации скиллов Matt Pocock. Атрибуция и полные MIT notices сохранены в [NOTICE](NOTICE) и `provenance/engineering/`. [Обновление upstream](docs/upstream.ru.md).
+
+Образец инженерных процедур теперь AI-first Platform. Общие скиллы читают правила целевого harness; старт, тестирование и доставка не унифицируются поверх проекта. [Граница процедур и политики](docs/engineering-contract.md).
 
 ## Проверки
 

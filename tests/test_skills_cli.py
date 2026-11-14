@@ -65,6 +65,19 @@ class SkillsCLI(unittest.TestCase):
         self.assertEqual(lock["skills"][".agents/skills/example"]["ref"], self.ref)
         self.run_cli("check")
 
+    def test_relative_provider_and_notices_resolve_from_the_catalog_directory(self):
+        (self.provider / "LICENSE").write_text("Fixture permission notice\n")
+        self.select(self.commit())
+        catalog = json.loads(self.catalog.read_text())
+        catalog["providers"]["test"].update({
+            "repository": "provider", "notices": {"LICENSE": {"source_path": "LICENSE"}},
+        })
+        self.catalog.write_text(json.dumps(catalog))
+        self.run_cli("install")
+        self.assertEqual((self.project / ".agents/skills/example/PROVIDER-NOTICES/LICENSE").read_text(),
+                         "Fixture permission notice\n")
+        self.run_cli("check")
+
     def test_edited_installed_copy_blocks_update_and_is_preserved(self):
         self.run_cli("install")
         target = self.project / ".agents/skills/example/reference.md"

@@ -19,7 +19,7 @@ Take the facts from your own session and pipeline: the conversation, the diff, t
    | Where | When | How |
    |---|---|---|
    | the chat | always | reply with the text |
-   | a PR | a PR exists, or the pipeline opens one | write the text to a temporary file outside the project, then `gh pr create --body-file <file>` or `gh pr edit --body-file <file>` |
+   | a PR | the project PR workflow requests narrative | supply the text to `pr`; that workflow owns the final PR contract and tracker mutation |
    | a file | the owner or the pipeline asks for one | `<repo>/.reports/recap/<date>-<topic>.md`; add `.reports/` to `.git/info/exclude` when `.gitignore` lacks it |
    | a page | the owner asks to see the work, or must accept it | build it by [page.md](references/page.md) |
 

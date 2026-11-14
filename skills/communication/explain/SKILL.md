@@ -1,6 +1,6 @@
 ---
 name: explain
-description: "Explain how a system or process works as an offline page of Mermaid diagrams drawn from the code: one takeaway per section. Use when asked how something is built or works, or to show or visualize it."
+description: "Explain how a system or process works as an offline page of Mermaid diagrams drawn from the code: one takeaway per section. Use when explicitly asked to show, visualize, diagram or map a system or process. An ordinary request for a text explanation does not select this skill."
 metadata:
   internal: true
 ---
