@@ -59,6 +59,14 @@ class WizardEnvironment(unittest.TestCase):
         self.assertEqual(self.target.stat().st_mode & 0o777, 0o640)
         self.assertEqual(list(self.root.glob("*.tmp.*")), [])
 
+    def test_written_key_updates_the_callers_variable_without_local_name_collisions(self):
+        for key in ("key", "value", "tmp", "target", "status", "quote"):
+            with self.subTest(key=key):
+                result = self.run_library(
+                    'unset "$1"; write_env "$1" synthetic; printf "%s" "${!1}" > assigned', key)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual((self.root / "assigned").read_text(), "synthetic")
+
     def test_new_file_is_private_even_with_permissive_parent_umask(self):
         result = self.run_library("umask 022; write_env SAMPLE test")
         self.assertEqual(result.returncode, 0, result.stderr)
