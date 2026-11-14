@@ -493,5 +493,15 @@
         }
       }
     }
+  },
+  "consumer_compatibility_repairs": {
+    "date": "2026-11-14",
+    "previous_agent_kit": "257dd644eb338442e86237532cfe38bd74ba532e",
+    "changes": [
+      "wizard: retain whole-value dotenv encoding, identifier/single-line validation, atomic replacement, symlink targets, file modes and failed-write preservation identified during consumer reconciliation",
+      "code-review: missing requirement coverage does not skip target-required independent behavioral review",
+      "wizard: discover variable names from authorized non-secret references; credential access remains assignment/project-owned"
+    ],
+    "matt_baseline_unchanged": true
   }
 }
