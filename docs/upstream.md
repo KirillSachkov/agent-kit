@@ -49,7 +49,8 @@ python3 tools/upstream.py update FULL_40_CHARACTER_MATT_SHA \
   --apply --expected-input FINGERPRINT_FROM_PREVIEW
 ```
 
-The fingerprint binds the library revision, skill/provenance bytes, paths and modes.
+The fingerprint binds the library revision, skill/provenance bytes, paths and modes,
+and the exact incoming repository and SHA.
 Changed inputs refuse application. A cooperating-updater lock excludes another
 apply; a stale lock requires checking its owner, not automatic removal. Do not run
 with `GIT_DIR`, `GIT_COMMON_DIR` or `GIT_WORK_TREE` selecting another checkout.

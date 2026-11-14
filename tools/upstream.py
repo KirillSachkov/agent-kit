@@ -400,6 +400,12 @@ def _copy_section(source: Path, destination: Path) -> None:
         shutil.copy2(source, destination)
 
 
+def review_fingerprint(local_input: str, repository: str, revision: str) -> str:
+    """Bind the local state to the exact incoming immutable source."""
+    payload = json.dumps([local_input, repository, revision], separators=(",", ":")).encode()
+    return hashlib.sha256(payload).hexdigest()
+
+
 def _remove_owned(path: Path) -> None:
     if path.is_dir():
         shutil.rmtree(path)
@@ -486,14 +492,15 @@ def update(root: Path, checkout: Path, revision: str, date: str, *, apply: bool 
            expected_input: str | None = None, repository: str = REPOSITORY, stat_only: bool = False) -> list[str]:
     root = root.resolve()
     fingerprint = input_fingerprint(root)
-    if apply and expected_input != fingerprint:
+    reviewed = review_fingerprint(fingerprint, repository, revision)
+    if apply and expected_input != reviewed:
         raise ValueError("update inputs changed after preview; use its --expected-input fingerprint")
     with tempfile.TemporaryDirectory(prefix="agent-kit-upstream-preview-") as temporary:
         proposal = Path(temporary)
         for relative in SECTIONS:
             _copy_section(root / relative, proposal / relative)
         problems = _merge_update(proposal, checkout, revision, date, repository)
-        print("Input fingerprint: " + fingerprint)
+        print("Input fingerprint: " + reviewed)
         print(f"Incoming: {repository} at {revision} ({date})")
         _show_proposal(root, proposal, stat_only)
         if problems:
@@ -504,7 +511,7 @@ def update(root: Path, checkout: Path, revision: str, date: str, *, apply: bool 
             print("Applied the reviewed update. Run library checks and independent review before publication.")
         else:
             print("Preview only; skills and accepted baseline are unchanged.")
-            print(f"Apply this SHA with --apply --expected-input {fingerprint}")
+            print(f"Apply this SHA with --apply --expected-input {reviewed}")
     return []
 
 
@@ -543,7 +550,7 @@ def main(argv: list[str], root: Path = ROOT) -> int:
             raise ValueError("revision must be a full lowercase 40-character commit SHA")
         if args.apply and not args.expected_input:
             raise ValueError("--apply requires --expected-input from a reviewed preview")
-        fingerprint = input_fingerprint(root.resolve())
+        fingerprint = review_fingerprint(input_fingerprint(root.resolve()), args.repository, args.revision)
         if args.apply and args.expected_input != fingerprint:
             raise ValueError("update inputs changed after preview; preview again")
         if args.apply:

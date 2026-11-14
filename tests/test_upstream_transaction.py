@@ -118,6 +118,30 @@ class UpstreamTransaction(unittest.TestCase):
         fetch.assert_not_called()
         self.assertEqual(self.image(), before)
 
+    def test_preview_token_cannot_apply_another_incoming_revision(self):
+        token = self.preview()
+        write(self.source / "skills/group/a/SKILL.md", BASE.replace("end", "different upstream decision"))
+        git(self.source, "commit", "-qam", "unreviewed incoming")
+        other = git(self.source, "rev-parse", "HEAD")
+        before = self.image()
+        with patch.object(upstream, "fetch") as fetch:
+            code, _, error = self.command("--apply", "--expected-input", token, revision=other)
+        self.assertNotEqual(code, 0)
+        self.assertIn("changed", error)
+        fetch.assert_not_called()
+        self.assertEqual(self.image(), before)
+
+    def test_preview_token_cannot_apply_another_source_repository(self):
+        token = self.preview()
+        before = self.image()
+        with patch.object(upstream, "fetch") as fetch:
+            code, _, error = self.command("--repository", str(self.source) + "-other",
+                                           "--apply", "--expected-input", token)
+        self.assertNotEqual(code, 0)
+        self.assertIn("changed", error)
+        fetch.assert_not_called()
+        self.assertEqual(self.image(), before)
+
     def test_failure_installing_second_section_restores_the_whole_batch(self):
         token = self.preview()
         before = self.image()
