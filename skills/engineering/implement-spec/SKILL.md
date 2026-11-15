@@ -25,8 +25,11 @@ A native subagent is not an independently assigned application session.
 
 1. Read the spec and ticket graph. Resolve dependency and acceptance conditions.
 2. If exploration is needed, a fresh exploration subagent can write scoped notes
-   outside the repo, accessible to later workers. Read-only exploration does not
-   start another implementation beyond the approved graph.
+   at the location selected by the target project's exploration and evidence policy,
+   accessible to later workers. If placement is unresolved, obtain the missing
+   project decision before writing notes; do not assume an inside- or outside-repo
+   location. Read-only exploration does not start another implementation beyond
+   the approved graph.
 3. Prepare the owned execution context under project policy. In integration mode,
    prepare its branch/worktree and draft at the required point. In ticket-PR mode,
    each ticket follows its own delivery and dependency-merge gates. A main-checkout
