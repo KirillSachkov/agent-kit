@@ -9,7 +9,10 @@ approved spec, tickets, criteria, blockers and human checkpoints. An authorized
 spec run covers its agreed child tasks, not new requirements.
 
 The goal is the assigned spec delivered in the project's selected mode: ticket
-PRs or an approved integration branch. Record an immutable review base against
+PRs, an approved integration branch, or main-checkout delivery. Keep spec status,
+review reports and verification evidence in the project-selected ticket, PR,
+integration record or main-checkout evidence location; do not create a PR or branch
+solely to hold evidence. Record an immutable review base against
 the intended target. This procedure does not choose another acceptance mode.
 
 Tickets form a **task graph** with blocking relationships and a ready **frontier**.

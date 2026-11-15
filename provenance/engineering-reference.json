@@ -26,7 +26,7 @@
     "Correct lower donor contradictions instead of copying top overrides.",
     "Use client-native loading or read SKILL.md; keep standalone supporting files.",
     "Keep existing self-contained legal and optional design references, EN/RU setup and corrected glab JSON flag.",
-    "Communication recap supplies narrative; pr owns the final PR artifact; explain requires a visual request."
+    "Communication recap supplies narrative; pr owns the final PR artifact; explain is removed from the selected library."
   ],
   "reference_files": {
     "ask": {
@@ -502,6 +502,23 @@
       "code-review: missing requirement coverage does not skip target-required independent behavioral review",
       "wizard: discover variable names from authorized non-secret references; credential access remains assignment/project-owned",
       "wizard: assign caller variables outside file-helper locals, including valid names quote/target/status"
+    ],
+    "matt_baseline_unchanged": true
+  },
+  "workflow_boundary_maintenance": {
+    "issue": "https://github.com/KirillSachkov/agent-kit/issues/2",
+    "review_base": "b1608ac14d8f934a8686a0c583f1110466a18b18",
+    "preserved_commit": "3c822f5a64724f4c5338fd147df0aab272571726",
+    "description_characters": {
+      "code-review": 152,
+      "wizard": 152,
+      "codebase-design": 163,
+      "research": 142
+    },
+    "changes": [
+      "Concise distinct model triggers; wizard remains discoverable only for human-only work.",
+      "Project-owned prototype surface and implementation authority, tracker roles and dependency frontier, rejection storage, main-checkout evidence, canonical instruction owner and client context limits.",
+      "Portable current maintenance URL; historical original guide remains unchanged."
     ],
     "matt_baseline_unchanged": true
   }

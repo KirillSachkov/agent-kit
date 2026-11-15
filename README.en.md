@@ -53,3 +53,5 @@ python3 scripts/check.py
 Checks use synthetic projects. They do not authorize services or establish the correctness of an agent's eventual work in another project.
 
 The engineering reference is AI-first Platform. Shared procedures resolve start, testing and delivery from the target harness. See the [portable contract](docs/engineering-contract.md) and [reviewed three-way upstream updates](docs/upstream.md).
+
+Workflow maintenance keeps tracker roles, prototype placement (including Storybook), rejected-request storage and evidence paths under the target project. Setup follows its canonical instruction owner; context boundaries follow the configured client.
