@@ -7,7 +7,6 @@
 | [plain-writing](../../skills/communication/plain-writing/SKILL.md) | Понятный текст для человека, общие правила и отдельный файл русского языка |
 | [recap](../../skills/communication/recap/SKILL.md) | Отчёт о законченной работе со ссылками на результат и проверками |
 | [setup-plain-writing](../../skills/communication/setup-plain-writing/SKILL.md) | Добавление согласованного блока в глобальные инструкции выбранных агентов |
-| [explain](../../skills/communication/explain/SKILL.md) | Схемы по коду; скилл остаётся в работе и выбирается явно |
 
 ## Установка
 
@@ -34,6 +33,6 @@ python3 tools/skills.py check --project /path/to/project
 python3 maintenance/communication/scripts/check.py
 ```
 
-Проверка запускает прежние текстовые и rendering tests по новым путям. Рисование Mermaid требует Node, Chromium и playwright-core; эти зависимости не устанавливаются нашей миграцией. Готовый `recap` загружает Mermaid из CDN; `explain` встраивает схемы при сборке.
+Проверка сверяет frontmatter скиллов и локальные ссылки. Готовый `recap` загружает Mermaid из CDN.
 
 Сохранены MIT-лицензия, примеры, assets и история Git прежнего Agent Clarity. Его README до переноса доступен в [первоначальном публичном commit](https://github.com/KirillSachkov/agent-clarity/blob/a8b3f408ab5373667680b3622048eecfdf41c47f/README.md).

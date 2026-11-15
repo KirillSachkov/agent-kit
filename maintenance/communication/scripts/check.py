@@ -29,7 +29,8 @@ def main() -> int:
                 continue
             if not (doc.parent / target.split("#", 1)[0]).exists():
                 errors.append(f"{doc.relative_to(ROOT)}: broken link {target}")
-    pythons = dict.fromkeys(p for p in (sys.executable, "/usr/bin/python3") if Path(p).exists())
+    has_tests = any((MAINTENANCE / "tests").glob("test_*.py"))
+    pythons = dict.fromkeys(p for p in (sys.executable, "/usr/bin/python3") if has_tests and Path(p).exists())
     for python in pythons:
         tests = subprocess.run([python, "-m", "unittest", "discover", "-s", str(MAINTENANCE / "tests"), "-q"], capture_output=True, text=True)
         if tests.returncode:

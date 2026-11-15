@@ -12,7 +12,7 @@ python3 tools/skills.py select --project /path/to/project --ref FULL_COMMIT_SHA 
 python3 tools/skills.py select --project /path/to/project --ref FULL_COMMIT_SHA --skill tdd --skill recap --client both --apply
 ```
 
-Selection records `.agents/skills-manifest.json`. There is no implicit entire-library selection. The internal `explain` skill requires explicit selection. `--client both` uses the project's canonical `.agents/skills` index and a Claude alias; conflicting client folders are preserved and stop the change.
+Selection records `.agents/skills-manifest.json`. There is no implicit entire-library selection. `--client both` uses the project's canonical `.agents/skills` index and a Claude alias; conflicting client folders are preserved and stop the change.
 
 ```json
 {

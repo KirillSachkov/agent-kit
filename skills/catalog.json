@@ -35,7 +35,6 @@
         "wayfinder": "skills/engineering/wayfinder",
         "wizard": "skills/engineering/wizard",
         "writing-for-agents": "skills/engineering/writing-for-agents",
-        "explain": "skills/communication/explain",
         "plain-writing": "skills/communication/plain-writing",
         "recap": "skills/communication/recap",
         "setup-plain-writing": "skills/communication/setup-plain-writing"
@@ -252,13 +251,6 @@
       "group": "engineering",
       "source": "engineering/writing-for-agents",
       "internal": false
-    },
-    {
-      "provider": "agent-kit",
-      "skill": "explain",
-      "group": "communication",
-      "source": "communication/explain",
-      "internal": true
     },
     {
       "provider": "agent-kit",

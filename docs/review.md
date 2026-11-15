@@ -13,7 +13,7 @@ Ten regression cases were added across these corrections. The 27 combinations of
 - `python3 scripts/check.py` passes: 50 unit cases, the 28-skill harness example's structural checks and the communication checker/build tests.
 - Upstream's 27 tests also pass with the system Python on the maintainer's Mac.
 - A real temporary consumer selected, previewed, installed and checked all 32 skills at the first canonical commit. It received 245 files, including 128 provider notice files. Its pre-existing AGENTS.md was unchanged.
-- The internal `explain` skill was explicitly selected for that smoke test; it remains internal in the catalog.
+- The internal `explain` skill was explicitly selected for that smoke test; it was internal in the catalog at that revision.
 - All 17 original source commit objects and four history refs are present. Canonical skill changes are limited to the documented path/attribution fixes; source licenses and the historical README are preserved byte-for-byte.
 - The public tree contains the two public source histories and generic distribution tooling. Private project inventories, account configuration and personal wiki data are not part of this repository.
 

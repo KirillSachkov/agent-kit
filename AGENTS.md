@@ -8,7 +8,6 @@ Session mode: main
 - Editable skill sources live in `skills/engineering` and `skills/communication`. `skills/catalog.json` is the discoverable inventory. Preserve complete folders, native metadata, licenses and attribution.
 - Before editing borrowed engineering skills, read `docs/upstream.md` and use `tools/upstream.py` to compare the adaptation with its frozen upstream source.
 - `examples/agent-harness` owns an example project's policy. Its explicit implementation starts, worktree rules and owner acceptance apply to that example. Skills read the target project's policy when used elsewhere.
-- `explain` is an internal work in progress. Preserve its status; installation requires an explicit selection.
 - Private home data, account configuration, credentials and service caches belong outside this public repository.
 
 ## Work

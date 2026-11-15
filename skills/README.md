@@ -41,7 +41,6 @@ One editable source folder per skill. Supporting files stay inside that folder. 
 
 | Skill | Status |
 | --- | --- |
-| [explain](communication/explain/SKILL.md) | Internal / work in progress; explicit opt-in |
 | [plain-writing](communication/plain-writing/SKILL.md) | Available for explicit selection |
 | [recap](communication/recap/SKILL.md) | Available for explicit selection |
 | [setup-plain-writing](communication/setup-plain-writing/SKILL.md) | Available for explicit selection |
@@ -51,6 +50,6 @@ One editable source folder per skill. Supporting files stay inside that folder. 
 - Clarify and plan: `ask`, `grill-me`, `grill-with-docs`, `domain-modeling`, `to-spec`, `to-tickets`.
 - Build and diagnose: `implement`, `implement-spec`, `tdd`, `diagnosing-bugs`, `prototype`.
 - Review and deliver: `code-review`, `pr`, `ship`, `retro`.
-- Write and explain: `plain-writing`, `recap`, `setup-plain-writing`; `explain` is internal.
+- Write and explain: `plain-writing`, `recap`, `setup-plain-writing`.
 
 Read the selected SKILL.md before recommending or running its procedure. Invocation metadata and project policy determine when it can run.

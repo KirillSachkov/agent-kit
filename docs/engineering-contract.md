@@ -39,8 +39,7 @@ foreign context or clean unintegrated work because a generic example says to do 
 
 `recap` supplies readable narrative; `pr` owns the final PR description and tracker
 contract; `ship` follows the project's actual delivery mode. A main-checkout flow
-does not acquire a mandatory PR. `explain` creates a visual page when requested;
-ordinary textual explanations keep the project's normal writing rules.
+does not acquire a mandatory PR.
 
 ## Maintenance
 

@@ -36,3 +36,8 @@ The open Agent Harness board-skill issue was transferred to [Agent Kit #1](https
 The private Home consumer switched to the reviewed source commit `b0570c6006289437cd587a362d26b4594c987e26`. Six project branches prepared adoption of 69 exact shared copies. Their independent reviews and project checks passed; integration follows each project's own merge rules. Eighty intentional project variants were left unchanged. Publication does not imply that every consumer branch has merged.
 
 Checks cover structure, source identities, complete folders and installer behavior. They do not prove that every external user or unindexed third-party installation has switched sources.
+
+
+## Removal of explain, 2026-11-15
+
+The owner requested removal of `explain` everywhere. Its canonical folder, catalog entry, build tests and active documentation pointers were removed. Historical Git objects and provenance remain intact; the three other communication skills are unchanged.

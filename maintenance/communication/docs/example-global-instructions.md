@@ -13,6 +13,6 @@
 ## Working with Kirill
 
 - A question about how or why is discussion: answer it and change nothing. A question that asks for an action is a request.
-- When he asks «подробнее» or «объясни», explain in full, in text. Draw a diagram with the `explain` skill only when he asks to show or visualize.
+- When he asks «подробнее» or «объясни», explain in full, in text.
 - During tool runs, write one line before a multi-step run, one per phase change, and one with the result.
 ```
