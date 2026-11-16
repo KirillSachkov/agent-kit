@@ -530,7 +530,8 @@
       "implement, implement-spec and code-review: restore upstream single review pass with parallel independent Standards/Spec reviewers, then one blocking-defect fix pass; optional suggestions may be left with a one-line reason.",
       "Remove automatic re-review of corrections; another invocation is a target-project policy choice.",
       "Preserve immutable endpoints, project commit/snapshot order, full-diff coverage and independent Spec comparison against human-participation rules; record correction evidence separately from reviewed content.",
-      "Align the portable contract and English/Russian example harness guides with the single-pass workflow; skill paths and catalog metadata are unchanged."
+      "Align the portable contract and English/Russian example harness guides with the single-pass workflow; skill paths and catalog metadata are unchanged.",
+      "Single correction pass after Spec finding SPEC-01: align example README, requirements and stale experiment-baseline descriptions in both languages; no second review."
     ],
     "matt_baseline_unchanged": true
   }

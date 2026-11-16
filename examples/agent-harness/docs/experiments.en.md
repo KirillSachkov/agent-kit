@@ -19,7 +19,7 @@ Publish only suitable original summaries and source references.
 | --- | --- | --- |
 | Does correction review help? | Checks after fixes versus checks plus independent correction review | Remaining defects, regressions, rounds, time and cost |
 | Do detailed loops help? | Short sequential steps versus an explicitly bounded loop | Missed actions, extra changes and owner intervention |
-| Is a round cap useful? | Current progress-based stopping versus a numerical cap | Stalls, unresolved defects and unnecessary escalation |
+| Does one fix pass suffice? | Current single fix pass versus bounded repeated corrections | Stalls, unresolved defects and unnecessary escalation |
 | How should false findings close? | Existing visible dispute handling versus independent rejection verification | False positives, missed defects and owner effort |
 | Is resumption clear? | Current instructions versus an explicit assignment-lifetime rule | Correct scope and unintended starts |
 
@@ -32,6 +32,6 @@ Small samples provide observations, not universal proof.
 
 ## Deferred changes
 
-There is no new numerical review cap, arbitration role, classifier or automatic synchronization.
+A separate arbitration role, classifier and automatic synchronization remain deferred.
 Do not turn every hypothetical failure into another instruction.
 A concrete issue can later introduce a case, variant or eval when its expected result is clear.

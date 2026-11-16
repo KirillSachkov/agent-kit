@@ -11,7 +11,7 @@ It is not an application or a universal configuration framework.
 - Every implementation has a bounded issue; full specs remain conditional.
 - The owner explicitly selects implementation. An authorized spec run may delegate its agreed tickets.
 - Independent implementations use separate worktrees; resumed work reuses its assigned copy.
-- Standards and Spec reviewers use fresh contexts. Corrections get affected checks and independent review.
+- Standards and Spec reviewers use fresh contexts for one review pass. One fix pass addresses blocking defects and reruns affected checks; optional suggestions may be left with a one-line reason.
 - `ship` delivers a verified PR; every final PR goes to the owner for acceptance.
 - Agent instructions remain English. Human work uses the selected English/Russian mode with equal capabilities.
 - Prompt-driven setup chooses the human language and preserves existing project settings.
@@ -22,5 +22,5 @@ It is not an application or a universal configuration framework.
 Human guides explain the rules; AGENTS and thematic agent documents own operational authority.
 GitHub protection settings are separate from written process rules.
 No installer, auto-sync, review classifier, automatic merge or eval framework is part of the first version.
-A numerical review cap and separate finding arbitration remain hypotheses rather than new rules.
+Separate finding arbitration remains a hypothesis rather than a new rule.
 Future changes get issues, checks and review appropriate to their actual behavior.
