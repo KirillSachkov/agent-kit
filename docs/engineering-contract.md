@@ -31,10 +31,13 @@ Other manual skills retain their deliberate manual invocation metadata.
 
 ## Shared invariants
 
-Record immutable review endpoints, preserve complete initial review coverage, and
-check corrections on immutable reviewed content. For required pre-commit review,
-keep the snapshot tree separate from the later delivered commit and verify they match. A done status, green CI, or an agent's
-review is not a substitute for project-required human acceptance. Never reset a
+Record immutable review endpoints and preserve complete full-diff review coverage.
+Run one independent Standards/Spec review, then one fix pass for blocking defects;
+optional suggestions may be left with a one-line reason. Rerun affected checks and
+retain correction evidence. For required pre-commit review, keep the reviewed
+snapshot tree separate from the later delivered commit, record corrections, and
+verify the delivered commit matches the frozen final content. A done status, green
+CI, or an agent's review is not a substitute for project-required human acceptance. Never reset a
 foreign context or clean unintegrated work because a generic example says to do so.
 
 `recap` supplies readable narrative; `pr` owns the final PR description and tracker

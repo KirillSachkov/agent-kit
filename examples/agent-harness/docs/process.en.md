@@ -11,7 +11,7 @@ flowchart TD
     A["Owner and agent agree the issue"] --> B["Owner selects implement or implement-spec"]
     B --> C["Agent checks for other work on the issue and works in a dedicated worktree linked to it"]
     C --> D["Checks, commit and independent review"]
-    D --> E["Corrections and their independent check when needed"]
+    D --> E["One fix pass and affected checks"]
     E --> F["ship: PR, current CI, full SHA of the last PR commit"]
     F --> G["Owner accepts the result"]
     G --> H["Owner approves merge in the PR or a message"]
@@ -60,11 +60,10 @@ This repository has no application tests.
 `code-review` starts independent Standards and Spec reviewers; they return reports rather than edit files.
 With `implement`, the main session makes corrections.
 With `implement-spec`, one fresh implementer corrects the integrated result.
-Then affected checks and an independent review cover the corrections and relevant interactions.
-The earlier full review remains part of the evidence.
-Optional improvements do not create another required cycle or expand the assignment.
-Disputed decisions or rounds without progress return to the owner.
-There is currently no numerical cap or separate arbitration mechanism.
+The process has one review pass followed by one fix pass for blocking defects and affected checks.
+Retain the review report and correction evidence.
+Optional suggestions may be left with a one-line reason and do not expand the assignment.
+Disputed decisions return to the owner.
 
 ## Larger specs
 
@@ -92,7 +91,7 @@ Every PR still receives final owner acceptance even when no extra manual test is
 `ship` pushes the reviewed branch and uses `pr` for its description.
 It creates or updates a draft, waits for current CI and hands the result to the owner.
 Small tasks open drafts after local checks and review; specs reuse their earlier draft.
-CI fixes stay within the assignment and receive affected checks and review.
+CI fixes stay within the assignment and receive affected checks and recorded correction evidence.
 Acceptance and merge approval are separate.
 The owner may approve in the PR or in a message; the agent records the source and full SHA.
 An agent’s authorized merge checks that SHA; any new commit needs new approval.
@@ -103,4 +102,4 @@ Worktrees separate files, not credentials or shared services.
 Start with ordinary tasks and record friction before adding rules.
 [Experiments](experiments.en.md) lists proposed comparisons; none is presented as completed evidence.
 The pinned Matt `implement-spec` requires a fresh correction implementer but does not mandate re-review.
-Our correction verification and verified-PR delivery are local choices.
+The example follows that single review pass and retains its local verified-PR delivery rules.

@@ -17,16 +17,16 @@ Keep issues open until delivery criteria are met, normally by merge.
 ## Verification evidence
 
 Follow [testing](testing.md) before delivery.
-Checks and independent review must cover the delivered contents and accepted requirements.
-Retain the initial full-diff review when later passes check only corrections and affected interactions.
-Resolve blocking findings; keep optional suggestions and disputed decisions visible in the issue or PR.
+Run one independent Standards/Spec review of the complete assigned diff against accepted requirements, then one fix pass for blocking defects.
+Rerun affected checks on corrections and retain the review report, checked endpoints and correction evidence.
+Optional suggestions may be left with a one-line reason; keep disputed decisions visible in the issue or PR.
 Optional redesign does not expand the assignment.
 For disputes, scope changes or corrections that stop making progress, follow [Ask the owner](human-review.md#ask-the-owner).
 Apply these rules to agent and human findings within the active assignment.
 
-After updating from the intended target, record a new immutable merge-base and review the complete resulting PR diff.
-Include relevant interactions and conflict resolutions; retain earlier reports and checked endpoints.
-New code or requirements need affected checks and review again.
+Before the review, update from the intended target and record an immutable merge-base for the complete resulting PR diff.
+Include relevant interactions and conflict resolutions.
+Later in-scope corrections receive affected checks and recorded evidence; new requirements return to the owner.
 Delivery requires successful CI on the current PR result.
 Failures remain blockers until resolved.
 Report unrelated failures and propose a separate implementation rather than expanding the assignment.
