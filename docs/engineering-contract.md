@@ -46,8 +46,9 @@ does not acquire a mandatory PR.
 
 ## Verification and attention
 
-After review corrections, `implement` and `implement-spec` route required independent verification
-through [the portable handoff](../skills/engineering/implement/VERIFICATION.md).
+After review corrections, `implement` routes required independent verification through
+[its portable handoff](../skills/engineering/implement/VERIFICATION.md). `implement-spec` and
+`ship` include their handoff steps locally so independently pinned installations remain complete.
 The target owns applicability, scenarios, verdicts, environment limitations, evidence storage and
 freshness. `ship` routes a final read-only classifier only when target policy requires one, after
 review dispositions, verification and final checks. The target supplies consequences, statuses,
