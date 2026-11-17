@@ -29,13 +29,21 @@ Use the change's consequences, not its size or file extension. Require a focused
 
 The owner or designated specialist inspects the remaining question. This need not mean reading the entire diff or repeating passing automated tests. Link existing evidence where it answers the question. A sensitive path is a search aid; changes elsewhere can trigger the same rule.
 
-Before handoff, the independent Spec reviewer compares requirements, agreed checkpoints, the complete delivered diff, and current evidence. Report omitted triggers, stale evidence, and unsupported claims.
+During the single review round, the independent Spec reviewer compares requirements, agreed checkpoints, the complete delivered diff, and current evidence. Report omitted triggers, stale evidence, and unsupported claims.
 
-If no additional check is needed, give a short reason in the PR. Every final PR still goes to the owner for acceptance. Automated checks and independent review remain applicable. Automatic risk classifiers and exceptions to owner acceptance are future policy work.
+If no additional check is needed, give a short reason in the PR. Every final PR still goes to the owner for acceptance. Automated checks and independent review remain applicable. This example enables no final classifier or exception to owner acceptance; consumers may define those through their own consequence and authority rules.
+
+## Technical findings and owner decisions
+
+Agents resolve technical review findings within the assignment, recording fixes or permitted
+one-line dispositions. The owner decides intended behavior, consequential tradeoffs and approval
+scope. An unresolved technical defect does not become an owner code-review task.
+Existing authorization persists within its assignment and scope; record its provenance when
+relayed. This example still requires explicit approval of the delivered head before merge.
 
 ## Present the result
 
-Lead with changed behavior and the owner's next action. Present each additional check using the [human-check fields](#human-check).
+Lead with observed changed behavior, inspectable artifacts and material limits, so the owner can assess the outcome without reading code. Keep test/review results separate from the [fresh verifier's result](testing.md#fresh-verification-of-the-corrected-result). State the owner's next action. Present each additional check using the [human-check fields](#human-check).
 
 Keep required human actions, unresolved questions, and material limitations visible. Put detailed commands, logs, and revision records behind a disclosure. Use `pr` for presentation. A screenshot demonstrates visible state; permissions and side effects need evidence at the relevant boundary. Mark planned or unavailable checks as such.
 

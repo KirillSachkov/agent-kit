@@ -19,6 +19,7 @@ Keep issues open until delivery criteria are met, normally by merge.
 Follow [testing](testing.md) before delivery.
 Run one independent Standards/Spec review of the complete assigned diff against accepted requirements, then one fix pass for blocking defects.
 Rerun affected checks on corrections and retain the review report, checked endpoints and correction evidence.
+Then run [fresh verification](testing.md#fresh-verification-of-the-corrected-result) where required; retain the original Spec notes and post-review changes without a second review round.
 Optional suggestions may be left with a one-line reason; keep disputed decisions visible in the issue or PR.
 Optional redesign does not expand the assignment.
 For disputes, scope changes or corrections that stop making progress, follow [Ask the owner](human-review.md#ask-the-owner).

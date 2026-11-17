@@ -534,5 +534,15 @@
       "Single correction pass after Spec finding SPEC-01: align example README, requirements and stale experiment-baseline descriptions in both languages; no second review."
     ],
     "matt_baseline_unchanged": true
+  },
+  "portable_acceptance_maintenance": {
+    "date": "2026-11-17",
+    "review_base": "c66fb95e097380806262888dac95f9c63048aae3",
+    "changes": [
+      "Add target-controlled fresh verification handoff after review corrections without another review round.",
+      "Route optional final read-only classification through ship; project policy owns consequences and authority.",
+      "Keep owner briefings tied to observed artifacts and limits; demonstrate routing with synthetic target policies."
+    ],
+    "matt_baseline_unchanged": true
   }
 }

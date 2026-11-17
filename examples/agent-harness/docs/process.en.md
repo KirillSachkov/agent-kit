@@ -103,3 +103,7 @@ Start with ordinary tasks and record friction before adding rules.
 [Experiments](experiments.en.md) lists proposed comparisons; none is presented as completed evidence.
 The pinned Matt `implement-spec` requires a fresh correction implementer but does not mandate re-review.
 The example follows that single review pass and retains its local verified-PR delivery rules.
+
+## Inspecting the corrected result
+
+After the single review and correction pass, use [fresh verification](agents/testing.md#fresh-verification-of-the-corrected-result) for task-required scenarios. The [synthetic exercise](acceptance-exercise.md) demonstrates routing. Agents resolve technical findings; the owner assesses outcomes and approves the delivered head. This example enables no classifier.

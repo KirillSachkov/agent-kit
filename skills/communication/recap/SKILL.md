@@ -6,7 +6,7 @@ description: "Recap finished work for its owner, as a chat reply, a PR body, a f
 # Recap
 
 A recap tells the owner what the agent did, so they can accept the work without re-reading it.
-Take the facts from your own session and pipeline: the conversation, the diff, the PR, the checks you ran.
+Take facts from the recorded conversation, diff, PR, checks and independent verification. Lead with observed outcomes the owner can assess without code, with their artifacts and material limits. Attribute independent observations and preserve their scope; distinguish test results, verifier results and checks not performed.
 
 ## Steps
 

@@ -54,6 +54,7 @@ A native subagent is not an independently assigned application session.
    suggestions may be left with a one-line reason. Rerun affected checks and freeze
    the corrected revision. Retain the full-diff review report and correction evidence.
    Invoke a named skill through the client's mechanism or read its `SKILL.md` and relevant references; a literal Skill tool is not required.
-8. Follow root delivery pointers for the verified result, reusing existing drafts.
+8. After corrections, follow [independent verification](../implement/VERIFICATION.md) at the target's required checkpoints, using the assigned scenarios and retaining artifacts and limits.
+   Follow root delivery pointers for the verified result, reusing existing drafts.
 9. Clean only owned, integrated child resources with no active writer or unsaved work.
    Follow project rules for retained acceptance trees and unintegrated results.

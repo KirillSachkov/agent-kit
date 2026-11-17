@@ -44,6 +44,16 @@ foreign context or clean unintegrated work because a generic example says to do 
 contract; `ship` follows the project's actual delivery mode. A main-checkout flow
 does not acquire a mandatory PR.
 
+## Verification and attention
+
+After review corrections, `implement` and `implement-spec` route required independent verification
+through [the portable handoff](../skills/engineering/implement/VERIFICATION.md).
+The target owns applicability, scenarios, verdicts, environment limitations, evidence storage and
+freshness. `ship` routes a final read-only classifier only when target policy requires one, after
+review dispositions, verification and final checks. The target supplies consequences, statuses,
+invalidation and approval scope. No shared status creates merge or deployment authority.
+`pr` and `recap` report observed outcomes and limits separately from regression checks.
+
 ## Maintenance
 
 The [reference record](../provenance/engineering-reference.json) records the source
