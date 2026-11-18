@@ -19,6 +19,9 @@ A skill defines a procedure. Each target project keeps its commands, permissions
 
 ## Install into a project
 
+[Start a project with Agent Kit](docs/first-project.en.md) provides starter instructions, a skill
+selection, and a walkthrough from assignment through acceptance and cleanup.
+
 Git and Python 3.11 or later are required. Clone the library and select its verified commit:
 
 ```bash
