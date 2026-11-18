@@ -52,7 +52,7 @@ An existing unmanaged directory is not silently replaced. For a verified exact s
 python3 tools/skills.py adopt --project /path/to/project
 ```
 
-Adoption compares the complete folder and executable modes with its pinned source before adding management metadata and notices. A changed, added or missing file stops the selected batch. A matching name or SKILL.md alone is insufficient. Keep intentional project adaptations owned by the project until their complete diff and policy implications are reconciled.
+Adoption compares the complete folder and executable modes before adding management metadata and notices. For a selected invocation override it accepts an exact pinned copy with either the original or configured invocation metadata. A changed, added or missing file stops the selected batch. A matching name or SKILL.md alone is insufficient. Keep intentional project adaptations owned by the project until their complete diff and policy implications are reconciled.
 
 Updates require a new explicit SHA selection. Installed local edits stop installation; there is no force-overwrite option. The previous copy and lock are retained in `.agents/skills-backups/`. Restore them together in the authorized idle checkout after preserving later edits. Removing a manifest selection does not delete an installed folder.
 

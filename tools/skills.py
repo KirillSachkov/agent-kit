@@ -100,15 +100,15 @@ def select(project, catalog, catalog_dir, provider_name, ref, names, client, app
             raise SkillsError("Invalid existing skill selection")
         if entry["destination"] in selections:
             replacement = selections.pop(entry["destination"])
-            if (replacement["provider"] == entry.get("provider") and entry.get("implementation_invocation")
+            if (replacement["provider"] == entry.get("provider") and "implementation_invocation" in entry
                     and "implementation_invocation" not in replacement):
                 replacement["implementation_invocation"] = entry["implementation_invocation"]
-            configured_files(provider, replacement, catalog_dir)
+            with_invocation(source_files(provider, replacement, catalog_dir), replacement)
             existing.append(replacement)
         else:
             existing.append(entry)
     for entry in selections.values():
-        configured_files(provider, entry, catalog_dir)
+        with_invocation(source_files(provider, entry, catalog_dir), entry)
     manifest["skills"] = existing + list(selections.values())
     if client is not None:
         manifest["clients"] = ["codex", "claude"] if client == "both" else [client]
@@ -198,8 +198,7 @@ def source_files(provider, entry, catalog_dir):
     return result
 
 
-def configured_files(provider, entry, catalog_dir):
-    files = source_files(provider, entry, catalog_dir)
+def with_invocation(files, entry):
     if "implementation_invocation" not in entry:
         return files
     invocation = entry["implementation_invocation"]
@@ -207,6 +206,7 @@ def configured_files(provider, entry, catalog_dir):
             or entry["skill"] not in IMPLEMENTATION_SKILLS):
         raise SkillsError(f"Invalid implementation invocation for {entry['skill']}")
 
+    files = files.copy()
     skill, mode = files["SKILL.md"]
     metadata_path = "agents/openai.yaml"
     if not skill.startswith(b"---\n") or b"\n---\n" not in skill[4:] or metadata_path not in files:
@@ -321,7 +321,7 @@ def plan(project, catalog, catalog_dir):
             raise SkillsError(f"Unknown provider: {entry['provider']}")
         if installation == "source-links" and "implementation_invocation" in entry:
             raise SkillsError("Invocation settings require installed copies")
-        wanted = configured_files(provider, entry, catalog_dir)
+        wanted = with_invocation(source_files(provider, entry, catalog_dir), entry)
         if installation == "source-links":
             destination = safe_path(project, str(Path(entry["destination"]).parent)) / Path(entry["destination"]).name
             expected = snapshot_folder(provider, entry, catalog_dir)
@@ -362,7 +362,9 @@ def install(project, items, lock, adoptable=None, client_link=None):
     changed = []
     for entry, path, current, wanted in items:
         previous = lock["skills"].get(entry["destination"])
-        if adoptable is not None and (not path.is_dir() or current not in (adoptable[entry["destination"]], wanted)):
+        if adoptable is not None and (
+            not path.is_dir() or (current != wanted and current not in adoptable[entry["destination"]])
+        ):
             raise SkillsError(f"Adoption requires an exact complete pinned copy: {entry['destination']}")
         if path.exists() and previous is None and adoptable is None:
             raise SkillsError(f"Unmanaged destination already exists: {entry['destination']}")
@@ -477,8 +479,15 @@ def main(argv=None):
                 client_link = client_discovery(project, read_json(safe_path(project, ".agents/skills-manifest.json")))
                 adoptable = None
                 if args.command == "adopt":
-                    adoptable = {entry["destination"]: configured_files(catalog["providers"][entry["provider"]], entry, args.catalog.parent)
-                                 for entry, path, current, wanted in items}
+                    adoptable = {}
+                    for entry, _, _, _ in items:
+                        provider = catalog["providers"][entry["provider"]]
+                        source = source_files(provider, entry, args.catalog.parent)
+                        adoptable[entry["destination"]] = (
+                            source,
+                            with_notices(provider, entry, source, args.catalog.parent),
+                            with_invocation(source, entry),
+                        )
                 install(project, items, lock, adoptable=adoptable, client_link=client_link)
         return 0
     except (SkillsError, OSError, KeyError, TypeError, ValueError) as error:

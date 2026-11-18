@@ -123,6 +123,9 @@ class ProjectStarterTest(unittest.TestCase):
                 *cli, "select", *target, "--ref", ref, "--client", "both",
                 "--skill", "implement", "--skill", "implement-spec", "--apply",
             ]
+            self.run_command(select, KIT)
+            self.run_command([*cli, "install", *target], KIT)
+            (project / ".agents/skills-lock.json").unlink()
 
             for invocation in ("implicit", "manual"):
                 with self.subTest(invocation=invocation):
@@ -130,7 +133,8 @@ class ProjectStarterTest(unittest.TestCase):
                     self.run_command(select, KIT)
                     preview = self.run_command([*cli, "preview", *target], KIT)
                     self.assertIn(f"allow_implicit_invocation: {'true' if invocation == 'implicit' else 'false'}", preview)
-                    self.run_command([*cli, "install", *target], KIT)
+                    apply = "adopt" if invocation == "implicit" else "install"
+                    self.run_command([*cli, apply, *target], KIT)
                     self.run_command([*cli, "check", *target], KIT)
                     for name in ("implement", "implement-spec"):
                         claude_skill = project / ".claude/skills" / name / "SKILL.md"

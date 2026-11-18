@@ -25,9 +25,9 @@ Use the current client's mechanism to load a named skill. If there is no literal
 Skill tool, read that skill's `SKILL.md` and relevant references. This changes the
 loading mechanism, not the target project's permission to start or delegate.
 
-`implement` and `implement-spec` are discoverable in both clients. Their availability
-does not grant execution: a harness may still require the owner to name an entrypoint.
-Other manual skills retain their deliberate manual invocation metadata.
+`implement` and `implement-spec` default to explicit invocation in Codex and Claude Code.
+A project can opt into implicit selection through [pinned distribution](distribution.md).
+The target's Start rule grants authority to implement.
 
 ## Shared invariants
 
