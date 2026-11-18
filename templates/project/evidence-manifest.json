@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "task": "<issue, specification, or agreed task reference>",
+  "revision": "<full verified revision>",
+  "verdict": "not_exercised",
+  "notes": "Replace this illustrative record with the results of verification.",
+  "scenarios": [
+    {
+      "id": "<task scenario identifier>",
+      "actor": "<role>",
+      "action": "<action>",
+      "expected": "<expected outcome>",
+      "observed": null,
+      "result": "not_exercised",
+      "notes": "<reason the scenario was not exercised>",
+      "artifacts": []
+    }
+  ]
+}

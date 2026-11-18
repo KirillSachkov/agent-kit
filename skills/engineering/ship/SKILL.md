@@ -15,15 +15,19 @@ do not invent a fixed CI name, mandatory PR, owner handoff or deployment permiss
    main-checkout flow, run its checks/review and commit/push as that flow requires.
 3. Verify current CI when the project requires it. Earlier green, pending, missing
    or cancelled checks do not establish success. Fix in-scope failures, rerun affected
-   checks and retain correction evidence. Another independent review occurs only when
-   the target explicitly requires it. For pre-commit review, verify the delivered commit matches the reviewed tree.
+   checks and retain correction evidence. Do not send corrections back to reviewers unless the
+   target explicitly requires another review. For pre-commit review, verify the delivered commit
+   matches the frozen final content and retain the originally reviewed tree.
 4. Confirm required fresh independent verification covers the corrected head and task scenarios,
    with inspected artifacts, observed outcomes and limits under the target's freshness rules.
    Keep environment limitations separate from product failures; unavailable coverage is not a pass.
-   When the target requires a classifier, run it last after review dispositions, verification
-   and final checks. Supply the task, original Spec notes, post-review changes, current verdict,
-   unresolved findings, final checks and target consequence/authority rules. It reads and returns
-   only the target's status, reason and owner action, edits nothing and requests no repairs.
+   When the target enables classification, invoke its configured classifier (such as the optional
+   `owner-attention` skill) once as a fresh read-only subagent, last after review dispositions,
+   required verification and final checks. Supply the task, original Spec notes, dispositions,
+   post-review changes, delivered revision, current verdict and limits, unresolved findings,
+   final checks and target consequence/authority rules. It returns only the target's status,
+   reason and any owner action. The caller records the result and applies any configured PR
+   status or labels. If required classification cannot run, keep delivery pending and report it.
    Finish technical work before classification; apply target invalidation rules after later edits.
    Record unavailable tokens as unavailable when usage is requested. Preserve existing scoped
    permission and its provenance when relayed; classification grants only target-defined authority.

@@ -41,6 +41,28 @@ python3 tools/skills.py install --project "$project" &&
 
 See [pinned distribution](distribution.md) for updates and existing skill folders.
 
+## Set up delivery
+
+- For GitHub PRs, copy the [PR template](../templates/project/.github/pull_request_template.md)
+  to `.github/pull_request_template.md` in the target and point `AGENTS.md` to it. Compare with
+  any existing PR template before changing it.
+- To enable classification, add `--skill owner-attention` to the selection above. Copy the
+  [conditions](../templates/project/docs/agents/owner-attention.md) into the target and set the
+  **Owner attention** decision in `AGENTS.md` to the conditions path and `owner-attention`.
+  Agree on the conditions and authority before using them. `ship` runs a fresh, read-only
+  classifier once on the finished delivery after review, required verification, and checks.
+- Start each verification record with the [manifest template](../templates/project/evidence-manifest.json)
+  in the evidence location declared by the target. Bind it to the verified revision. Give each
+  scenario its expected and observed outcome and mark it `pass`, `fail` or `not_exercised`.
+  For each artifact fill in `kind`, `file` (relative to the manifest), `source` and `caption`.
+  Add `url` only after publishing it under the target's rules.
+
+Use a screenshot for a visible state, a short recording for an interaction, and a table for data
+or access. Open the files before attaching them and confirm what they show and which data they
+use. Use synthetic data for files published publicly. Keep private evidence in the project's
+chosen store and use links the intended readers can open. Show each scenario and any important
+limit in the body of the PR. Keep technical details in its disclosure.
+
 ## Run the first task
 
 Pick a small change with a result you can see through the project's regular entry point. A fictional

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Owner Attention"
+  short_description: "Classify a finished change for the owner"
+policy:
+  allow_implicit_invocation: false

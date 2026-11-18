@@ -34,7 +34,8 @@ Other manual skills retain their deliberate manual invocation metadata.
 Record immutable review endpoints and preserve complete full-diff review coverage.
 Run one independent Standards/Spec review, then one fix pass for blocking defects;
 optional suggestions may be left with a one-line reason. Rerun affected checks and
-retain correction evidence. For required pre-commit review, keep the reviewed
+retain correction evidence. Do not send corrections back to reviewers unless the
+target explicitly requires another round. For required pre-commit review, keep the reviewed
 snapshot tree separate from the later delivered commit, record corrections, and
 verify the delivered commit matches the frozen final content. A done status, green
 CI, or an agent's review is not a substitute for project-required human acceptance. Never reset a
@@ -50,9 +51,11 @@ After review corrections, `implement` routes required independent verification t
 [its portable handoff](../skills/engineering/implement/VERIFICATION.md). `implement-spec` and
 `ship` include their handoff steps locally so independently pinned installations remain complete.
 The target owns applicability, scenarios, verdicts, environment limitations, evidence storage and
-freshness. `ship` routes a final read-only classifier only when target policy requires one, after
-review dispositions, verification and final checks. The target supplies consequences, statuses,
-invalidation and approval scope. No shared status creates merge or deployment authority.
+freshness. `ship` can call the optional [owner-attention skill](../skills/engineering/owner-attention/SKILL.md)
+once after review dispositions, required verification and final checks. The target supplies
+consequences, statuses, invalidation and approval scope. No shared status creates merge or
+deployment authority. The [starter](first-project.en.md#set-up-delivery) includes copyable
+conditions, a PR body and an evidence manifest.
 `pr` and `recap` report observed outcomes and limits separately from regression checks.
 
 ## Maintenance

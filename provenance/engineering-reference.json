@@ -544,5 +544,15 @@
       "Keep owner briefings tied to observed artifacts and limits; demonstrate routing with synthetic target policies."
     ],
     "matt_baseline_unchanged": true
+  },
+  "starter_delivery_maintenance": {
+    "review_base": "ce7810ceb7bf5ac05b91e7df6c6e742f08edca84",
+    "source": "https://github.com/sachkov-inside/platform/blob/eb18a3002981d114c9b3a9e1bb05d9b7af6919f1/docs/agents/ship.md",
+    "changes": [
+      "Add an explicitly invoked owner-attention classifier with target-owned conditions and no shared merge authority.",
+      "Provide copyable starter conditions, a GitHub PR body and a per-scenario evidence manifest.",
+      "Make the absence of automatic re-review explicit in the starter and ship."
+    ],
+    "matt_baseline_unchanged": true
   }
 }

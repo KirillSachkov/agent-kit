@@ -9,7 +9,7 @@ It contains engineering procedures, communication skills, a project harness exam
 
 | Area | Contents |
 | --- | --- |
-| [skills/engineering](skills/README.md#engineering) | 28 skills for discussion, design, implementation, review and delivery |
+| [skills/engineering](skills/README.md#engineering) | 29 skills for discussion, design, implementation, review and delivery |
 | [skills/communication](skills/README.md#communication) | Writing style, recaps and style setup |
 | [examples/agent-harness](examples/agent-harness/AGENTS.md) | Example project policy: starts, worktrees, checks and owner acceptance |
 | [tools/skills.py](tools/skills.py) | Version selection, diff preview, installation, verification and explicit exact-copy adoption |
