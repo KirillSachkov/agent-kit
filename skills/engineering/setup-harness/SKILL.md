@@ -46,8 +46,10 @@ resulting project rules.
    `owner-attention` when enabled.
 4. **Apply and check.** Once the owner approves the setup, apply the selection, preview the
    installation and resolve conflicts before installing. Adopt exact unmanaged copies using
-   the distribution guide. If a conflict blocks setup, report any selection already written
-   and the remaining conflict. After a successful install and check, write the agreed project
+   the distribution guide. If selection, install or check fails, keep the proposed rules
+   in the preview and stop before writing project instructions, imports or tracker files.
+   Report the failed command, any partial installation, and the access or correction
+   needed to resume. After a successful install and check, write the agreed project
    rules and, when enabled, the classifier conditions. Verify that the instructions, the
    installed invocation settings and the selected classifier agree. Report the changed
    files, pin and check result. In a fresh session of each available selected client,
