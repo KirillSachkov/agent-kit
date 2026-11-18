@@ -1,6 +1,7 @@
 ---
 name: implement
 description: "Implement an assigned task, spec or ticket after the target project's start rule is satisfied. Use for implementation requests; the harness decides whether ordinary assignment or a named entrypoint is required."
+disable-model-invocation: true
 ---
 
 Implement the assigned work. First read target root `AGENTS.md`, applicable instructions and its implementation pointers. Satisfy its start rule before writing: a request, readiness label or this skill's discovery does not override that rule.

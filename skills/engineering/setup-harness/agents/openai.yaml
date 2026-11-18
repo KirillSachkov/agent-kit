@@ -1,0 +1,5 @@
+interface:
+  display_name: "Set Up Agent Harness"
+  short_description: "Configure Agent Kit for a project"
+policy:
+  allow_implicit_invocation: false

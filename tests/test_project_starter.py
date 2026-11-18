@@ -11,7 +11,7 @@ import unittest
 KIT = Path(__file__).resolve().parents[1]
 SKILLS = (
     "implement", "implement-spec", "code-review", "tdd", "ship", "pr", "recap",
-    "diagnosing-bugs", "to-spec", "to-tickets",
+    "diagnosing-bugs", "to-spec", "to-tickets", "setup-harness",
 )
 
 
@@ -61,6 +61,12 @@ class ProjectStarterTest(unittest.TestCase):
             self.run_command([*install, "install", "--project", str(project)], KIT)
             self.run_command([*install, "check", "--project", str(project)], KIT)
             self.assertEqual((project / "AGENTS.md").read_text(encoding="utf-8"), starter)
+            self.assertIn("Owner attention: disabled.", starter)
+            self.assertFalse((project / ".agents/skills/owner-attention").exists())
+            for name in ("implement", "implement-spec", "setup-harness"):
+                installed = project / ".agents/skills" / name
+                self.assertIn("disable-model-invocation: true", (installed / "SKILL.md").read_text())
+                self.assertIn("allow_implicit_invocation: false", (installed / "agents/openai.yaml").read_text())
             self.assertEqual(
                 (project / ".claude/skills").resolve(), (project / ".agents/skills").resolve(),
             )
@@ -103,6 +109,40 @@ class ProjectStarterTest(unittest.TestCase):
             self.assertFalse(verification.exists())
             self.assertEqual(self.git(project, "status", "--porcelain"), "")
             self.check_status_command(project, "missing.txt", status=2, message="Input file is missing.")
+
+    def test_installation_invocation_can_switch_both_clients_without_editing_project_rules(self):
+        with tempfile.TemporaryDirectory(prefix="agent-kit-invocation-") as temporary:
+            project = Path(temporary)
+            rules = project / "AGENTS.md"
+            instructions = "Existing project rules.\n"
+            rules.write_text(instructions)
+            cli = [sys.executable, str(KIT / "tools/skills.py")]
+            target = ["--project", str(project)]
+            ref = self.git(KIT, "rev-parse", "HEAD")
+            select = [
+                *cli, "select", *target, "--ref", ref, "--client", "both",
+                "--skill", "implement", "--skill", "implement-spec", "--apply",
+            ]
+
+            for invocation in ("implicit", "manual"):
+                with self.subTest(invocation=invocation):
+                    self.run_command([*select, "--implementation-invocation", invocation], KIT)
+                    self.run_command(select, KIT)
+                    preview = self.run_command([*cli, "preview", *target], KIT)
+                    self.assertIn(f"allow_implicit_invocation: {'true' if invocation == 'implicit' else 'false'}", preview)
+                    self.run_command([*cli, "install", *target], KIT)
+                    self.run_command([*cli, "check", *target], KIT)
+                    for name in ("implement", "implement-spec"):
+                        claude_skill = project / ".claude/skills" / name / "SKILL.md"
+                        codex_policy = project / ".agents/skills" / name / "agents/openai.yaml"
+                        self.assertEqual(
+                            "disable-model-invocation: true" in claude_skill.read_text(), invocation == "manual",
+                        )
+                        self.assertIn(
+                            f"allow_implicit_invocation: {'false' if invocation == 'manual' else 'true'}",
+                            codex_policy.read_text(),
+                        )
+                    self.assertEqual(rules.read_text(), instructions)
 
 
 if __name__ == "__main__":

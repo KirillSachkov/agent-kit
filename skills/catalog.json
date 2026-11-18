@@ -24,6 +24,7 @@
         "prototype": "skills/engineering/prototype",
         "research": "skills/engineering/research",
         "retro": "skills/engineering/retro",
+        "setup-harness": "skills/engineering/setup-harness",
         "setup-matt-pocock-skills": "skills/engineering/setup-matt-pocock-skills",
         "ship": "skills/engineering/ship",
         "tdd": "skills/engineering/tdd",
@@ -174,6 +175,13 @@
       "skill": "retro",
       "group": "engineering",
       "source": "engineering/retro",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "setup-harness",
+      "group": "engineering",
+      "source": "engineering/setup-harness",
       "internal": false
     },
     {

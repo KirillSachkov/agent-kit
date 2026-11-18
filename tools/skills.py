@@ -15,6 +15,7 @@ import tempfile
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
+IMPLEMENTATION_SKILLS = {"implement", "implement-spec"}
 
 
 class SkillsError(Exception):
@@ -66,11 +67,13 @@ def list_skills(catalog):
         print(f"{entry['group']}/{entry['skill']} [{entry['provider']}]{state}")
 
 
-def select(project, catalog, catalog_dir, provider_name, ref, names, client, apply):
+def select(project, catalog, catalog_dir, provider_name, ref, names, client, apply, invocation=None):
     if catalog.get("schema_version") != 1 or not isinstance(catalog.get("providers"), dict):
         raise SkillsError("Invalid catalog")
     if not names or not ref:
         raise SkillsError("select requires --ref and at least one --skill")
+    if invocation and (provider_name != "agent-kit" or not IMPLEMENTATION_SKILLS.intersection(names)):
+        raise SkillsError("--implementation-invocation requires selecting Agent Kit's implement or implement-spec")
     provider = catalog["providers"].get(provider_name)
     if provider is None:
         raise SkillsError(f"Unknown provider: {provider_name}")
@@ -88,16 +91,24 @@ def select(project, catalog, catalog_dir, provider_name, ref, names, client, app
             raise SkillsError(f"Skill is not in this catalog: {name}")
         entry = {"provider": provider_name, "ref": ref, "skill": name,
                  "destination": ".agents/skills/" + name}
-        source_files(provider, entry, catalog_dir)
+        if invocation and name in IMPLEMENTATION_SKILLS:
+            entry["implementation_invocation"] = invocation
         selections[entry["destination"]] = entry
     existing = []
     for entry in manifest["skills"]:
         if not isinstance(entry, dict) or "destination" not in entry:
             raise SkillsError("Invalid existing skill selection")
         if entry["destination"] in selections:
-            existing.append(selections.pop(entry["destination"]))
+            replacement = selections.pop(entry["destination"])
+            if (replacement["provider"] == entry.get("provider") and entry.get("implementation_invocation")
+                    and "implementation_invocation" not in replacement):
+                replacement["implementation_invocation"] = entry["implementation_invocation"]
+            configured_files(provider, replacement, catalog_dir)
+            existing.append(replacement)
         else:
             existing.append(entry)
+    for entry in selections.values():
+        configured_files(provider, entry, catalog_dir)
     manifest["skills"] = existing + list(selections.values())
     if client is not None:
         manifest["clients"] = ["codex", "claude"] if client == "both" else [client]
@@ -185,6 +196,38 @@ def source_files(provider, entry, catalog_dir):
     if "SKILL.md" not in result:
         raise SkillsError(f"Missing SKILL.md at {prefix} in {ref}")
     return result
+
+
+def configured_files(provider, entry, catalog_dir):
+    files = source_files(provider, entry, catalog_dir)
+    if "implementation_invocation" not in entry:
+        return files
+    invocation = entry["implementation_invocation"]
+    if (invocation not in ("manual", "implicit") or entry["provider"] != "agent-kit"
+            or entry["skill"] not in IMPLEMENTATION_SKILLS):
+        raise SkillsError(f"Invalid implementation invocation for {entry['skill']}")
+
+    skill, mode = files["SKILL.md"]
+    metadata_path = "agents/openai.yaml"
+    if not skill.startswith(b"---\n") or b"\n---\n" not in skill[4:] or metadata_path not in files:
+        raise SkillsError(f"Unsupported invocation metadata: {entry['skill']}")
+    header, body = skill[4:].split(b"\n---\n", 1)
+    header = re.sub(rb"(?m)^disable-model-invocation: (?:true|false)\n?", b"", header)
+    if re.search(rb"(?m)^disable-model-invocation:", header):
+        raise SkillsError(f"Unsupported Claude invocation metadata: {entry['skill']}")
+    manual = invocation == "manual"
+    header = header.rstrip(b"\n")
+    if manual:
+        header += b"\ndisable-model-invocation: true"
+    files["SKILL.md"] = (b"---\n" + header + b"\n---\n" + body, mode)
+
+    metadata, mode = files[metadata_path]
+    metadata, count = re.subn(rb"(?m)^(  allow_implicit_invocation: )(?:true|false)$",
+                              rb"\g<1>" + (b"false" if manual else b"true"), metadata)
+    if count != 1:
+        raise SkillsError(f"Unsupported Codex invocation metadata: {entry['skill']}")
+    files[metadata_path] = (metadata, mode)
+    return files
 
 
 def folder_files(path):
@@ -276,7 +319,9 @@ def plan(project, catalog, catalog_dir):
         provider = catalog["providers"].get(entry["provider"])
         if provider is None:
             raise SkillsError(f"Unknown provider: {entry['provider']}")
-        wanted = source_files(provider, entry, catalog_dir)
+        if installation == "source-links" and "implementation_invocation" in entry:
+            raise SkillsError("Invocation settings require installed copies")
+        wanted = configured_files(provider, entry, catalog_dir)
         if installation == "source-links":
             destination = safe_path(project, str(Path(entry["destination"]).parent)) / Path(entry["destination"]).name
             expected = snapshot_folder(provider, entry, catalog_dir)
@@ -393,8 +438,12 @@ def main(argv=None):
     parser.add_argument("--ref", help="full commit SHA for select")
     parser.add_argument("--skill", action="append", default=[], help="explicit skill for select; repeatable")
     parser.add_argument("--client", choices=["codex", "claude", "both"], help="discovery clients for select")
+    parser.add_argument("--implementation-invocation", choices=["manual", "implicit"],
+                        help="invocation mode for implement and implement-spec selected by this command")
     parser.add_argument("--apply", action="store_true", help="write select's manifest; otherwise preview only")
     args = parser.parse_args(argv)
+    if args.implementation_invocation and args.command != "select":
+        parser.error("--implementation-invocation is only available with select")
     try:
         catalog = read_json(args.catalog)
         if args.command == "list":
@@ -402,7 +451,8 @@ def main(argv=None):
             return 0
         project = args.project.resolve(strict=True)
         if args.command == "select":
-            select(project, catalog, args.catalog.parent, args.provider, args.ref, args.skill, args.client, args.apply)
+            select(project, catalog, args.catalog.parent, args.provider, args.ref, args.skill, args.client, args.apply,
+                   args.implementation_invocation)
             return 0
         items, lock, installation = plan(project, catalog, args.catalog.parent)
         client_link = client_discovery(project, read_json(safe_path(project, ".agents/skills-manifest.json")))
@@ -427,7 +477,7 @@ def main(argv=None):
                 client_link = client_discovery(project, read_json(safe_path(project, ".agents/skills-manifest.json")))
                 adoptable = None
                 if args.command == "adopt":
-                    adoptable = {entry["destination"]: source_files(catalog["providers"][entry["provider"]], entry, args.catalog.parent)
+                    adoptable = {entry["destination"]: configured_files(catalog["providers"][entry["provider"]], entry, args.catalog.parent)
                                  for entry, path, current, wanted in items}
                 install(project, items, lock, adoptable=adoptable, client_link=client_link)
         return 0

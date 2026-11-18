@@ -554,5 +554,14 @@
       "Make the absence of automatic re-review explicit in the starter and ship."
     ],
     "matt_baseline_unchanged": true
+  },
+  "project_setup_maintenance": {
+    "review_base": "94c236f63240a78e209b14012ff2143f22cfbda8",
+    "changes": [
+      "Make implement and implement-spec explicit by default in Codex and Claude Code, with a pinned installation override.",
+      "Add setup-harness for selecting the project start rule, evidence, delivery and optional classification.",
+      "Keep the starter short and leave the Matt baseline unchanged."
+    ],
+    "matt_baseline_unchanged": true
   }
 }

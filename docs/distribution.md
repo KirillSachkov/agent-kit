@@ -14,6 +14,13 @@ python3 tools/skills.py select --project /path/to/project --ref FULL_COMMIT_SHA 
 
 Selection records `.agents/skills-manifest.json`. There is no implicit entire-library selection. `--client both` uses the project's canonical `.agents/skills` index and a Claude alias; conflicting client folders are preserved and stop the change.
 
+The current `implement` and `implement-spec` sources default to manual invocation.
+`select --implementation-invocation manual|implicit` records an override for the selected
+implementation skills. Subsequent selections keep an existing override unless a new mode is
+specified. Preview, install and check derive the Codex and Claude Code invocation metadata from
+the pinned source and that override. Source links keep the metadata in their source. Project
+rules in `AGENTS.md` still determine what authorizes implementation.
+
 ```json
 {
   "schema_version": 1,

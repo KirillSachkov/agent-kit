@@ -5,6 +5,9 @@
 Нужны Git и Python 3.11 или новее. [Стартовый AGENTS.md](../templates/project/AGENTS.md) хранится
 в самом проекте. Если там уже есть такой файл, сравни оба и сохрани действующие правила проекта.
 
+Чтобы настроить проект по шагам, явно вызови `setup-harness`. Если у тебя только рабочая
+копия Agent Kit, можно поручить агенту пройти [инструкцию скилла](../skills/engineering/setup-harness/SKILL.md).
+
 ## Установить рабочий набор
 
 Запусти команды из рабочей копии Agent Kit. В `project` укажи абсолютный путь к репозиторию,
@@ -27,7 +30,7 @@ Codex и Claude Code используют одни и те же файлы.
 python3 tools/skills.py select --project "$project" --ref "$kit_ref" --client both \
   --skill implement --skill implement-spec --skill code-review --skill tdd \
   --skill ship --skill pr --skill recap --skill diagnosing-bugs \
-  --skill to-spec --skill to-tickets --apply &&
+  --skill to-spec --skill to-tickets --skill setup-harness --apply &&
   python3 tools/skills.py preview --project "$project"
 ```
 
@@ -40,12 +43,17 @@ python3 tools/skills.py install --project "$project" &&
 
 [Как обновлять скиллы и работать с уже установленными копиями](distribution.md)
 
+По умолчанию владелец явно выбирает `implement` или `implement-spec`. Если владелец хочет,
+чтобы агент сам выбирал скилл после поручения на реализацию, запиши это в поле **Start**
+в `AGENTS.md` и выбери оба скилла с `--implementation-invocation implicit`. Чтобы вернуть
+ручной выбор, измени правило **Start** и выбери скиллы с `--implementation-invocation manual`.
+
 ## Настроить доставку
 
 - Для GitHub скопируй [шаблон PR](../templates/project/.github/pull_request_template.md)
   в `.github/pull_request_template.md` проекта и укажи его в `AGENTS.md`. Если в проекте уже есть
   шаблон, сначала сравни их.
-- Чтобы включить классификатор, добавь `--skill owner-attention` к команде выбора скиллов.
+- Классификатор по умолчанию выключен. Чтобы включить его, добавь `--skill owner-attention` к команде выбора скиллов.
   Скопируй [файл условий](../templates/project/docs/agents/owner-attention.md) в проект. В поле
   **Owner attention** в `AGENTS.md` укажи путь к условиям и скилл `owner-attention`. Заранее
   определи, в каких случаях нужно решение владельца и что оно разрешает. `ship` один раз

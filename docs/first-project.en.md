@@ -6,6 +6,9 @@ This walkthrough uses a new or existing Git repository. Git and Python 3.11 or n
 The [starter instructions](../templates/project/AGENTS.md) are designed to live in that repository.
 If it already has `AGENTS.md`, compare the two and keep the project's established decisions.
 
+To configure a project interactively, explicitly invoke `setup-harness`. From a fresh Agent Kit
+checkout, you can explicitly ask the agent to follow [the setup skill](../skills/engineering/setup-harness/SKILL.md).
+
 ## Install the workflow
 
 Run the commands from the Agent Kit checkout. Set `project` to the absolute path of the target
@@ -28,7 +31,7 @@ The same installed files are available to Codex and Claude Code with `--client b
 python3 tools/skills.py select --project "$project" --ref "$kit_ref" --client both \
   --skill implement --skill implement-spec --skill code-review --skill tdd \
   --skill ship --skill pr --skill recap --skill diagnosing-bugs \
-  --skill to-spec --skill to-tickets --apply &&
+  --skill to-spec --skill to-tickets --skill setup-harness --apply &&
   python3 tools/skills.py preview --project "$project"
 ```
 
@@ -41,12 +44,18 @@ python3 tools/skills.py install --project "$project" &&
 
 See [pinned distribution](distribution.md) for updates and existing skill folders.
 
+The starter requires the owner to choose `implement` or `implement-spec` explicitly.
+If the owner opts in to implicit skill selection after an ordinary implementation assignment,
+set the Start rule in `AGENTS.md` accordingly and select both skills with
+`--implementation-invocation implicit`. Use `--implementation-invocation manual`
+to restore explicit selection and update the Start rule to match.
+
 ## Set up delivery
 
 - For GitHub PRs, copy the [PR template](../templates/project/.github/pull_request_template.md)
   to `.github/pull_request_template.md` in the target and point `AGENTS.md` to it. Compare with
   any existing PR template before changing it.
-- To enable classification, add `--skill owner-attention` to the selection above. Copy the
+- Classification starts disabled. To enable it, add `--skill owner-attention` to the selection above. Copy the
   [conditions](../templates/project/docs/agents/owner-attention.md) into the target and set the
   **Owner attention** decision in `AGENTS.md` to the conditions path and `owner-attention`.
   Agree on the conditions and authority before using them. `ship` runs a fresh, read-only

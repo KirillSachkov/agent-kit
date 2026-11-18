@@ -1,6 +1,7 @@
 ---
 name: implement-spec
 description: "Execute an assigned specification and its dependency graph under the target project's start, delegation and delivery rules. Use when the owner assigns a whole spec and the project's required start is satisfied."
+disable-model-invocation: true
 ---
 
 Read root `AGENTS.md` and its requirements, worktree, testing, human-participation,
