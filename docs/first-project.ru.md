@@ -16,7 +16,8 @@ project=/absolute/path/to/project
 kit_ref=FULL_COMMIT_SHA
 git show "$kit_ref:templates/project/AGENTS.md"
 # Посмотри вывод, затем скопируй файл в проект, если в нём ещё нет AGENTS.md:
-(set -C; git show "$kit_ref:templates/project/AGENTS.md" > "$project/AGENTS.md")
+starter=$(git show "$kit_ref:templates/project/AGENTS.md") &&
+  (set -C; printf '%s\n' "$starter" > "$project/AGENTS.md")
 ```
 
 Выбери скиллы, посмотри список изменений, затем установи и проверь их. С `--client both`
@@ -26,10 +27,15 @@ Codex и Claude Code используют одни и те же файлы.
 python3 tools/skills.py select --project "$project" --ref "$kit_ref" --client both \
   --skill implement --skill implement-spec --skill code-review --skill tdd \
   --skill ship --skill pr --skill recap --skill diagnosing-bugs \
-  --skill to-spec --skill to-tickets --apply
-python3 tools/skills.py preview --project "$project"
-python3 tools/skills.py install --project "$project"
-python3 tools/skills.py check --project "$project"
+  --skill to-spec --skill to-tickets --apply &&
+  python3 tools/skills.py preview --project "$project"
+```
+
+После успешного предпросмотра проверь список изменений и переходи к установке.
+
+```bash
+python3 tools/skills.py install --project "$project" &&
+  python3 tools/skills.py check --project "$project"
 ```
 
 [Как обновлять скиллы и работать с уже установленными копиями](distribution.md)
@@ -48,8 +54,9 @@ python3 tools/skills.py check --project "$project"
 | Доставка | Коммит доставки, результаты проверок, вопрос владельцу при необходимости, коммит после слияния |
 | Уборка | Где лежат материалы, откуда восстановить изменение, какие ресурсы удалены и какие остались |
 
-Для проверки результата запусти обычную команду в свежем контексте на исправленном коммите.
-Сохрани код выхода и вывод. Для исправления бага сохрани падение на старой версии и проход
+Поручи проверку свежему агенту, который не делал изменение. Он запустит обычную команду
+на исправленном коммите, сохранит код выхода и вывод по `implement/VERIFICATION.md`.
+Для исправления бага сохрани падение на старой версии и проход
 на исправленной. Если сценарий требует недоступного аккаунта, браузера или сервиса, укажи
 его в отчёте как непроверенный.
 

@@ -1,7 +1,7 @@
 """Exercise the starter on a disposable repository using the public installer."""
 
 from pathlib import Path
-import shutil
+import os
 import subprocess
 import sys
 import tempfile
@@ -9,7 +9,6 @@ import unittest
 
 
 KIT = Path(__file__).resolve().parents[1]
-STARTER = KIT / "templates/project/AGENTS.md"
 SKILLS = (
     "implement", "implement-spec", "code-review", "tdd", "ship", "pr", "recap",
     "diagnosing-bugs", "to-spec", "to-tickets",
@@ -17,15 +16,22 @@ SKILLS = (
 
 
 class ProjectStarterTest(unittest.TestCase):
+    def setUp(self):
+        local_git_vars = subprocess.check_output(["git", "rev-parse", "--local-env-vars"], text=True)
+        self.fixture_env = os.environ.copy()
+        for variable in local_git_vars.splitlines():
+            self.fixture_env.pop(variable, None)
+        self.fixture_env.update(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1")
+
     def run_command(self, args, cwd, *, status=0):
-        result = subprocess.run(args, cwd=cwd, capture_output=True, text=True)
+        result = subprocess.run(args, cwd=cwd, env=self.fixture_env, capture_output=True, text=True)
         self.assertEqual(result.returncode, status, result.stdout + result.stderr)
         return result.stdout.strip()
 
     def git(self, path, *args):
         return self.run_command([
             "git", "-c", "user.name=Starter exercise", "-c", "user.email=exercise@example.invalid",
-            "-c", "core.hooksPath=/dev/null", "-c", "commit.gpgSign=false", *args,
+            "-c", f"core.hooksPath={os.devnull}", "-c", "commit.gpgSign=false", *args,
         ], path)
 
     def check_status_command(self, path, source, *, status, message):
@@ -36,13 +42,14 @@ class ProjectStarterTest(unittest.TestCase):
     def test_install_and_run_a_task_through_worktree_retirement(self):
         with tempfile.TemporaryDirectory(prefix="agent-kit-starter-") as temporary:
             root = Path(temporary)
-            project = root / "project"
+            project = root / "project with spaces"
             project.mkdir()
-            self.git(project, "init", "-q", "-b", "main")
-            shutil.copyfile(STARTER, project / "AGENTS.md")
-            installed_policy = (project / "AGENTS.md").read_bytes()
-
+            self.git(project, "init", "-q", "-b", "main", "--template=")
             ref = self.git(KIT, "rev-parse", "HEAD")
+            starter = self.git(KIT, "show", f"{ref}:templates/project/AGENTS.md") + "\n"
+            with (project / "AGENTS.md").open("x", encoding="utf-8") as instructions:
+                instructions.write(starter)
+
             install = [sys.executable, str(KIT / "tools/skills.py")]
             selection = [argument for skill in SKILLS for argument in ("--skill", skill)]
             self.run_command([
@@ -53,7 +60,7 @@ class ProjectStarterTest(unittest.TestCase):
             self.assertFalse((project / ".agents/skills").exists())
             self.run_command([*install, "install", "--project", str(project)], KIT)
             self.run_command([*install, "check", "--project", str(project)], KIT)
-            self.assertEqual((project / "AGENTS.md").read_bytes(), installed_policy)
+            self.assertEqual((project / "AGENTS.md").read_text(encoding="utf-8"), starter)
             self.assertEqual(
                 (project / ".claude/skills").resolve(), (project / ".agents/skills").resolve(),
             )

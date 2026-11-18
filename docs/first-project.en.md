@@ -17,7 +17,8 @@ project=/absolute/path/to/project
 kit_ref=FULL_COMMIT_SHA
 git show "$kit_ref:templates/project/AGENTS.md"
 # After checking the output, for a project without AGENTS.md:
-(set -C; git show "$kit_ref:templates/project/AGENTS.md" > "$project/AGENTS.md")
+starter=$(git show "$kit_ref:templates/project/AGENTS.md") &&
+  (set -C; printf '%s\n' "$starter" > "$project/AGENTS.md")
 ```
 
 Choose the skill set, preview the proposed changes, then install and check the complete folders.
@@ -27,10 +28,15 @@ The same installed files are available to Codex and Claude Code with `--client b
 python3 tools/skills.py select --project "$project" --ref "$kit_ref" --client both \
   --skill implement --skill implement-spec --skill code-review --skill tdd \
   --skill ship --skill pr --skill recap --skill diagnosing-bugs \
-  --skill to-spec --skill to-tickets --apply
-python3 tools/skills.py preview --project "$project"
-python3 tools/skills.py install --project "$project"
-python3 tools/skills.py check --project "$project"
+  --skill to-spec --skill to-tickets --apply &&
+  python3 tools/skills.py preview --project "$project"
+```
+
+After a successful preview, review the changes before proceeding.
+
+```bash
+python3 tools/skills.py install --project "$project" &&
+  python3 tools/skills.py check --project "$project"
 ```
 
 See [pinned distribution](distribution.md) for updates and existing skill folders.
@@ -49,8 +55,9 @@ specific message. Write the expected behavior before implementation.
 | Deliver | Delivered revision, check results, decision requested from the owner if needed, actual merged revision when applicable |
 | Retire | Evidence location, integrated or recoverable task revision, exact resources removed or retained |
 
-For the verification row, run the regular command in a fresh context at the corrected revision.
-Capture the exit status and output. For a bug fix, retain the failure on the old revision and the
+For the verification row, have a fresh verifier who did not implement the change run the regular
+command at the corrected revision and capture its exit status and output. Follow the installed
+`implement/VERIFICATION.md`. For a bug fix, retain the failure on the old revision and the
 pass on the corrected one. If a check requires an unavailable account, browser, or service, keep
 that scenario open in the report.
 

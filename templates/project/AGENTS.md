@@ -19,8 +19,9 @@ in the project repository. Installed skills supply procedures and follow the dec
 2. Implement within the assignment. Run the affected checks. Use independent Standards and Spec
    review on an immutable diff. Record the findings, make one correction pass, and repeat the
    affected checks.
-3. When the task requires an observed scenario, use a fresh verifier on the corrected revision.
-   Record the actor, action, expected and observed result, source revision, and evidence location.
+3. When the task requires an observed scenario, use a fresh verifier who did not implement the
+   change. Verify the corrected revision. Record the actor, action, expected and observed result,
+   source revision, and evidence location.
    Record unmet or unavailable scenarios explicitly. Keep these observations separate from review
    and CI results. Use synthetic data for shareable examples.
 4. Deliver according to the project decisions. Check the required CI at the delivered revision.
