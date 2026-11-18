@@ -52,7 +52,7 @@ See [pinned distribution](distribution.md) for updates and existing skill folder
   Agree on the conditions and authority before using them. `ship` runs a fresh, read-only
   classifier once on the finished delivery after review, required verification, and checks.
 - Start each verification record with the [manifest template](../templates/project/evidence-manifest.json)
-  in the evidence location declared by the target. Bind it to the verified revision. Give each
+  in the evidence location declared by the target. Record the verified commit or tree SHA. Give each
   scenario its expected and observed outcome and mark it `pass`, `fail` or `not_exercised`.
   For each artifact fill in `kind`, `file` (relative to the manifest), `source` and `caption`.
   Add `url` only after publishing it under the target's rules.

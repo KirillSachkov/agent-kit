@@ -11,10 +11,12 @@ do not invent a fixed CI name, mandatory PR, owner handoff or deployment permiss
    independent review under the project's commit/review order. Record immutable
    checked commits or snapshot trees, findings and evidence limits.
 2. Follow the selected mode. For a PR, push the owned branch, use `pr` for its body,
-   create/update it through the tracker and follow draft timing. For an authorized
-   main-checkout flow, run its checks/review and commit/push as that flow requires.
-3. Verify current CI when the project requires it. Earlier green, pending, missing
-   or cancelled checks do not establish success. Fix in-scope failures, rerun affected
+   create/update it through the tracker and follow draft timing. For a main-checkout flow,
+   prepare its checked commit locally. Treat a push that publishes the finished change as
+   the delivery action in step 5. If required pre-delivery evidence needs a remote run, use
+   the project's authorized staging route or report the block.
+3. Verify the required pre-delivery CI on the candidate revision. Earlier green, pending,
+   missing or cancelled checks do not establish success. Fix in-scope failures, rerun affected
    checks and retain correction evidence. Do not send corrections back to reviewers unless the
    target explicitly requires another review. For pre-commit review, verify the delivered commit
    matches the frozen final content and retain the originally reviewed tree.
@@ -34,8 +36,9 @@ do not invent a fixed CI name, mandatory PR, owner handoff or deployment permiss
    Resolve human decisions due at this stage. Present the result, full delivered SHA,
    verification and its limits, and the owner's concrete next action when needed.
    Keep reviewed, accepted, merged and deployed states distinct.
-5. Merge, deploy or publish only when the assignment and project gates authorize that
-   concrete step. Follow required head guards, acceptance and queues. Otherwise stop
-   at the project's defined handoff with the remaining gate explicit.
+5. Push to main, merge, deploy or publish only when the assignment and project gates
+   authorize that concrete step. Follow required head guards, acceptance and queues.
+   Verify any required post-delivery CI on the actual delivered revision. If a gate is
+   pending, stop at the project's defined handoff and state what remains.
 6. Retain or clean only owned resources under project lifecycle rules. Preserve active
    writers, unsaved work and unintegrated child results.
