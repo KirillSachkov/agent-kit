@@ -8,6 +8,10 @@ Configure the target repository. Ask one unresolved question at a time, with the
 answer first. Reuse decisions the owner already made. Start implementation only under the
 resulting project rules.
 
+For a testing-only update to an existing setup, inspect its checks and instructions,
+preview the testing guide and its project pointer, then apply the approved edits.
+Keep the current skill selection, pin, clients and other workflow decisions.
+
 1. **Inspect.** Resolve the target Git root, existing instructions, tracker, checks, delivery
    rules and skill manifest. Find the Agent Kit checkout and the full commit SHA to install.
    Reuse the project's pin when it provides the agreed workflow. Read
@@ -27,6 +31,11 @@ resulting project rules.
      An explicit assignment still authorizes the work.
    - **Work:** checkout or worktree, base selection and authority to clean up.
    - **Checks and evidence:** commands, required CI, test data and evidence location.
+     Offer a testing guide now or on a later setup run. Reuse existing testing docs;
+     otherwise adapt `templates/project/docs/agents/testing.md` from the selected pin
+     and link the guide from the project instructions. Populate it from actual tests
+     and commands. If the pinned template is unavailable, use the existing rules
+     and discuss a pin update only if needed.
    - **Delivery:** destination, who accepts and who may publish, merge or deploy.
    - **Owner attention:** default to disabled. If enabled, agree on conditions and what each
      outcome authorizes. Use the pinned `templates/project/docs/agents/owner-attention.md`.

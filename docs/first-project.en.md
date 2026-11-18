@@ -11,6 +11,8 @@ checkout, you can explicitly ask the agent to follow [the setup skill](../skills
 
 For spec and ticket workflows, record the tracker location, dependencies, readiness and who confirms it. Check which project instructions each selected client loads. When an existing CLAUDE.md needs the shared rules, preserve its contents and import `@AGENTS.md`. In a fresh session, ask the client where tasks live, what starts implementation, which check to run and who accepts delivery.
 
+You can configure testing separately, including on a later run. Ask `setup-harness` to configure testing only. It reuses existing guidance or offers the [testing.md template](../templates/project/docs/agents/testing.md) for project commands, example tests and their data requirements.
+
 ## Install the workflow
 
 Run the commands from the Agent Kit checkout. Set `project` to the absolute path of the target
