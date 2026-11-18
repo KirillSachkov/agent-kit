@@ -41,7 +41,7 @@ verify the delivered commit matches the frozen final content. A done status, gre
 CI, or an agent's review is not a substitute for project-required human acceptance. Never reset a
 foreign context or clean unintegrated work because a generic example says to do so.
 
-`recap` supplies readable narrative; `pr` owns the final PR description and tracker
+`pr` owns the final PR description and tracker
 contract; `ship` follows the project's actual delivery mode. A main-checkout flow
 does not acquire a mandatory PR.
 
@@ -56,7 +56,7 @@ once after review dispositions, required verification and final checks. The targ
 consequences, statuses, invalidation and approval scope. No shared status creates merge or
 deployment authority. The [starter](first-project.en.md#set-up-delivery) includes copyable
 conditions, a PR body and an evidence manifest.
-`pr` and `recap` report observed outcomes and limits separately from regression checks.
+`ship` and `pr` report observed outcomes and limits separately from regression checks.
 
 ## Maintenance
 

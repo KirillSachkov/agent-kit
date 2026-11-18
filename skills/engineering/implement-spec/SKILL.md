@@ -5,8 +5,9 @@ disable-model-invocation: true
 ---
 
 Read root `AGENTS.md` and its requirements, worktree, testing, human-participation,
-tracker and delivery pointers. Satisfy its start rule before writing. Confirm the
-approved spec, tickets, criteria, blockers and human checkpoints. An authorized
+tracker and delivery pointers. Satisfy its start rule before writing. Read the
+approved spec and check its tickets, criteria, blockers and agreed human checkpoints.
+Ask the owner when a missing or conflicting decision blocks a ticket. An authorized
 spec run covers its agreed child tasks, not new requirements.
 
 The goal is the assigned spec delivered in the project's selected mode: ticket

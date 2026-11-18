@@ -1,5 +1,7 @@
 # Agreed consolidation
 
+This records the original consolidation requirements. See [migration history](migration.md) for later retirements.
+
 The owner approved a new public `KirillSachkov/agent-kit` combining Agent Harness and Agent Clarity, with engineering/communication skills, harness examples and an installer. Source repositories are archived only after history preservation and consumer updates. This is library consolidation, not authorization to implement the retained experimental board work.
 
 ## Acceptance

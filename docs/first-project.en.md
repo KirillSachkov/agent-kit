@@ -9,6 +9,8 @@ If it already has `AGENTS.md`, compare the two and keep the project's establishe
 To configure a project interactively, explicitly invoke `setup-harness`. From a fresh Agent Kit
 checkout, you can explicitly ask the agent to follow [the setup skill](../skills/engineering/setup-harness/SKILL.md).
 
+For spec and ticket workflows, record the tracker location, dependencies, readiness and who confirms it. Check which project instructions each selected client loads. When an existing CLAUDE.md needs the shared rules, preserve its contents and import `@AGENTS.md`. In a fresh session, ask the client where tasks live, what starts implementation, which check to run and who accepts delivery.
+
 ## Install the workflow
 
 Run the commands from the Agent Kit checkout. Set `project` to the absolute path of the target
@@ -30,7 +32,7 @@ The same installed files are available to Codex and Claude Code with `--client b
 ```bash
 python3 tools/skills.py select --project "$project" --ref "$kit_ref" --client both \
   --skill implement --skill implement-spec --skill code-review --skill tdd \
-  --skill ship --skill pr --skill recap --skill diagnosing-bugs \
+  --skill ship --skill pr --skill diagnosing-bugs \
   --skill to-spec --skill to-tickets --skill setup-harness --apply &&
   python3 tools/skills.py preview --project "$project"
 ```

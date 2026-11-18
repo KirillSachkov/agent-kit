@@ -38,19 +38,10 @@ One editable source folder per skill. Supporting files stay inside that folder. 
 | [wizard](engineering/wizard/SKILL.md) | Available for explicit selection |
 | [writing-for-agents](engineering/writing-for-agents/SKILL.md) | Available for explicit selection |
 
-## Communication
-
-| Skill | Status |
-| --- | --- |
-| [plain-writing](communication/plain-writing/SKILL.md) | Available for explicit selection |
-| [recap](communication/recap/SKILL.md) | Available for explicit selection |
-| [setup-plain-writing](communication/setup-plain-writing/SKILL.md) | Available for explicit selection |
-
 ## Find a procedure
 
 - Clarify and plan: `ask`, `grill-me`, `grill-with-docs`, `domain-modeling`, `to-spec`, `to-tickets`.
 - Build and diagnose: `implement`, `implement-spec`, `tdd`, `diagnosing-bugs`, `prototype`.
 - Review and deliver: `code-review`, `pr`, `ship`, `owner-attention`, `retro`.
-- Write and explain: `plain-writing`, `recap`, `setup-plain-writing`.
 
 Read the selected SKILL.md before recommending or running its procedure. Invocation metadata and project policy determine when it can run.

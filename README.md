@@ -3,14 +3,13 @@
 [English](README.en.md)
 
 Общая библиотека скиллов для Claude Code, Codex и других агентов, которые читают `SKILL.md`.
-Здесь находятся инженерные процедуры, скиллы для объяснений и отчётов, пример проектного harness и установщик выбранных версий.
+Здесь находятся инженерные процедуры, пример проектного harness и установщик выбранных версий.
 
 ## Что где лежит
 
 | Раздел | Что содержит |
 | --- | --- |
-| [skills/engineering](skills/README.md#engineering) | 29 скиллов для обсуждения, проектирования, реализации, проверки и доставки |
-| [skills/communication](skills/README.md#communication) | Стиль, отчёты, настройка стиля |
+| [skills/engineering](skills/README.md#engineering) | Скиллы для обсуждения, проектирования, реализации, проверки и доставки |
 | [examples/agent-harness](examples/agent-harness/AGENTS.md) | Пример самостоятельных правил проекта: запуск работ, worktrees, проверки и приёмка владельцем |
 | [tools/skills.py](tools/skills.py) | Выбор версии, просмотр diff, установка, проверка и принятие точных существующих копий под управление |
 | [provenance](provenance/sources.json) | История источников, лицензии и замороженный upstream для сравнения |
@@ -33,7 +32,7 @@ git rev-parse HEAD
 Подставь полученный полный SHA и путь проекта:
 
 ```bash
-python3 tools/skills.py select --project /path/to/project --ref FULL_COMMIT_SHA --skill tdd --skill recap --client both --apply
+python3 tools/skills.py select --project /path/to/project --ref FULL_COMMIT_SHA --skill tdd --skill ship --client both --apply
 python3 tools/skills.py preview --project /path/to/project
 python3 tools/skills.py install --project /path/to/project
 python3 tools/skills.py check --project /path/to/project

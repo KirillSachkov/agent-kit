@@ -8,6 +8,8 @@
 Чтобы настроить проект по шагам, явно вызови `setup-harness`. Если у тебя только рабочая
 копия Agent Kit, можно поручить агенту пройти [инструкцию скилла](../skills/engineering/setup-harness/SKILL.md).
 
+Для работы со спеками и тикетами укажи трекер, способ записи зависимостей и кто подтверждает готовность задачи. Проверь, какие правила загружает каждый выбранный клиент. Если в проекте уже есть CLAUDE.md и ему нужны общие правила, сохрани его содержимое и добавь импорт `@AGENTS.md`. В новой сессии спроси агента, где брать задачу, что разрешает начать работу, какую проверку запускать и кто принимает результат.
+
 ## Установить рабочий набор
 
 Запусти команды из рабочей копии Agent Kit. В `project` укажи абсолютный путь к репозиторию,
@@ -29,7 +31,7 @@ Codex и Claude Code используют одни и те же файлы.
 ```bash
 python3 tools/skills.py select --project "$project" --ref "$kit_ref" --client both \
   --skill implement --skill implement-spec --skill code-review --skill tdd \
-  --skill ship --skill pr --skill recap --skill diagnosing-bugs \
+  --skill ship --skill pr --skill diagnosing-bugs \
   --skill to-spec --skill to-tickets --skill setup-harness --apply &&
   python3 tools/skills.py preview --project "$project"
 ```

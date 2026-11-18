@@ -16,7 +16,12 @@ resulting project rules.
    only project rules that match the resulting client metadata and installed skills.
 2. **Choose.** Resolve the starter fields in order. Read facts such as CI names and test
    commands from the repository. Ask about decisions the files cannot settle.
-   - **Instructions and tracker:** project language and where to record work.
+   - **Instructions and tracker:** keep the project language and its existing rules. When
+     selecting `to-spec` or `to-tickets`, resolve where to write specs and tickets, how to
+     record dependencies and readiness, and who confirms them. Reuse the project’s tracker
+     contract. For an unconfigured tracker, consult the relevant GitHub, GitLab or local
+     Markdown example in the pinned `setup-matt-pocock-skills` source. Record the agreed
+     convention or a pointer to it in the project instructions.
    - **Start:** default to the owner explicitly choosing `implement` or `implement-spec`.
      If the owner opts in to implicit selection, write the ordinary-assignment start rule.
      An explicit assignment still authorizes the work.
@@ -29,7 +34,10 @@ resulting project rules.
    - **Skills and clients:** offer the first-project guide's starter bundle and client
      selection in a fresh project. In an existing project, keep the current selections and
      client settings unless the owner asks to change them. Include the skills that the new
-     instructions depend on.
+     instructions depend on. For each selected client, identify the project instructions
+     it actually loads. If Claude uses an existing `CLAUDE.md`, check for an import of
+     the shared rules. Preview an `@AGENTS.md` import where needed, preserving existing
+     instructions and avoiding circular imports.
 3. **Preview.** Fill in the starter for a new repository. In an existing repository, update
    the agreed settings in place and preserve unrelated instructions. Show the proposed
    `AGENTS.md` changes and the skill selection at its full SHA. Use `tools/skills.py select`
@@ -42,4 +50,7 @@ resulting project rules.
    and the remaining conflict. After a successful install and check, write the agreed project
    rules and, when enabled, the classifier conditions. Verify that the instructions, the
    installed invocation settings and the selected classifier agree. Report the changed
-   files, pin and check result.
+   files, pin and check result. In a fresh session of each available selected client,
+   check that it can identify the task location, start rule, check command and delivery
+   authority from this project. Use a read-only question. Report unavailable client
+   checks separately from installation checks.

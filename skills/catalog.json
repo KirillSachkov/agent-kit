@@ -36,10 +36,7 @@
         "wait-what": "skills/engineering/wait-what",
         "wayfinder": "skills/engineering/wayfinder",
         "wizard": "skills/engineering/wizard",
-        "writing-for-agents": "skills/engineering/writing-for-agents",
-        "plain-writing": "skills/communication/plain-writing",
-        "recap": "skills/communication/recap",
-        "setup-plain-writing": "skills/communication/setup-plain-writing"
+        "writing-for-agents": "skills/engineering/writing-for-agents"
       },
       "notices": {
         "LICENSE": {
@@ -266,27 +263,6 @@
       "skill": "writing-for-agents",
       "group": "engineering",
       "source": "engineering/writing-for-agents",
-      "internal": false
-    },
-    {
-      "provider": "agent-kit",
-      "skill": "plain-writing",
-      "group": "communication",
-      "source": "communication/plain-writing",
-      "internal": false
-    },
-    {
-      "provider": "agent-kit",
-      "skill": "recap",
-      "group": "communication",
-      "source": "communication/recap",
-      "internal": false
-    },
-    {
-      "provider": "agent-kit",
-      "skill": "setup-plain-writing",
-      "group": "communication",
-      "source": "communication/setup-plain-writing",
       "internal": false
     }
   ]

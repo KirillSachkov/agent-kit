@@ -9,7 +9,7 @@ metadata:
     url: "https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md"
 ---
 
-Write a report the owner can understand without reading the conversation or every changed line. Root `AGENTS.md` owns audience language, including headings. Preserve technical syntax and the project's declared domain vocabulary. `ship` owns delivery; this skill owns the PR description and its project-specific contract. `recap` may supply readable narrative, but does not independently create or edit the PR.
+Write a report the owner can understand without reading the conversation or every changed line. Root `AGENTS.md` owns audience language, including headings. Preserve technical syntax and the project's declared domain vocabulary. `ship` owns delivery; this skill owns the PR description and its project-specific contract.
 
 ## Build the explanation
 

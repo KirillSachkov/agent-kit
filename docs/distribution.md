@@ -8,8 +8,8 @@ Run from this library's checkout with a known full commit SHA:
 
 ```bash
 python3 tools/skills.py list
-python3 tools/skills.py select --project /path/to/project --ref FULL_COMMIT_SHA --skill tdd --skill recap --client both
-python3 tools/skills.py select --project /path/to/project --ref FULL_COMMIT_SHA --skill tdd --skill recap --client both --apply
+python3 tools/skills.py select --project /path/to/project --ref FULL_COMMIT_SHA --skill tdd --skill ship --client both
+python3 tools/skills.py select --project /path/to/project --ref FULL_COMMIT_SHA --skill tdd --skill ship --client both --apply
 ```
 
 Selection records `.agents/skills-manifest.json`. There is no implicit entire-library selection. `--client both` uses the project's canonical `.agents/skills` index and a Claude alias; conflicting client folders are preserved and stop the change.

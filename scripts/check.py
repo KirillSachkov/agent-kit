@@ -48,7 +48,7 @@ def check_structure():
         for path in source.rglob("*"):
             if path.is_symlink():
                 errors.append(f"symlink inside distributable folder: {path}")
-    actual = {p.parent.relative_to(ROOT) for group in ("engineering", "communication") for p in (ROOT / "skills" / group).glob("*/SKILL.md")}
+    actual = {p.parent.relative_to(ROOT) for p in (ROOT / "skills").glob("*/*/SKILL.md")}
     if actual != found:
         errors.append("canonical catalog coverage mismatch")
     alias = ROOT / ".claude/skills"
@@ -94,7 +94,6 @@ def main():
     commands = [
         [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py"],
         [sys.executable, "examples/agent-harness/scripts/check.py"],
-        [sys.executable, "maintenance/communication/scripts/check.py"],
     ]
     for command in commands:
         print("CHECK " + " ".join(command[1:]), flush=True)
