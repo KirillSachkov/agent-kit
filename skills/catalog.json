@@ -36,7 +36,10 @@
         "wait-what": "skills/engineering/wait-what",
         "wayfinder": "skills/engineering/wayfinder",
         "wizard": "skills/engineering/wizard",
-        "writing-for-agents": "skills/engineering/writing-for-agents"
+        "writing-for-agents": "skills/engineering/writing-for-agents",
+        "plain-writing": "skills/communication/plain-writing",
+        "recap": "skills/communication/recap",
+        "setup-plain-writing": "skills/communication/setup-plain-writing"
       },
       "notices": {
         "LICENSE": {

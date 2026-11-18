@@ -21,7 +21,7 @@ These branches preserve drafts and evidence; they do not promote experiments int
 
 The 28 Agent Harness runtime folders moved to `skills/engineering`. Its project instructions and human guides remain in `examples/agent-harness`; the example uses the canonical library through discovery links. Upstream comparison moved to the library maintenance tools and a frozen baseline under provenance.
 
-The four Agent Clarity folders moved to `skills/communication`; `explain` retains `metadata.internal: true`. Communication checker/build tests remain under `maintenance/communication`. Whole folders include examples, assets and native metadata.
+The four Agent Clarity folders moved to `skills/communication`; `explain` originally retained `metadata.internal: true`. Communication checker/build tests lived under `maintenance/communication`. Whole folders include examples, assets and native metadata.
 
 The PR skill's legal reference is made self-contained. Style setup points at this repository. Other procedure semantics are preserved; project policy remains at the target project.
 
@@ -41,3 +41,5 @@ Checks cover structure, source identities, complete folders and installer behavi
 ## Removal of explain, 2026-11-15
 
 The owner requested removal of `explain` everywhere. Its canonical folder, catalog entry, build tests and active documentation pointers were removed. Historical Git objects and provenance remain intact; a later maintenance change retired the remaining communication skills and their checker from the active library. Historical pins retain their original contents.
+
+The current installer keeps historical source paths for existing pinned manifests. Retired skills are absent from new selections. Updating the starter preserves existing project-owned files.

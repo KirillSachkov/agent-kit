@@ -1,6 +1,7 @@
 """Exercise the starter on a disposable repository using the public installer."""
 
 from pathlib import Path
+import json
 import os
 import subprocess
 import sys
@@ -38,6 +39,32 @@ class ProjectStarterTest(unittest.TestCase):
         self.assertEqual(
             self.run_command([sys.executable, "status.py", source], path, status=status), message,
         )
+
+    def test_retired_skills_remain_readable_from_an_existing_pin(self):
+        old_ref = "94c236f63240a78e209b14012ff2143f22cfbda8"
+        cli = [sys.executable, str(KIT / "tools/skills.py")]
+        with tempfile.TemporaryDirectory(prefix="agent-kit-previous-pin-") as temporary:
+            project = Path(temporary)
+            target = ["--project", str(project)]
+            skills = ("recap", "plain-writing", "setup-plain-writing")
+            entries = [
+                {"provider": "agent-kit", "skill": name, "ref": old_ref,
+                 "destination": f".agents/skills/{name}"}
+                for name in skills
+            ]
+            manifest = project / ".agents/skills-manifest.json"
+            manifest.parent.mkdir()
+            manifest.write_text(json.dumps({"schema_version": 1, "skills": entries}))
+            for action in ("preview", "install", "check"):
+                self.run_command([*cli, action, *target], KIT)
+            for name in skills:
+                self.assertTrue((project / ".agents/skills" / name / "SKILL.md").is_file())
+                result = subprocess.run(
+                    [*cli, "select", *target, "--ref", old_ref, "--skill", name],
+                    cwd=KIT, env=self.fixture_env, capture_output=True, text=True,
+                )
+                self.assertEqual(result.returncode, 1)
+                self.assertIn("not in this catalog", result.stderr)
 
     def test_install_and_run_a_task_through_worktree_retirement(self):
         with tempfile.TemporaryDirectory(prefix="agent-kit-starter-") as temporary:
