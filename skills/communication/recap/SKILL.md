@@ -11,7 +11,7 @@ Take facts from the recorded conversation, diff, PR, checks and independent veri
 ## Steps
 
 1. **Write the recap** in the form of [format.md](references/format.md), with the prose of the `plain-writing` skill.
-   Start from the example closest in size: [small-fix](examples/small-fix/recap.md), [interview-sensei](examples/interview-sensei/recap.md), [research](examples/research/recap.md).
+   Start from the example closest in size: [small-fix](examples/small-fix/recap.md) or [research](examples/research/recap.md).
    Size it to the work: a small fix is a verdict, one or two items and one check.
    Done when each claim names where it holds: a file, a command and its result, or a link.
 2. **Deliver it** to every place that applies:

@@ -1,7 +1,6 @@
 # The recap page
 
 One HTML file, one scrolling page with a table of contents. You write only the body; the styles and the script come from this skill's `assets/`.
-[The example page](../examples/interview-sensei/page.html) shows every element in use; match its look, and lay out your own content.
 
 1. Write `body.html`, next to the recap, with the classes below:
 
