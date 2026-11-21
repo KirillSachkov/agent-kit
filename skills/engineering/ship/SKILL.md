@@ -9,8 +9,9 @@ rules, and `testing.md` or the testing contract it names.
 1. Read the implementation handoff. Match the task to its immutable review base and
    endpoint, Standards and Spec reports, dispositions, fixes and affected tests.
    Carry forward the local Verify revision, verdict, scenario evidence and limits,
-   or the project-based reason it was inapplicable. A missing, failed or blocked
-   required result keeps the delivery pending.
+   or the project-based reason it was inapplicable. A passing handoff closes Verify.
+   Use its observations directly; do not replay its scenarios at handoff or after
+   a CI correction. A missing, failed or blocked required result keeps delivery pending.
 2. For a PR, push the owned branch and use `pr` to open or update its description
    with that evidence. For main-checkout delivery, prepare the checked commit locally
    and run the project's delivery checks. If a required check needs a remote run,
