@@ -1,0 +1,20 @@
+{
+  "language": "Use the language of the assignment.",
+  "tracker": "Use the written local task or an issue explicitly assigned by the owner.",
+  "start": "Start an assigned change when its expected result and scope are clear.",
+  "worktree": "Use the assigned idle checkout. Preserve other writers and record the review base.",
+  "access": "Use local synthetic data. Confirm required external services, credentials and access with the project.",
+  "tdd": "Use for changes with an observable failing test at an established boundary.",
+  "delivery": "local",
+  "verify": "Run once locally before opening a PR when an acceptance criterion requires an observed scenario.",
+  "verifier": "The implementer may verify unless the task requires an independent verifier.",
+  "evidence": "Record revision, action, expectation, observations, side effects, limits and artifact locations with the task.",
+  "owner_attention": false,
+  "acceptance": "Report the result and open criteria to the task owner for acceptance.",
+  "publication": "Obtain specific authority from the owner before pushing, merging, deploying or publishing.",
+  "cleanup": "Retire only assigned resources after authorized delivery and checking for unpublished work.",
+  "ci": "No external CI is required for the local baseline.",
+  "development_checks": "Run the affected checks at the changed boundary.",
+  "delivery_checks": "Run all required local checks and record results at the delivery revision.",
+  "behavior": "Exercise the affected public entry point and observe the expected result and material side effects."
+}

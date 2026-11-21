@@ -24,7 +24,7 @@ Omit otherwise. -->
 <summary>Details</summary>
 
 <!-- Record the review base, reviewed revision, delivered revision, original
-findings and dispositions, corrected-result verification, CI links, and any
+findings and dispositions, local Verify revision and limits, subsequent changes, CI on the final revision, and any
 rollback steps. Link the evidence manifest where permitted. -->
 
 </details>

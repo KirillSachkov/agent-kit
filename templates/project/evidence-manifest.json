@@ -1,35 +1,23 @@
 {
   "schema_version": 1,
-  "task": "<issue, specification, or agreed task reference>",
-  "revision": "<full verified commit or tree SHA>",
+  "task": "<agreed task reference>",
+  "revision": "<immutable local Verify revision>",
   "verdict": "not_exercised",
-  "notes": "Both rows are examples. Replace them and the verdict with actual verification results.",
+  "notes": "Replace prompts with observed results. Distinguish a failed assertion from a blocked environment.",
   "scenarios": [
     {
-      "id": "example-saved-state",
-      "actor": "Test editor",
-      "action": "Save the test note",
-      "expected": "The note shows a saved state.",
-      "observed": "The test note displayed a saved status.",
-      "result": "pass",
-      "artifacts": [
-        {
-          "kind": "screenshot",
-          "file": "saved-state.png",
-          "source": "Synthetic data in the test project",
-          "caption": "Saved status after the editor saves the test note."
-        }
-      ]
-    },
-    {
-      "id": "<task scenario identifier>",
+      "id": "<acceptance criterion>",
       "actor": "<role>",
-      "action": "<action>",
-      "expected": "<expected outcome>",
+      "action": "<action through the public entry point>",
+      "expected": "<expected behavior and side effects>",
       "observed": null,
+      "side_effects": [],
       "result": "not_exercised",
-      "notes": "<reason the scenario was not exercised>",
+      "notes": "<limits, defect, or environment blocker>",
       "artifacts": []
     }
-  ]
+  ],
+  "changes_after_local_verify": [],
+  "delivered_revision": null,
+  "required_ci": []
 }
