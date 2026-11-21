@@ -163,7 +163,7 @@ _env_target() {
 # writes, or renames leave the original intact. New files are 0600; existing
 # file modes and ENV_FILE's symlinks are preserved.
 _write_env_file() {
-  local key="$1" value="$2" tmp target status quote
+  local key="$1" value="$2" tmp target status
   [[ "$key" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]] || return 1
   if [[ "$value" == *$'\n'* || "$value" == *$'\r'* ]]; then
     printf 'Cannot save %s: use a single-line credential or configure it directly in the consumer.\n' "$key" >&2
@@ -173,7 +173,6 @@ _write_env_file() {
     printf 'Cannot save %s: a value with a single quote reads differently in a shell and in dotenv. Configure it directly in the consumer.\n' "$key" >&2
     return 1
   fi
-  quote="'"
   target=$(_env_target) || return 1
   [[ ! -e "$target" || -f "$target" ]] || return 1
   tmp=$(umask 077; mktemp "${target}.tmp.XXXXXX") || return 1
@@ -185,7 +184,7 @@ _write_env_file() {
       if (( status != 1 )); then rm -f -- "$tmp"; return "$status"; fi
     fi
   fi
-  if ! printf '%s=%s%s%s\n' "$key" "$quote" "$value" "$quote" >> "$tmp"; then rm -f -- "$tmp"; return 1; fi
+  if ! printf "%s='%s'\n" "$key" "$value" >> "$tmp"; then rm -f -- "$tmp"; return 1; fi
   if ! mv -f -- "$tmp" "$target"; then rm -f -- "$tmp"; return 1; fi
   printf '  %s✓ wrote%s %s → %s\n' "$GREEN" "$RESET" "$key" "$ENV_FILE"
 }

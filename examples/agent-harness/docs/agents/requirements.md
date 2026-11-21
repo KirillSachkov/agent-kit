@@ -29,7 +29,7 @@ Keep proposed and implemented behavior distinct.
 In a project that adopts this harness, each question about current behavior has one owner:
 
 - Behavior: the project’s tests at agreed seams. Name each test by the behavior it checks.
-- Terms: `DOMAIN.md`.
+- Terms: `GLOSSARY.md`.
 - Decisions that meet the [ADR criteria](../../.agents/skills/domain-modeling/ADR-FORMAT.md#when-to-offer-an-adr), including deliberate non-goals: ADRs.
 
 Such a project keeps current behavior in these sources only, without a separate prose document.

@@ -39,7 +39,7 @@ A question to the owner names known overlapping issues, PRs and active sessions.
 A spec answers “what was requested then, and why”. After merge, nobody rewrites it.
 In a project that adopts this harness, the project’s tests show current behavior.
 That project keeps no separate document of current behavior.
-`DOMAIN.md` holds terms. ADRs hold consequential decisions.
+`GLOSSARY.md` holds terms. ADRs hold consequential decisions.
 A new issue links the earlier one and names each criterion it replaces.
 [Requirements](agents/requirements.md#current-behavior-and-history) list the source for each question.
 This repository has no application tests.

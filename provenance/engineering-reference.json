@@ -572,8 +572,15 @@
       "Return implement-spec to human-only invocation in both clients. implement stays model-invocable for a direct assignment.",
       "Move owner-attention classification into ship as a reference procedure and drop it from the catalog; installed copies at earlier SHAs are unchanged.",
       "The wizard template writes only single-quoted values, which a shell and dotenv parsers read identically, and rejects a value containing a single quote.",
-      "The starter root instructions own the rule for loading a named skill in a client without a Skill tool."
+      "The starter root instructions own the rule for loading a named skill in a client without a Skill tool.",
+      "Rename the example harness glossary from DOMAIN.md to GLOSSARY.md to match the restored domain-modeling skill."
     ],
-    "matt_baseline_unchanged": true
+    "matt_baseline_unchanged": true,
+    "moved": {
+      "from": "skills/engineering/owner-attention/SKILL.md",
+      "to": "skills/engineering/ship/OWNER-ATTENTION.md",
+      "blob_at_review_base": "d7d786a2c242dd7420adb7f45cc4f0b6eaf53858",
+      "removed_tree": "skills/engineering/owner-attention/agents ccbe56b81b31828ffd0e071c8e30e5b80fd8d780"
+    }
   }
 }

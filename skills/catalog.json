@@ -240,7 +240,7 @@
       "dependencies": [
         {
           "skill": "pr",
-          "reason": "Write the evidence and acceptance record for pull-request delivery.",
+          "reason": "Shape the pull-request body.",
           "feature": "pr"
         }
       ]

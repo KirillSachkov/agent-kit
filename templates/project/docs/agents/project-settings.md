@@ -1,7 +1,7 @@
 # Project settings
 
-These choices apply to the workflow in [WORKFLOW.md](../../WORKFLOW.md). Existing project
-instructions listed below govern their own scope. Apply the recorded project resolution where it
+These choices apply to the workflow in [WORKFLOW.md](../../WORKFLOW.md). The project's own
+instructions govern their scope. Apply the recorded project resolution where it
 settles a difference. Use defaults for questions the project leaves open.
 
 @@sources@@

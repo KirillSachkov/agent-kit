@@ -70,7 +70,8 @@ class SetupTest(unittest.TestCase):
         preview = self.setup("--client", "both")
         self.assertEqual(list(self.project.iterdir()), [])
         self.assertIn("Observe a fixture", preview)
-        self.assertIn(".agents/skills/probe: agent-kit@" + self.ref + " / probe, ", preview)
+        self.assertRegex(preview, re.escape(f".agents/skills/probe: agent-kit@{self.ref} / probe, sha256 ")
+                         + r"[0-9a-f]{12}, new\n")
         self.assertNotIn("selected/reference.txt", preview)
         self.assertIn("selected/WORKFLOW.md", preview)
         full = self.setup("--client", "both", "--full")
@@ -102,9 +103,11 @@ class SetupTest(unittest.TestCase):
         workflows = self.project / ".github/workflows"
         workflows.mkdir(parents=True)
         (workflows / "test.yaml").write_text("name: Sample CI\n")
+        self.assertIn("fixture database", self.setup("--client", "both", "--full"))
         preview = self.setup("--client", "both", "--apply")
-        for found in ("docs/checks.md", "fixture database", "make check", ".github/workflows/test.yaml"):
+        for found in ("Existing project document: docs/checks.md", "make check", ".github/workflows/test.yaml"):
             self.assertIn(found, preview)
+        self.assertNotIn("fixture database", preview)
         self.assertTrue((self.project / "CLAUDE.md").read_text().startswith(rules))
         self.assertIn("docs/checks.md", (self.project / "CLAUDE.md").read_text())
         self.assertIn("CLAUDE.md", (self.project / "AGENTS.md").read_text())
@@ -120,7 +123,7 @@ class SetupTest(unittest.TestCase):
         (self.project / "docs/mcp.md").write_text("Server authorization uses a token. Cleanup the worktree cache.\n")
         self.setup("--apply")
         settings = (self.project / "docs/agents/project-settings.md").read_text()
-        self.assertIn("`docs/domain.md`, `docs/mcp.md`", settings)
+        self.assertIn("Documents reached from the existing instructions: `AGENTS.md`, `docs/domain.md`, `docs/mcp.md`.", settings)
         self.assertNotIn("Follow `", settings)
         self.assertIn("- Language: Use the language of the assignment.", settings)
         self.assertIn("No changes.", self.setup())

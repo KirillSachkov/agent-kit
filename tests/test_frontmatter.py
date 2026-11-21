@@ -23,15 +23,11 @@ class FrontmatterTest(unittest.TestCase):
 
     def test_rejects_values_yaml_would_reject_or_misread(self):
         for description in ("Ask where you are: which flow fits.", "Trailing colon:", "Cut here #comment",
-                            "[bracket start", '"unterminated', "'unterminated", ""):
+                            "[bracket start", '"unterminated', "'unterminated", "", "#only a comment",
+                            "First line\n  second: line", "One\ndescription: Two"):
             with self.subTest(description=description):
                 self.assertTrue(check.frontmatter_errors(skill(description)))
         self.assertEqual(check.frontmatter_errors("Body only\n"), ["no frontmatter block"])
-
-    def test_every_catalog_skill_parses(self):
-        for path in sorted((KIT / "skills").glob("*/*/SKILL.md")):
-            with self.subTest(skill=path.parent.name):
-                self.assertEqual(check.frontmatter_errors(path.read_text()), [])
 
 
 if __name__ == "__main__":

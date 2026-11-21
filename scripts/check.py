@@ -16,24 +16,34 @@ def git(*args):
 
 
 def frontmatter_errors(text):
-    """Report top-level frontmatter values a strict YAML parser rejects or misreads.
+    """Hold SKILL.md frontmatter to a conservative subset every strict YAML parser reads alike.
 
-    Clients and installers parse SKILL.md frontmatter as YAML and skip a skill that fails.
+    Clients and installers parse it as YAML and skip a skill that fails. Top-level values are
+    one line each: plain, quoted, or a block scalar. Nested mappings are indented and unchecked.
     """
     lines = text.splitlines()
     if not lines or lines[0] != "---" or "---" not in lines[1:]:
         return ["no frontmatter block"]
     found = {}
     errors = []
+    scalar = None
     for line in lines[1:lines.index("---", 1)]:
-        if not line.strip() or line[0] in " \t#":
+        if not line.strip() or line[0] == "#":
+            continue
+        if line[0] in " \t":
+            if scalar:
+                errors.append(f"{scalar}: keep the value on one line or use a block scalar")
+                scalar = None
             continue
         key, separator, value = line.partition(":")
         value = value.strip()
         if not separator or (value and line[len(key) + 1] != " "):
             errors.append(f"not a key: value line: {line}")
             continue
+        if key in found:
+            errors.append(f"duplicate key: {key}")
         found[key] = value
+        scalar = key if value and value.rstrip("+-") not in ("|", ">") else None
         if value[:1] == '"':
             try:
                 json.loads(value)
@@ -43,7 +53,7 @@ def frontmatter_errors(text):
             if len(value) < 2 or not value.endswith("'") or "'" in value[1:-1].replace("''", ""):
                 errors.append(f"{key}: invalid single-quoted value")
         elif value and value.rstrip("+-") not in ("|", ">") and (
-                ": " in value or " #" in value or value.endswith(":") or value[:1] in "[]{}>|*&!%@`,?-"):
+                ": " in value or " #" in value or value.endswith(":") or value[:1] in "[]{}>|*&!%@`,?-#"):
             errors.append(f"{key}: quote a value containing ': ', ' #' or a leading YAML indicator")
     for key in ("name", "description"):
         if not found.get(key):
@@ -71,8 +81,9 @@ def check_structure():
             errors.append(f"missing skill: {source}")
             continue
         found.add(source.relative_to(ROOT))
-        metadata = skill.read_text().split("---", 2)
-        errors.extend(f"{skill.relative_to(ROOT)}: {error}" for error in frontmatter_errors(skill.read_text()))
+        text = skill.read_text()
+        metadata = text.split("---", 2)
+        errors.extend(f"{skill.relative_to(ROOT)}: {error}" for error in frontmatter_errors(text))
         if len(metadata) != 3 or not re.search(r"^name:\s*" + re.escape(item["skill"]) + r"\s*$", metadata[1], re.M):
             errors.append(f"invalid skill frontmatter: {skill}")
         internal = len(metadata) == 3 and "internal: true" in metadata[1]

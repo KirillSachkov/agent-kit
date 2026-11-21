@@ -397,7 +397,7 @@ def build_plan(project, ref, client, options):
     if missing:
         blocker = "Choose " + ", ".join(missing) + " in the decisions JSON and preview the differences again."
     details = dict(choices)
-    details["sources"] = ("Existing instructions: " + ", ".join(f"`{f}`" for f in policy) + "."
+    details["sources"] = ("Documents reached from the existing instructions: " + ", ".join(f"`{f}`" for f in policy) + "."
                           if policy else "No prior project policy was discovered.")
     details["testing_file"] = "<" + testing + ">" if testing and " " in testing else testing or ""
     details["checks"] = "\n".join(checks) or "No local test command or test directory was discovered."
@@ -508,9 +508,10 @@ def write_documents(project, edits):
             raise
 
 
-def describe(result, project, full=False):
+def describe(result, project, *, full):
     for name, content in result.policy.items():
-        print(f"Existing project instructions ({name}):\n{content.strip()}")
+        print(f"Existing project instructions ({name}):\n{content.strip()}" if full
+              else f"Existing project document: {name}")
     for fact in result.checks:
         print(fact)
     if result.ci:
@@ -524,16 +525,15 @@ def describe(result, project, full=False):
         print("".join(difflib.unified_diff((edit.before or b"").decode().splitlines(True),
                                           edit.after.decode().splitlines(True),
                                           fromfile="current/" + edit.name, tofile="selected/" + edit.name)), end="")
-    if full:
-        skills.preview(result.changed)
-    else:
+    if result.changed and not full:
         for entry, _, current, wanted in result.changed:
             count = sum(current.get(name) != wanted.get(name) for name in current.keys() | wanted.keys())
+            change = "new" if not current else f"{count} changed files" if count else "pin only"
             print(f"{entry['destination']}: {entry['provider']}@{entry['ref']} / {entry['skill']}, "
-                  f"{count} files {'change' if current else 'new'}")
-        if result.changed:
-            print("Pass --full for the complete skill file differences.")
-    if result.changed and full:
+                  f"sha256 {skills.digest(wanted)[:12]}, {change}")
+        print("Pass --full for existing document contents and complete skill file differences.")
+    elif result.changed:
+        skills.preview(result.changed)
         lock = result.skill_lock
         updated_lock = {**lock, "skills": dict(lock["skills"])}
         for entry, _, _, files in result.items:
@@ -568,7 +568,7 @@ def main(argv=None):
             raise ERROR("Another installation holds skills-sync.lock; reconcile its owner before retrying")
         options = skills.read_json(args.decisions) if args.decisions else {}
         result = build_plan(project, args.ref, args.client, options)
-        describe(result, project, args.full)
+        describe(result, project, full=args.full)
         if result.blocker:
             return 1
         if not args.apply:
