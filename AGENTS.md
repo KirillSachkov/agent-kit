@@ -5,7 +5,7 @@ Session mode: main
 
 ## Ownership
 
-- Editable skill sources live in `skills/engineering` and `skills/communication`. `skills/catalog.json` is the discoverable inventory. Preserve complete folders, native metadata, licenses and attribution.
+- Edit skill sources in their canonical catalog folders. Use `writing-for-agents` when writing or adapting skills. `skills/catalog.json` is the discoverable inventory. Preserve complete folders, native metadata, licenses and attribution.
 - Before editing borrowed engineering skills, read `docs/upstream.md` and use `tools/upstream.py` to compare the adaptation with its frozen upstream source.
 - `examples/agent-harness` owns an example project's policy. Its explicit implementation starts, worktree rules and owner acceptance apply to that example. Skills read the target project's policy when used elsewhere.
 - Private home data, account configuration, credentials and service caches belong outside this public repository.
