@@ -554,5 +554,14 @@
       "Make the absence of automatic re-review explicit in the starter and ship."
     ],
     "matt_baseline_unchanged": true
+  },
+  "project_setup_and_delivery": {
+    "issue": "https://github.com/KirillSachkov/agent-kit/issues/7",
+    "review_base": "01202cb03ff01d19ea8d77d782ac5f595f45297f",
+    "changes": [
+      "Use one review per delivery, one corrections pass and one successful local Verify before PR or CI. Honor the project testing contract and retain both verification and delivery revisions.",
+      "Retire recap from the release and preserve pinned historical selections."
+    ],
+    "matt_baseline_unchanged": true
   }
 }

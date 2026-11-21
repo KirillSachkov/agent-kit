@@ -46,8 +46,9 @@ A native subagent is not an independently assigned application session.
 5. For tickets submitted together, have a fresh merger integrate their checked changes
    where project rules permit.
    At the boundary of each delivery, follow [Prepare one delivery](../implement/SKILL.md#prepare-one-delivery)
-   on the complete diff. The assigned author runs review, corrections, affected tests
-   and any required local Verify once, then hands their evidence to the delivery owner.
+   on the complete diff. The author commissions one review. For its single correction pass, use a fresh
+   implementer in an owned context. Run affected tests and required local Verify,
+   then hand the evidence to the delivery owner.
    Integrators and `ship` consume that record. For separate ticket PRs, do this for
    each PR and confirm its required acceptance/merge before unblocking dependents.
 6. Recompute the frontier from proven dependency outcomes and start newly ready work.
