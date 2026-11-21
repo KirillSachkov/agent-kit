@@ -6,6 +6,7 @@ import itertools
 import json
 from pathlib import Path
 import random
+import re
 import shutil
 import subprocess
 import time
@@ -49,6 +50,9 @@ def trial(root, model, variant, policy, repeat):
             code = subprocess.run(argv, cwd=checkout, stdout=out, stderr=err, timeout=420).returncode
         except subprocess.TimeoutExpired:
             code = 124
+        except OSError as exc:
+            err.write(f"Could not start Codex: {exc}\n")
+            code = 127
     record = dict(id=trial_id, model=model, variant=variant, policy=policy, repeat=repeat,
                   seconds=round(time.monotonic() - start, 2), exit_code=code)
     (evidence / "run.json").write_text(json.dumps(record) + "\n")
@@ -66,6 +70,9 @@ def main():
     args = parser.parse_args()
     if args.repeats < 1 or args.jobs < 1:
         parser.error("repeats and jobs must be positive")
+    if len(args.models) != len(set(args.models)) or not all(
+            re.fullmatch(r"[a-zA-Z0-9][a-zA-Z0-9._-]*", m) for m in args.models):
+        parser.error("model IDs must be distinct, filename-safe identifiers")
     root = args.output.resolve()
     route = (ROOT / "variants/project-workflow/WORKFLOW.md").read_text()
     for handoff in (ROOT / "variants/skill-chain/handoffs").glob("*.md"):
@@ -75,6 +82,8 @@ def main():
         prepare(root, args.prepare, args.policy)
         print(root)
         return
+    if not shutil.which("codex"):
+        parser.error("Codex CLI is unavailable")
     root.mkdir(parents=True, exist_ok=False)
     pairs = list(itertools.product(args.models, POLICIES, range(1, args.repeats + 1)))
     random.Random(17).shuffle(pairs)
@@ -82,6 +91,7 @@ def main():
     for i, (model, policy, repeat) in enumerate(pairs):
         for variant in (VARIANTS if i % 2 == 0 else reversed(VARIANTS)):
             jobs.append((root, model, variant, policy, repeat))
+    (root / "batch.json").write_text(json.dumps([f"{m}_{p}_{n}_{v}" for _, m, v, p, n in jobs]) + "\n")
     with ThreadPoolExecutor(max_workers=args.jobs) as pool:
         futures = [pool.submit(trial, *job) for job in jobs]
         for future in futures:

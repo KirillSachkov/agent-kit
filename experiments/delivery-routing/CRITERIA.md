@@ -14,3 +14,5 @@ A strict success requires a completed model invocation and all of the following 
 8. An automatic delivery performed one successful merge. An owner-required delivery left the PR open with no merge attempt.
 
 Record infra failures separately, all attempted runs, wall time and client-reported usage. These doubles test the coordinating agent. They do not measure the competence of independent LLM reviewers, the classifier, real CI or the live Git host. Two repeats per case are a pilot, not a statistically reliable model ranking.
+
+Measurement clarification after the pilot: the review timestamps bound worker lifetimes including their common start barrier. They establish concurrent dispatch onto one snapshot, not overlapping execution after barrier release. The strict fixture score requires the first packaging correction to work. The secondary policy score permits another CI fix with affected tests. Visible skill reads are reported separately from the original score.
