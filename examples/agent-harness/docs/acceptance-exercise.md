@@ -54,3 +54,19 @@ the artifacts and confirm their synthetic provenance. Record checked source head
 notes, post-review changes, remaining limits and unavailable token counts. A procedure simulation
 is evidence about these routing choices only. Remove only the disposable context this run owns
 when its result record has been captured.
+
+## CI correction trial
+
+To exercise the handoff, use a local bare origin as a simulated PR target. Prepare a CLI that prints `ready`, a project rule reserving merge for the owner, and a check that imports the module and expects silent stdout. Seed an unconditional print so the CLI scenario passes and the import check fails. The watcher reads the pushed commit. Give a fresh delivery agent the project instructions, reviewed endpoints and the recorded successful local Verify.
+
+Observed with the Kit `ship` procedure at `b182c53587c5377944e2bb2df01e471a28698959`:
+
+| Event | Observed result |
+| --- | --- |
+| Local Verify at `e60ba4b98d08be9b8a058a52fdc8b567a88bbe50` | The status command printed `ready`. The synthetic handoff supplied two review reports. |
+| First push and watcher | The import check read the pushed revision and failed on unexpected stdout `ready`. |
+| Correction at `81d49dcc08e799359777bf27cecb12e298dc9687` | Restored the CLI entry guard. The affected check passed and a direct import was silent. |
+| Second push and watcher | The import check passed at the new head. The delivery agent carried the existing reports and Verify forward, with zero new review calls or scenario runs. |
+| Acceptance | Reading both remote refs showed the corrected candidate and the original main. The agent stopped for the owner's merge decision. |
+
+The checks executed against real Git refs and local processes. The review reports were fixture inputs. Remote GitHub CI and human approval require their own project environment.

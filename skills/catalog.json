@@ -267,7 +267,12 @@
       "dependencies": [
         {
           "skill": "codebase-design",
-          "reason": "Shared vocabulary for discussing test seams.",
+          "reason": "Choose the shape of a new test seam or module interface.",
+          "feature": "seam-design"
+        },
+        {
+          "skill": "code-review",
+          "reason": "Further reading on the review stage after TDD.",
           "reference": true
         }
       ]
