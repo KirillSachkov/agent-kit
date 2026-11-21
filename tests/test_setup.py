@@ -128,6 +128,18 @@ class SetupTest(unittest.TestCase):
         self.assertIn("- Language: Use the language of the assignment.", settings)
         self.assertIn("No changes.", self.setup())
 
+    def test_documents_keep_their_stored_spelling(self):
+        (self.project / "GLOSSARY.md").write_text("Order: a purchase.\n")
+        (self.project / "AGENTS.md").write_text("Read [domain](docs/agents/domain.md).\n")
+        (self.project / "docs/agents").mkdir(parents=True)
+        (self.project / "docs/agents/domain.md").write_text("Read `GLOSSARY.md` for terms.\n")
+        (self.project / "docs/TESTING.md").write_text("Run the suite.\n")
+        preview = self.setup()
+        self.assertIn("Existing project document: GLOSSARY.md", preview)
+        self.assertIn("Existing project document: docs/TESTING.md", preview)
+        for wrong in ("docs/agents/GLOSSARY.md", "docs/testing.md"):
+            self.assertNotIn("Existing project document: " + wrong, preview)
+
     def test_conflict_resolution_is_bound_to_discovered_difference(self):
         instructions = "Open a draft PR before implementation.\n"
         (self.project / "AGENTS.md").write_text(instructions)

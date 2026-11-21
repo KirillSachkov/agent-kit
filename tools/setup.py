@@ -45,6 +45,16 @@ def read_optional(project, name):
     return path.read_bytes()
 
 
+def spelled_as_stored(project, name):
+    """A case-insensitive filesystem opens docs/TESTING.md as docs/testing.md; keep the stored name only."""
+    current = project
+    for part in Path(name).parts:
+        if not current.is_dir() or part not in os.listdir(current):
+            return False
+        current = current / part
+    return True
+
+
 def pinned_templates(ref):
     if not re.fullmatch(r"[0-9a-f]{40}", ref):
         raise ERROR("--ref must be a full lowercase commit SHA")
@@ -118,7 +128,7 @@ def local_pointers(project, source, content):
             name = path.relative_to(project)
             if ".git" in name.parts or name.parts[:2] in ((".agents", "skills"), (".claude", "skills")):
                 continue
-            if path.resolve() == path and path.is_file():
+            if path.resolve() == path and path.is_file() and spelled_as_stored(project, name):
                 yield str(name), bool(TEST_GUIDE.search(label or target))
                 break
 
@@ -141,7 +151,7 @@ def find_sources(project, templates, lock, testing_file):
     if testing_file:
         sources.append(testing_file)
     for name in sources:
-        if name not in managed:
+        if name not in managed and spelled_as_stored(project, name):
             data = read_optional(project, name)
             if data:
                 policy[name] = data.decode()
