@@ -348,6 +348,26 @@ class SetupTest(unittest.TestCase):
         self.assertEqual(manifest["selection_features"], {".agents/skills/probe": ["extended"]})
         self.assertIn("No changes.", self.setup())
 
+    def test_upgrade_names_pin_only_changed_and_retired_skills(self):
+        catalog = self.provider / "skills/catalog.json"
+        inventory = json.loads(catalog.read_bytes())
+        inventory["skills"].append({"provider": "agent-kit", "skill": "retired", "group": "engineering"})
+        retired = self.provider / "skills/engineering/retired"
+        retired.mkdir()
+        (retired / "SKILL.md").write_text("---\nname: retired\ndescription: Leaves the catalog.\n---\n")
+        catalog.write_text(json.dumps(inventory))
+        old = self.ref = self.release("Add a skill that later retires")
+        self.setup("--apply")
+        inventory["skills"].pop()
+        catalog.write_text(json.dumps(inventory))
+        self.ref = self.release("Retire it")
+        preview = self.setup()
+        self.assertIn(f".agents/skills/retired: not in this release, stays installed at {old}", preview)
+        self.assertRegex(preview, r"/ probe, sha256 [0-9a-f]{12}, pin only\n")
+        (self.provider / "skills/engineering/probe/reference.txt").write_text("v2\n")
+        self.ref = self.release("Change one file")
+        self.assertRegex(self.setup(), r"/ probe, sha256 [0-9a-f]{12}, 1 changed file\n")
+
     def test_installer_failure_restores_setup_and_prior_backups(self):
         (self.project / "AGENTS.md").write_text("Keep project instructions.\n")
         self.setup("--apply")

@@ -508,7 +508,7 @@ def write_documents(project, edits):
             raise
 
 
-def describe(result, project, *, full):
+def describe(result, project, ref, *, full):
     for name, content in result.policy.items():
         print(f"Existing project instructions ({name}):\n{content.strip()}" if full
               else f"Existing project document: {name}")
@@ -525,10 +525,14 @@ def describe(result, project, *, full):
         print("".join(difflib.unified_diff((edit.before or b"").decode().splitlines(True),
                                           edit.after.decode().splitlines(True),
                                           fromfile="current/" + edit.name, tofile="selected/" + edit.name)), end="")
+    for entry, _, _, _ in result.items:
+        if entry["ref"] != ref:
+            print(f"{entry['destination']}: not in this release, stays installed at {entry['ref']}")
     if result.changed and not full:
         for entry, _, current, wanted in result.changed:
             count = sum(current.get(name) != wanted.get(name) for name in current.keys() | wanted.keys())
-            change = "new" if not current else f"{count} changed files" if count else "pin only"
+            change = ("new" if not current else "pin only" if not count
+                      else f"{count} changed file{'s' if count > 1 else ''}")
             print(f"{entry['destination']}: {entry['provider']}@{entry['ref']} / {entry['skill']}, "
                   f"sha256 {skills.digest(wanted)[:12]}, {change}")
         print("Pass --full for existing document contents and complete skill file differences.")
@@ -568,7 +572,7 @@ def main(argv=None):
             raise ERROR("Another installation holds skills-sync.lock; reconcile its owner before retrying")
         options = skills.read_json(args.decisions) if args.decisions else {}
         result = build_plan(project, args.ref, args.client, options)
-        describe(result, project, full=args.full)
+        describe(result, project, args.ref, full=args.full)
         if result.blocker:
             return 1
         if not args.apply:
