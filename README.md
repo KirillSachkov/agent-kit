@@ -29,6 +29,7 @@ python3 tools/skills.py check --project /path/to/project
 
 ## Как устроен Kit
 
+- [Два экспериментальных варианта поставки](experiments/delivery-routing/README.md) показывают, как сравнить цепочку скиллов с проектным workflow.
 - [Инженерные скиллы](skills/README.md) задают процедуры. [Пример проектного харнеса](examples/agent-harness/README.ru.md) показывает вариант с рабочими деревьями, PR и одобрением конкретного коммита.
 - [Происхождение](docs/migration.md) описывает сохранённые истории Agent Harness и Agent Clarity. Для скиллов Matt Pocock сохранены лицензии, исходная ревизия и механизм сравнения адаптаций. [Обновление upstream](docs/upstream.ru.md)
 - Команда `python3 scripts/check.py` проверяет каталог, целостность источников и поведение инструментов на временных проектах.

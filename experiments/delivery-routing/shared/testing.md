@@ -1,0 +1,1 @@
+Check changed behavior with python3 service.py test. The project requires local behavior verification for changes to the CSV interface. The Verify service exercises the public CLI and returns observations for the tested revision.
