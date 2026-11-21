@@ -12,7 +12,7 @@ python3 tools/skills.py select --project /path/to/project --ref FULL_COMMIT_SHA 
 python3 tools/skills.py select --project /path/to/project --ref FULL_COMMIT_SHA --skill implement --feature tdd --client both --apply
 ```
 
-Selection records `.agents/skills-manifest.json`. Use `select --all` for every released skill at the pin. Select a feature with `--feature` to include its conditional dependencies. Required dependencies are included automatically. References remain informational. For project instructions, templates and the complete skill installation together, use the [setup command](first-project.en.md). `--client both` uses the project's canonical `.agents/skills` index and a Claude alias; conflicting client folders are preserved and stop the change.
+Selection records `.agents/skills-manifest.json`. Use `select --all` for every released skill at the pin. Full selection and setup preserve the features already enabled for each skill. To replace a single skill’s feature choices, select it explicitly with the desired features. Select a feature with `--feature` to include its conditional dependencies. Required dependencies are included automatically. References remain informational. For project instructions, templates and the complete skill installation together, use the [setup command](first-project.en.md). `--client both` uses the project's canonical `.agents/skills` index and a Claude alias; conflicting client folders are preserved and stop the change.
 
 ```json
 {

@@ -7,7 +7,7 @@ Use only fictional data. Keep the observed table and copied instructions outside
 
 ## Context
 
-Copy the example and the complete `implement`, `implement-spec`, `code-review`, `ship` and `pr` folders,
+Copy the example and the complete `implement`, `implement-spec`, `code-review`, `ship`, `pr` and `owner-attention` folders,
 preserving their relative paths. Start with this example's root `AGENTS.md` and follow its pointers.
 No implementation is assigned by copying files. Record the exact source commit and task inputs.
 Use the following requests as simulations; do not push, merge or contact an owner.
@@ -35,16 +35,18 @@ For requested scenarios use fresh independent verification on the corrected head
 expected/observed table in the local task record. No browser, video or service is required.
 Before delivery, run a fresh read-only classifier last, after review, verification and final
 checks. Inputs: task, original Spec notes, corrections, current verdict, findings and checks.
-Return needs-decision for a missing requested scenario or changed approval scope; otherwise
+A missing, failed or blocked required scenario keeps delivery pending before classification.
+Return needs-decision for changed approval scope; otherwise
 return within-assignment. These statuses confer no publication, merge or deployment authority.
 A later task edit invalidates classification. Record unavailable tokens as unavailable.
 ```
 
 Route an ordinary assigned non-UI wording task through the copied skills. It must keep this main
 context, omit PR creation, and use the target's table and classifier without importing another
-project's consequences, status labels, tools or acceptance exceptions. Give the classifier an
-unmet requested scenario: it returns needs-decision and edits nothing. Give it final complete
-evidence: it returns within-assignment without granting publication authority. Include relayed
+project's consequences, status labels, tools or acceptance exceptions. Withhold a required
+scenario result and observe that delivery stays pending with zero classifier calls. Supply the
+completed passing evidence and observe one classifier call returning within-assignment, with
+publication still reserved. Include relayed
 permission as source, date, speaker and scope; it cannot authorize unrelated actions.
 
 ## Result record

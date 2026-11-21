@@ -98,6 +98,31 @@ def root_parts(data):
     return first, BEGIN + managed + END
 
 
+TEST_GUIDE = re.compile(r"test|verification|quality|checks|тест|проверк|верификаци", re.I)
+# A Markdown link or a named local document (including backtick paths) in agent instructions.
+POINTER = re.compile(r"\[([^]\n]+)\]\((<[^>\n]+>|[^)\s]+)\)|`([^`\n]+)`|"
+                     r"(?<![/:\w.-])(@?[\w./-]+\.(?:md|txt|rst|ya?ml))\b", re.I)
+
+
+def local_pointers(project, source, content):
+    for match in POINTER.finditer(content):
+        label, href, quoted, plain = match.groups()
+        target = unquote((href or quoted or plain).strip("<>").removeprefix("@").split("#")[0])
+        if (not target or target.startswith(("/", "~")) or ":" in target or
+                Path(target).suffix.lower() not in {".md", ".txt", ".rst", ".yaml", ".yml"}):
+            continue
+        for base in ((project / source).parent, project):
+            path = Path(os.path.abspath(base / target))
+            if not path.is_relative_to(project):
+                continue
+            name = path.relative_to(project)
+            if ".git" in name.parts or name.parts[:2] in ((".agents", "skills"), (".claude", "skills")):
+                continue
+            if path.resolve() == path and path.is_file():
+                yield str(name), bool(TEST_GUIDE.search(label or target))
+                break
+
+
 def find_sources(project, templates, lock, testing_file):
     docs = root_documents(project)
     policy = {}
@@ -105,37 +130,42 @@ def find_sources(project, templates, lock, testing_file):
         outside, _ = root_parts(data)
         if outside.strip():
             policy[name] = outside
-    for name in ("CONTRIBUTING.md", "docs/agents/delivery.md", "docs/agents/worktrees.md",
-                 "docs/agents/issue-tracker.md", "docs/agents/requirements.md",
-                 "docs/agents/verification.md", "docs/agents/verify.md", ".cursorrules"):
-        data = read_optional(project, name)
-        if data:
-            policy[name] = data.decode()
-    candidates = []
-    for source, rules in policy.items():
-        for label, href in re.findall(r"\[([^]]+)\]\(([^)]+)\)", rules):
-            if re.search(r"test|verification|quality|checks|тест|проверк|верификаци", label, re.I):
-                target = unquote(href.strip("<>").split("#")[0])
-                if target and not target.startswith(("/", "~")) and ":" not in target:
-                    absolute = (project / source).parent / target
-                    if absolute.resolve().is_relative_to(project):
-                        name = os.path.relpath(absolute, project)
-                        if name.lower().endswith(".md"):
-                            candidates.append(name)
-    candidates.extend(["TESTING.md", "testing.md", "docs/TESTING.md", "docs/testing.md", TESTING])
+    known = ("CONTRIBUTING.md", "docs/agents/delivery.md", "docs/agents/worktrees.md",
+             "docs/agents/issue-tracker.md", "docs/agents/requirements.md",
+             "docs/agents/verification.md", "docs/agents/verify.md", "docs/agents/owner-attention.md", ".cursorrules")
+    fallback = ("TESTING.md", "testing.md", "docs/TESTING.md", "docs/testing.md", TESTING)
+    managed = lock.get("files", {})
+    if testing_file and ("\n" in testing_file or not read_optional(project, testing_file)):
+        raise ERROR(f"Existing testing instruction unavailable: {testing_file}")
+    sources = [*known, *fallback]
     if testing_file:
-        if "\n" in testing_file or not read_optional(project, testing_file):
-            raise ERROR(f"Existing testing instruction unavailable: {testing_file}")
-        candidates = [testing_file]
-    for name in candidates:
-        data = read_optional(project, name)
-        if data and name not in lock.get("files", {}):
-            policy[name] = data.decode()
-            return docs, policy, name
-    return docs, policy, TESTING if TESTING in templates else None
+        sources.append(testing_file)
+    for name in sources:
+        if name not in managed:
+            data = read_optional(project, name)
+            if data:
+                policy[name] = data.decode()
+    pending = list(policy)
+    candidates = []
+    for source in pending:
+        for name, testing in local_pointers(project, source, policy[source]):
+            if name in managed or name in docs or name in ("AGENTS.md", "CLAUDE.md"):
+                continue
+            if testing and name.lower().endswith((".md", ".rst", ".txt")):
+                candidates.append(name)
+            if name not in policy:
+                policy[name] = read_optional(project, name).decode()
+                pending.append(name)
+    testing = testing_file or next((name for name in (*candidates, *fallback) if name in policy), None)
+    return docs, policy, testing or (TESTING if TESTING in templates else None)
 
 
-def instruction_owner(docs, previous, choice):
+def instruction_owner(project, docs, previous, choice):
+    # root_documents validated every root symlink. Canonicalize before checking delegation.
+    if choice:
+        choice = (project / choice).resolve().name
+    if previous:
+        previous = (project / previous).resolve().name
     delegates = {}
     for name, raw in docs.items():
         other = "CLAUDE.md" if name == "AGENTS.md" else "AGENTS.md"
@@ -145,6 +175,8 @@ def instruction_owner(docs, previous, choice):
             delegates[name] = other
     if len(delegates) == 2:
         raise ERROR("Instruction cycle between AGENTS.md and CLAUDE.md; reconcile their project-owned pointers")
+    if any((project / target).is_symlink() for target in delegates.values()):
+        raise ERROR("Instruction cycle through the root instruction alias; reconcile its project-owned pointer")
     if delegates:
         owner = next(iter(delegates.values()))
         if choice and choice != owner:
@@ -214,7 +246,7 @@ CONFLICTS = [
     (r"(?:откры\w*|созда\w*).{0,50}(?:PR|пулл.?реквест|черновик).{0,40}(?:\bдо\b|сразу|перед)|"
      r"(?:сразу|перед началом).{0,40}(?:откры\w*|созда\w*).{0,40}\bPR\b",
      "The workflow opens a PR after the local evidence is ready."),
-    (r"\b(no|never|forbid|disable)\b.{0,30}\b(subagents?|sub-agents?|reviewers?)\b",
+    (r"\b(no|never|forbid|disable|do not use|must not use|don't use)\b.{0,30}\b(sub[ -]?agents?|reviewers?)\b",
      "The workflow uses parallel independent Standards and Spec reviewers."),
 ]
 
@@ -279,27 +311,74 @@ def project_choices(defaults, previous, overrides):
     return options, choices
 
 
+PR = r"(?:pull requests?|PRs?)\b"
+NEGATION = r"(?:never|do not|must not|don't|cannot|no|without)\s+"
+PR_ACTION = r"(?:(?:open|create|submit|use|require)\s+)?(?:an? |the |draft )*"
+CLASSIFIER = r"\b(?:owner[- ]attention(?: classification| classifier)?|owner classifier)\b"
+DISABLED = r"(?:disabled?|off|optional and disabled|not (?:enabled|required)|never run|do not (?:use|run))"
+ENABLED = r"(?:enable[ds]?|on|require[ds]?|mandatory|must run|must use|always run|run|use)"
+
+
+def policy_constraints(line):
+    """Recognize explicit, unconditional choices, keeping each source sentence as evidence."""
+    prohibited = re.search(r"\b" + NEGATION + PR_ACTION + PR, line, re.I)
+    if prohibited:
+        if not re.search(r"\b(before|until|without|unless)\b", line[prohibited.end():], re.I):
+            yield "delivery", {"local", "main"}
+    elif re.search(r"\b(via|through|requires?|open|submit|create|use)\s+(?:an? |the |draft )*" + PR
+                   + r"|\b(?:delivery route|delivery)\s*:\s*pr\b", line, re.I):
+        yield "delivery", {"pr"}
+    if re.search(r"\b(?:deliver(?:y)?|land|commit)\s+(?:directly\s+)?(?:on|to|in|via)\s+"
+                 r"(?:the\s+)?main\b|\b(?:delivery route|delivery)\s*:\s*main\b", line, re.I):
+        yield "delivery", {"main"}
+    if re.search(r"\b(?:keep|deliver|delivery)\b.{0,38}\blocal(?:ly)?\b(?:\s+only)?\s*$|"
+                 r"\b(?:delivery route|delivery)\s*:\s*local\b", line, re.I):
+        yield "delivery", {"local"}
+    if re.search(r"\bno owner[- ]attention (?:classifier|classification)\b", line, re.I):
+        yield "owner_attention", {False}
+        return
+    for indicator, enabled in ((DISABLED, False), (ENABLED, True)):
+        if re.search(CLASSIFIER + r"\s*(?::|is|must be|=)?\s*" + indicator + r"\b|"
+                     r"\b" + indicator + r"\s+(?:the |an? )?" + CLASSIFIER, line, re.I):
+            yield "owner_attention", {enabled}
+            break
+
+
 def reconcile(project, policy, ci, options, choices):
     if ci and "ci" not in options:
         choices["ci"] = "Found " + ", ".join(f"`{path}`" for path in ci) + ". Confirm required jobs and delivered revision with the project before delivery."
     if (project / ".github/ISSUE_TEMPLATE").is_dir() and "tracker" not in options:
         choices["tracker"] = "Use the assigned issue and the project's .github/ISSUE_TEMPLATE conventions."
     material = conflicts(policy | ci)
-    policy_text = "\n".join(policy.values())
-    if re.search(r"\b(via|through|require[sd]?|open|submit)\s+(?:an? |the )?(pull request|PR)\b", policy_text, re.I):
-        if "delivery" not in options:
-            choices["delivery"] = "pr"
-        elif options["delivery"] != "pr":
-            material.append("Existing rules specify pull request delivery. The selected delivery route is " + options["delivery"] + ".")
+    constraints = {}
+    for name, body in policy.items():
+        for line in re.split(r"[\n.!?;]", body):
+            for key, allowed in policy_constraints(line):
+                constraints.setdefault(key, []).append((f"{name}: {line.strip()}", allowed))
+    missing = []
+    for key, rules in constraints.items():
+        if key not in choices:
+            continue
+        permitted = set.intersection(*(values for _, values in rules))
+        if key not in options and len(permitted) == 1:
+            choices[key] = next(iter(permitted))
+        if choices[key] not in permitted:
+            if key not in options:
+                missing.append(key)
+            for source, allowed in rules:
+                if key in missing or choices[key] not in allowed:
+                    material.append(f"{source}\n  Selected {key}: {json.dumps(choices[key])}.")
     for key, words in (("start", "authorization to start|implementation starts|start rule"),
                        ("language", "language"), ("access", "credentials|service access"),
-                       ("publication", "merge authority|deploy permission|publication authority"),
+                       ("publication", "merge authority|deploy permission|publication authority|authorization"),
+                       ("acceptance", "acceptance|owner approval"), ("ci", r"required checks|required CI|CI policy"),
+                       ("evidence", "evidence requirements"), ("cleanup", "cleanup|retire worktrees"),
                        ("worktree", "worktree"), ("verifier", "independent verif|fresh verifier"),
                        ("tdd", "TDD|test.driven"), ("tracker", "issue tracker|tracker operations")):
-        existing = [name for name, body in policy.items() if re.search(words, body, re.I)]
+        existing = [name for name, body in policy.items() if re.search(words, name + "\n" + body, re.I)]
         if existing and key not in options:
             choices[key] = "Follow " + ", ".join(f"`{name}`" for name in existing) + "."
-    return material
+    return material, missing
 
 
 def build_plan(project, ref, client, options):
@@ -310,44 +389,48 @@ def build_plan(project, ref, client, options):
         raise ERROR(f"Invalid setup lock: {LOCK}")
     previous = state.get("decisions", {})
     defaults = json.loads(templates.pop("defaults.json", b"{}"))
-    supplied = set(options)
+    options = dict(options)
+    agreement = options.pop("conflict_id", None)
     options, choices = project_choices(defaults, previous, options)
     docs, policy, testing = find_sources(project, templates, state, choices.get("testing_file"))
     checks, ci = project_checks(project)
-    material = reconcile(project, policy, ci, options, choices)
+    material, missing = reconcile(project, policy, ci, options, choices)
     if defaults and "WORKFLOW.md" not in templates:
         raise ERROR(f"Missing pinned workflow template at {ref}")
     signature = sha(encoded(material))
-    current_resolution = "resolution" in supplied or signature == state.get("conflicts")
+    recorded = signature == state.get("conflicts") and options.get("resolution") == previous.get("resolution")
+    current_resolution = agreement == signature if agreement is not None else recorded
     blocker = None
     if material and not (options.get("resolution") and current_resolution):
-        blocker = "Resolve the displayed process conflict via the decisions JSON field 'resolution' before --apply."
+        blocker = ("Resolve the displayed process conflict before --apply. Record the agreed 'resolution' "
+                   f"and this conflict_id in the decisions JSON: {signature}")
+    if missing:
+        blocker = "Choose " + ", ".join(missing) + " in the decisions JSON and preview the differences again."
     details = dict(choices)
     details["sources"] = ("Existing instructions: " + ", ".join(f"`{f}`" for f in policy) + "."
                           if policy else "No prior project policy was discovered.")
     details["testing_file"] = "<" + testing + ">" if testing and " " in testing else testing or ""
     details["checks"] = "\n".join(checks) or "No local test command or test directory was discovered."
     details["resolution"] = "Project resolution: " + options["resolution"] if "resolution" in options else ""
-    details["owner_attention"] = ("Enabled. Apply [owner attention conditions](owner-attention.md) once after technical checks."
+    conditions = [name for name, body in policy.items()
+                  if re.search(CLASSIFIER, name + "\n" + body, re.I)
+                  and re.search(r"\b(status(?:es)?|conditions|decision rules)\b", body, re.I)]
+    condition_refs = ", ".join(f"`{name}`" for name in conditions) or "[owner attention conditions](owner-attention.md)"
+    details["owner_attention"] = (f"Enabled. Apply {condition_refs} once after technical checks."
                                   if choices.get("owner_attention") else "Disabled.")
     edits = []
     managed = dict(state.get("files", {}))
     def add(name, before, after):
-        target = skills.safe_path(project, name)
-        for parent in target.parents:
-            if parent == project:
-                break
-            if parent.exists() and not parent.is_dir():
-                raise ERROR(f"Destination parent must be a directory: {parent}")
+        skills.safe_path(project, name)
         if before != after:
             edits.append(Edit(name, before, after))
     roots = dict(state.get("roots", {}))
-    canonical, delegates = instruction_owner(docs, state.get("instruction_owner"), choices.get("instruction_owner"))
+    canonical, delegates = instruction_owner(project, docs, state.get("instruction_owner"), choices.get("instruction_owner"))
     catalog_dir = KIT / "skills"
     catalog = skills.read_json(catalog_dir / "catalog.json")
     manifest = skills.select_manifest(project, catalog, catalog_dir, "agent-kit", ref, None, client)
     items, skill_lock, _ = skills.plan(project, catalog, catalog_dir, manifest=manifest)
-    changed = skills.preflight_changed(items, skill_lock)
+    changed = skills.preflight_changed(project, items, skill_lock)
     link = skills.client_discovery(project, manifest)
     root_template = render(templates.pop("AGENTS.md"), details).decode().rstrip()
     requested_roots = {canonical, "AGENTS.md"}
@@ -373,7 +456,7 @@ def build_plan(project, ref, client, options):
         if name == TESTING and name != testing:
             continue
         if defaults and ((name.startswith(".github/") and choices["delivery"] != "pr") or
-                         (name.endswith("/owner-attention.md") and not choices["owner_attention"])):
+                         (name.endswith("/owner-attention.md") and (not choices["owner_attention"] or conditions))):
             continue
         before = read_optional(project, name)
         after = render(raw, details)
@@ -421,15 +504,15 @@ def write_documents(project, edits):
                 for directory in reversed(missing):
                     directory.mkdir()
                     created_dirs.append(directory)
-                os.replace(stage / f"{i}.new", target)
                 applied.append((target, stage / f"{i}.old"))
+                os.replace(stage / f"{i}.new", target)
             yield
         except BaseException:
             for target, backup in reversed(applied):
                 if backup.exists():
                     os.replace(backup, target)
                 else:
-                    target.unlink()
+                    target.unlink(missing_ok=True)
             for directory in reversed(created_dirs):
                 directory.rmdir()
             raise
@@ -481,6 +564,9 @@ def main(argv=None):
         project = args.project.resolve(strict=True)
         if not project.is_dir():
             raise ERROR("--project must be an existing directory")
+        guard = skills.safe_path(project, ".agents/skills-sync.lock")
+        if guard.exists():
+            raise ERROR("Another installation holds skills-sync.lock; reconcile its owner before retrying")
         options = skills.read_json(args.decisions) if args.decisions else {}
         result = build_plan(project, args.ref, args.client, options)
         describe(result, project)

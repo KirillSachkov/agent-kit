@@ -35,7 +35,8 @@ rules, and `testing.md` or the testing contract it names.
      revision, subsequent edits, affected test results and final head with its CI
      evidence. Review and local Verify each stay complete.
 4. After technical checks pass on the candidate, invoke the configured classifier
-   once if enabled (for example, `owner-attention` as a fresh read-only subagent).
+   once if enabled. For `owner-attention`, give a fresh read-only subagent the
+   [installed procedure](../owner-attention/SKILL.md) and the project’s conditions.
    Supply the task, original Spec notes, dispositions and unresolved findings,
    Verify revision and limits, later changes, final candidate, checks and target
    decision rules. Record its status, reason and owner action. Required classification

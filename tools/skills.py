@@ -13,7 +13,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -28,6 +27,8 @@ def safe_path(root, relative):
         raise SkillsError(f"Unsafe relative path: {relative}")
     target = root
     for part in parts:
+        if target.exists() and not target.is_dir():
+            raise SkillsError(f"Destination parent must be a directory: {target}")
         target = target / part
         if target.is_symlink():
             raise SkillsError(f"Symlink not allowed in managed path: {target}")
@@ -38,6 +39,8 @@ def safe_path(root, relative):
 
 def read_json(path):
     try:
+        if not path.is_file():
+            raise ValueError("expected a regular JSON file")
         value = json.loads(path.read_text())
         if not isinstance(value, dict):
             raise ValueError("expected a JSON object")
@@ -207,7 +210,8 @@ def resolve_manifest(manifest, catalog, catalog_dir):
 
 def select_manifest(project, catalog, catalog_dir, provider_name, ref, names, client, features=()):
     _, rows = release(catalog, catalog_dir, provider_name, ref)
-    if names is None:
+    select_all = names is None
+    if select_all:
         names = [name for name, row in rows.items() if not row.get("internal")]
     if not names:
         raise SkillsError("Select at least one released skill (or --all)")
@@ -227,11 +231,14 @@ def select_manifest(project, catalog, catalog_dir, provider_name, ref, names, cl
             raise SkillsError(f"Skill is not in this catalog: {name}")
         entry = skill_entry(provider_name, ref, name)
         destination = entry["destination"]
-        if destination in roots and roots[destination]["provider"] != provider_name:
+        if destination in roots and any(roots[destination][key] != entry[key] for key in ("provider", "skill")):
             raise SkillsError(f"Provider conflict at {destination}")
         roots[destination] = entry
-        if features:
-            selected_features[destination] = sorted(set(features))
+        enabled = set(features)
+        if select_all:
+            enabled.update(selected_features.get(destination, []))
+        if enabled:
+            selected_features[destination] = sorted(enabled)
         else:
             selected_features.pop(destination, None)
     manifest["skills"] = list(roots.values())
@@ -447,6 +454,10 @@ def plan(project, catalog, catalog_dir, manifest=None):
             raise SkillsError("Skill entries must be objects")
         if not re.fullmatch(r"\.agents/skills/[a-z0-9][a-z0-9-]*", entry["destination"]):
             raise SkillsError(f"Unsafe destination: {entry['destination']}")
+        previous = lock["skills"].get(entry["destination"])
+        if previous is not None and any(previous.get(key) != entry[key] for key in ("provider", "skill")):
+            raise SkillsError(f"Installed skill identity conflict at {entry['destination']}: "
+                              f"{previous.get('provider')}/{previous.get('skill')} is already managed there")
         provider, _ = release(catalog, catalog_dir, entry["provider"], entry["ref"])
         wanted = source_files(provider, entry, catalog_dir)
         if installation == "source-links":
@@ -484,7 +495,7 @@ def preview(items):
                 print(f"mode {name}: {current.get(name, (b'', 'absent'))[1]} -> {wanted.get(name, (b'', 'absent'))[1]}")
 
 
-def preflight_changed(items, lock, adoptable=None):
+def preflight_changed(project, items, lock, adoptable=None):
     # Validate the whole selection before changing any consumer folder.
     changed = []
     for entry, path, current, wanted in items:
@@ -498,20 +509,24 @@ def preflight_changed(items, lock, adoptable=None):
         if current != wanted or previous != {**entry, "sha256": digest(wanted)}:
             changed.append((entry, path, current, wanted))
 
+    if changed:
+        backup_root = safe_path(project, ".agents/skills-backups")
+        if backup_root.exists() and not backup_root.is_dir():
+            raise SkillsError(f"Backup destination must be a directory: {backup_root}")
     return changed
 
 
 def install(project, items, lock, adoptable=None, client_link=None):
-    changed = preflight_changed(items, lock, adoptable)
-    backup_root = safe_path(project, ".agents/skills-backups")
-    run_id = uuid.uuid4().hex
-    backup = backup_root / run_id
+    changed = preflight_changed(project, items, lock, adoptable)
+    backup = None
     lock_path = safe_path(project, ".agents/skills-lock.json")
     old_lock = lock_path.read_bytes() if lock_path.exists() else None
     stage = Path(tempfile.mkdtemp(prefix=".skills-stage-", dir=project / ".agents"))
     new_directories = []
     applied = []
     created_link = None
+    staged_lock = stage / "lock.json"
+    swapping_lock = False
     try:
         for index, (entry, path, current, wanted) in enumerate(changed):
             selected = stage / str(index)
@@ -522,9 +537,11 @@ def install(project, items, lock, adoptable=None, client_link=None):
                 target.write_bytes(data)
                 target.chmod(0o755 if mode == "100755" else 0o644)
         if changed:
+            backup_root = safe_path(project, ".agents/skills-backups")
             if not backup_root.exists():
                 new_directories.append(backup_root)
-            backup.mkdir(parents=True)
+                backup_root.mkdir()
+            backup = Path(tempfile.mkdtemp(dir=backup_root))
             if old_lock is not None:
                 (backup / "skills-lock.json").write_bytes(old_lock)
         for index, (entry, path, current, wanted) in enumerate(changed):
@@ -535,9 +552,9 @@ def install(project, items, lock, adoptable=None, client_link=None):
                 new_directories.append(path.parent)
             path.parent.mkdir(parents=True, exist_ok=True)
             previous = backup / path.name
+            applied.append((path, previous, stage / str(index)))
             if path.exists():
                 os.replace(path, previous)
-            applied.append((path, previous))
             os.replace(stage / str(index), path)
         if client_link is not None:
             source, target = client_link
@@ -545,22 +562,33 @@ def install(project, items, lock, adoptable=None, client_link=None):
                 if not target.parent.exists():
                     new_directories.append(target.parent)
                 target.parent.mkdir(parents=True, exist_ok=True)
-                target.symlink_to(os.path.relpath(source, target.parent), target_is_directory=True)
                 created_link = target
+                target.symlink_to(os.path.relpath(source, target.parent), target_is_directory=True)
+        updated = {**lock, "skills": dict(lock["skills"])}
         for entry, path, current, wanted in items:
-            lock["skills"][entry["destination"]] = {**entry, "sha256": digest(wanted)}
-        staged_lock = stage / "lock.json"
-        staged_lock.write_text(json.dumps(lock, indent=2) + "\n")
+            updated["skills"][entry["destination"]] = {**entry, "sha256": digest(wanted)}
+        staged_lock.write_text(json.dumps(updated, indent=2) + "\n")
+        if old_lock is not None:
+            os.link(lock_path, stage / "old-lock")
+        swapping_lock = True
         os.replace(staged_lock, lock_path)
-    except Exception:
+        print(f"Installed {len(items)} pinned skills. Project policies remain project-owned.")
+        if changed:
+            print(f"Previous installed copies and lock (if present): {backup}")
+    except BaseException:
+        if swapping_lock and not staged_lock.exists():
+            if old_lock is None:
+                lock_path.unlink()
+            else:
+                os.replace(stage / "old-lock", lock_path)
         if created_link is not None and created_link.is_symlink() and created_link.resolve() == client_link[0].resolve():
             created_link.unlink()
-        for path, previous in reversed(applied):
-            if path.exists():
+        for path, previous, staged in reversed(applied):
+            if not staged.exists() and path.exists():
                 shutil.rmtree(path)
             if previous.exists():
                 os.replace(previous, path)
-        if backup.exists():
+        if backup is not None:
             shutil.rmtree(backup)
         for directory in reversed(new_directories):
             if directory.is_dir() and not any(directory.iterdir()):
@@ -568,9 +596,6 @@ def install(project, items, lock, adoptable=None, client_link=None):
         raise
     finally:
         shutil.rmtree(stage)
-    print(f"Installed {len(items)} pinned skills. Project policies remain project-owned.")
-    if changed:
-        print(f"Previous installed copies and lock (if present): {backup}")
 
 
 def main(argv=None):

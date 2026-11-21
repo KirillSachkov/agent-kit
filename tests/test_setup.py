@@ -1,6 +1,7 @@
 """Exercise full setup through its public entry point, using a local versioned provider."""
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -114,11 +115,76 @@ class SetupTest(unittest.TestCase):
         self.assertIn("Open a draft PR", rejected)
         self.assertIn("after the local evidence", rejected)
         self.assertEqual([p.name for p in self.project.iterdir()], ["AGENTS.md"])
-        self.setup(*self.decisions(resolution="Use local Verify before opening a PR for this workflow."), "--apply")
+        resolution = "Use local Verify before opening a PR for this workflow."
+        args = self.decisions(resolution=resolution, conflict_id=self.conflict_id(rejected))
+        self.setup(*args, "--apply")
+        self.assertIn("No changes.", self.setup(*args))
         self.assertIn("No changes.", self.setup())
         text = (self.project / "AGENTS.md").read_text()
         (self.project / "AGENTS.md").write_text("Repeat verification after every CI fix.\n" + text)
         self.assertIn("Resolve the displayed process conflict", self.setup("--apply", status=1))
+        updated = self.setup(*args, "--apply", status=1)
+        self.assertNotEqual(self.conflict_id(rejected), self.conflict_id(updated))
+        self.setup(*self.decisions(resolution="Keep the original Verify through CI corrections.",
+                                   conflict_id=self.conflict_id(updated)), "--apply")
+        self.assertIn("No changes.", self.setup())
+
+    def conflict_id(self, report):
+        return re.search(r"conflict_id in the decisions JSON: ([0-9a-f]{64})", report)[1]
+
+    def test_nested_policy_sources_negation_and_explicit_overrides(self):
+        rules = self.project / "AGENTS.md"
+        rules.write_text("Follow the [release guide](policy/release.md).\n")
+        policy = self.project / "policy"
+        policy.mkdir()
+        (policy / "release.md").write_text("For delivery, read `gates/acceptance.md`.\n")
+        gates = policy / "gates"
+        gates.mkdir()
+        contract = gates / "acceptance.md"
+        external = self.base / "private.md"
+        external.write_text("UNRELATED PRIVATE DATA")
+        (gates / "linked.md").symlink_to(external)
+        for route, choice, classifier, enabled in (
+                ("Deliver on main only.", "main", "Every delivery requires the owner-attention classifier.", True),
+                ("Keep every change local.", "local", "Owner attention classifier is disabled.", False)):
+            contract.write_text(f"Never open a PR. {route} {classifier}\n"
+                                "Read [release](../release.md) and [external](../../../private.md).\n"
+                                "Read [linked](linked.md).\n")
+            preview = self.setup()
+            self.assertNotIn("UNRELATED PRIVATE DATA", preview)
+            self.assertIn(f"Delivery route: {choice}", preview)
+            self.assertIn("Owner attention classifier: " + ("Enabled" if enabled else "Disabled"), preview)
+            self.assertNotIn("pull_request_template", preview)
+            contrary = self.setup(*self.decisions(delivery="pr", owner_attention=not enabled), "--apply", status=1)
+            self.assertIn("Selected delivery:", contrary)
+            self.assertIn("Selected owner_attention:", contrary)
+            self.assertFalse((self.project / ".agents").exists())
+        contract.write_text("Every delivery requires the owner-attention classifier.\n"
+                            "Its statuses are Owner signoff and No owner attention needed.\n")
+        self.setup("--apply")
+        settings = (self.project / "docs/agents/project-settings.md").read_text()
+        self.assertIn("Enabled. Apply `policy/gates/acceptance.md`", settings)
+        self.assertFalse((self.project / "docs/agents/owner-attention.md").exists())
+        self.assertIn("No changes.", self.setup())
+        contract.write_text("Do not use subagents.\n")
+        report = self.setup("--apply", status=1)
+        self.assertIn("parallel independent Standards and Spec reviewers", report)
+
+    def test_instruction_owner_through_root_alias(self):
+        for canonical, alias in (("AGENTS.md", "CLAUDE.md"), ("CLAUDE.md", "AGENTS.md")):
+            self.project = self.base / canonical.removesuffix(".md")
+            self.project.mkdir()
+            (self.project / canonical).write_text("Project-owned rule.\n")
+            link = self.project / alias
+            link.symlink_to(canonical)
+            args = self.decisions(instruction_owner=alias)
+            self.setup(*args, "--client", "both", "--apply")
+            self.assertTrue(link.is_symlink())
+            self.assertIn("WORKFLOW.md", (self.project / canonical).read_text())
+            lock = json.loads((self.project / ".agents/setup-lock.json").read_text())
+            self.assertEqual(lock["instruction_owner"], canonical)
+            self.assertIn("No changes.", self.setup(*args, "--apply"))
+            self.assertIn("No changes.", self.setup())
 
     def test_preserves_local_edits_and_unmanaged_destinations(self):
         self.setup("--apply")
@@ -189,15 +255,106 @@ class SetupTest(unittest.TestCase):
         self.assertEqual(preview.count("Project workflow difference:"), 2)
         self.assertFalse((self.project / ".agents").exists())
 
-    def test_runtime_failure_restores_existing_documents_and_manifest(self):
+    def test_known_backup_obstacle_blocks_preview_and_apply(self):
         root = self.project / "AGENTS.md"
         root.write_text("Project-owned instructions.\n")
         agents = self.project / ".agents"
         agents.mkdir()
         backup = agents / "skills-backups"
         backup.write_text("owned obstruction")
-        self.setup("--apply", status=1)
+        self.assertIn("Backup destination must be a directory", self.setup(status=1))
+        self.assertIn("Backup destination must be a directory", self.setup("--apply", status=1))
         self.assertEqual(root.read_text(), "Project-owned instructions.\n")
         self.assertEqual({p.name for p in self.project.iterdir()}, {".agents", "AGENTS.md"})
         self.assertEqual(list(agents.iterdir()), [backup])
         self.assertEqual(backup.read_text(), "owned obstruction")
+
+    def test_obstructed_skill_parent_blocks_preview(self):
+        agents = self.project / ".agents"
+        agents.mkdir()
+        (agents / "skills").write_text("Existing file")
+        before = self.snapshot()
+        self.assertIn("must be a directory", self.setup(status=1))
+        self.assertIn("must be a directory", self.setup("--apply", status=1))
+        self.assertEqual(self.snapshot(), before)
+
+    def skill_command(self, *args, status=0):
+        result = subprocess.run([sys.executable, self.provider / "tools/skills.py", *args,
+                                 "--project", self.project], capture_output=True, text=True, env=self.env)
+        self.assertEqual(result.returncode, status, result.stdout + result.stderr)
+        return result.stdout + result.stderr
+
+    def snapshot(self):
+        return {str(path.relative_to(self.project)): path.readlink() if path.is_symlink() else
+                path.read_bytes() if path.is_file() else None for path in self.project.rglob("*")}
+
+    def test_retained_provider_identity_blocks_selection_install_and_setup(self):
+        catalog = self.base / "third-party.json"
+        catalog.write_text(json.dumps({"schema_version": 1, "providers": {"other": {
+            "repository": str(self.provider), "skills_prefix": "skills/engineering"}},
+            "skills": [{"provider": "other", "skill": "probe", "group": "engineering"}]}))
+        self.skill_command("select", "--provider", "other", "--catalog", catalog,
+                          "--ref", self.ref, "--all", "--apply")
+        self.skill_command("install", "--catalog", catalog)
+        manifest = self.project / ".agents/skills-manifest.json"
+        selected = json.loads(manifest.read_bytes())
+        manifest.unlink()
+        before = self.snapshot()
+        self.assertIn("identity conflict", self.setup("--apply", status=1))
+        self.assertIn("identity conflict", self.skill_command("select", "--ref", self.ref,
+                                                              "--all", "--apply", status=1))
+        self.assertEqual(self.snapshot(), before)
+        selected["skills"][0]["provider"] = "agent-kit"
+        manifest.write_text(json.dumps(selected))
+        before = self.snapshot()
+        self.assertIn("identity conflict", self.skill_command("install", status=1))
+        self.assertEqual(self.snapshot(), before)
+
+    def test_full_setup_preserves_individual_features(self):
+        catalog = self.provider / "skills/catalog.json"
+        inventory = json.loads(catalog.read_bytes())
+        inventory["skills"][0]["dependencies"] = [{"skill": "extra", "feature": "extended",
+                                                  "reason": "A conditional practice."}]
+        inventory["skills"].append({"provider": "agent-kit", "skill": "extra", "group": "engineering"})
+        extra = self.provider / "skills/engineering/extra"
+        extra.mkdir()
+        (extra / "SKILL.md").write_text("# Extra\n")
+        catalog.write_text(json.dumps(inventory))
+        self.ref = self.release("Add conditional practice")
+        self.skill_command("select", "--ref", self.ref, "--skill", "probe", "--feature", "extended", "--apply")
+        self.skill_command("install")
+        self.setup("--apply")
+        manifest = json.loads((self.project / ".agents/skills-manifest.json").read_bytes())
+        self.assertEqual(manifest["selection_features"], {".agents/skills/probe": ["extended"]})
+        self.assertIn("No changes.", self.setup())
+
+    def test_installer_failure_restores_setup_and_prior_backups(self):
+        (self.project / "AGENTS.md").write_text("Keep project instructions.\n")
+        self.setup("--apply")
+        (self.provider / "skills/engineering/probe/reference.txt").write_text("v2\n")
+        self.ref = self.release("Update installed skill")
+        before = self.snapshot()
+        for fault in ("before-copy", "after-lock"):
+            script = """
+import os, sys
+from pathlib import Path
+sys.path.insert(0, sys.argv.pop(1))
+import setup
+fault = sys.argv.pop(1)
+replace = os.replace
+def fail(source, destination):
+    source = Path(source)
+    if fault == 'before-copy' and source.parent.name.startswith('.skills-stage-') and source.name == '0':
+        raise OSError('injected write failure')
+    replace(source, destination)
+    if fault == 'after-lock' and source.name == 'lock.json':
+        raise KeyboardInterrupt('injected interrupt')
+os.replace = fail
+sys.exit(setup.main(sys.argv[1:]))
+"""
+            result = subprocess.run([sys.executable, "-c", script, self.provider / "tools", fault,
+                                     "--project", self.project, "--ref", self.ref, "--client", "both",
+                                     "--apply"], capture_output=True, text=True, env=self.env)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("injected", result.stderr)
+            self.assertEqual(self.snapshot(), before)
