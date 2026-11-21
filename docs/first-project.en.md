@@ -28,6 +28,8 @@ The same SHA and decisions produce an empty diff on the second preview. Run `pyt
 
 ## Start work in a fresh session
 
+The table uses Codex commands. In Claude Code, start the message with a slash command such as `/to-tickets <spec>`. You can accept the spec and request the breakdown in that same message.
+
 | What you want | What you say | Where the agent stops |
 | --- | --- | --- |
 | Understand one issue | “Why does #42 lose the discount?” | Reproduction and explanation. |

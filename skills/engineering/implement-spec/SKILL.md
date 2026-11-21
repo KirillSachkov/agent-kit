@@ -5,7 +5,9 @@ description: "Execute an assigned specification and its dependency graph under t
 
 Read root `AGENTS.md` and its requirements, worktree, testing, human-participation,
 tracker and delivery pointers. Satisfy its start rule before writing. Confirm the
-approved spec, its published tickets, criteria, blockers and human checkpoints. If the ticket graph is missing, return the spec reference for the owner to invoke `to-tickets` before implementation. An authorized
+approved spec, its published tickets, criteria, blockers and human checkpoints.
+If the ticket graph is missing, return the spec reference and the project's ticket-planning
+entrypoint. Resume on assignment once the agreed tickets exist. An authorized
 spec run covers its agreed child tasks, not new requirements.
 
 The goal is the assigned spec delivered in the project's selected mode: ticket
@@ -45,8 +47,9 @@ A native subagent is not an independently assigned application session.
      workers update from the integration tip only by the project's permitted procedure.
 5. For tickets submitted together, have a fresh merger integrate their checked changes
    where project rules permit.
-   If the owner requested a stop before review, return the assembled changes, review base and affected test results at that boundary. For a full delivery, follow [Prepare one delivery](../implement/SKILL.md#prepare-one-delivery)
-   on the complete diff. The author commissions one review. For its single correction pass, use a fresh
+   If the owner requested a stop before review, return the assembled changes, review base
+   and affected test results at that boundary. For a full delivery, follow [Prepare one delivery](../implement/SKILL.md#prepare-one-delivery)
+   on the complete diff. For its single correction pass, use a fresh
    implementer in an owned context. Run affected tests and required local Verify,
    then hand the evidence to the delivery owner.
    Integrators and `ship` consume that record. For separate ticket PRs, do this for
