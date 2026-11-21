@@ -16,7 +16,7 @@ Read the target project's configured tracker, artifact paths and role mappings f
 
 2. Sketch out the seams at which you're going to test the feature. Existing seams should be preferred to new ones. Use the highest seam possible. If new seams are needed, propose them at the highest point you can. The fewer seams across the codebase, the better - the ideal number is one.
 
-Reuse the testing seams and decision authority established by the project harness. Ask for confirmation when that contract requires it or a new boundary remains undecided.
+State the task's observable expected outcomes in the spec. Use `testing.md` or the testing contract named by root instructions to determine how the project can demonstrate those outcomes. Reuse its testing seams and decision authority. Ask for confirmation when that contract requires it or a new boundary remains undecided.
 
 3. Write the spec using the template below, then publish it to the project issue tracker. Apply the project-mapped readiness role only when its criteria and required confirmation are satisfied; use its configured status mechanism rather than assuming a literal label.
 

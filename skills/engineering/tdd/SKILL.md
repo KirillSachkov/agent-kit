@@ -7,7 +7,7 @@ description: Test-driven development. Use when the user wants to build features 
 
 TDD is the red → green loop. This skill is the reference that makes that loop produce tests worth keeping: what a good test is, where tests go, the anti-patterns, and the rules of the loop. Every section applies on every cycle: consult them before and during the loop, not after.
 
-Read root `AGENTS.md` and its testing/domain pointers. Use its declared glossary and ADRs so test names and vocabulary match the project. This skill does not rename domain files.
+Read root `AGENTS.md` and its domain pointers. Use `testing.md` or the testing contract it names for accepted boundaries, test data, services and the development command and working directory. Use its declared glossary and ADRs so test names and vocabulary match the project. This skill does not rename domain files.
 
 ## What a good test is
 

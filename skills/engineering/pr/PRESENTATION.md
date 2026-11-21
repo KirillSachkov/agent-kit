@@ -26,10 +26,15 @@ For example, translate labels into the team language:
 
 ```mermaid
 flowchart LR
-    owner[Owner selects implementation] --> agent[Agent changes and verifies]
+    owner[Assigned work] --> agent[Implement and test]
     agent --> review[Independent review]
-    review --> pr[Draft PR and current CI]
-    pr --> acceptance[Owner acceptance]
+    review --> fixes[Address findings]
+    fixes --> verify{Verify required?}
+    verify -->|Yes| local[Check locally]
+    local -->|Pass| pr[Open PR]
+    verify -->|No| pr
+    pr --> ci[Required checks]
+    ci --> acceptance[Project acceptance]
 ```
 
 Use one diagram when it replaces a longer explanation. Prefer familiar shapes and short labels. A diagram shows a process or model; label it as such rather than presenting it as execution evidence.

@@ -1,5 +1,5 @@
 interface:
   display_name: "Ship"
-  short_description: "Deliver reviewed work as a verified PR"
+  short_description: "Deliver reviewed work under project rules"
 policy:
   allow_implicit_invocation: true

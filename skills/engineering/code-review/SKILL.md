@@ -10,8 +10,7 @@ Two-axis review of the diff between an immutable reviewed head and a fixed point
 
 Both axes run as **parallel sub-agents** so they don't pollute each other's context, then this skill aggregates their findings. Start every sub-agent with a fresh context window.
 
-Each invocation runs one review pass and returns its findings for one fix pass by the caller.
-A project may require another `code-review` invocation through its own rule.
+For assigned delivery, run once on the whole change being submitted. Return both reports to the author for a single fix pass. Integration and later CI corrections use the recorded findings and affected tests.
 
 Read target root `AGENTS.md` and its review, testing, tracker and human-participation pointers. The rules may be inline or linked; do not require a particular `docs/agents` layout. A supplied specification can support review without a tracker.
 

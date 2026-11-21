@@ -9,12 +9,16 @@ If the user passes a ticket reference, fetch it from the configured issue tracke
 
 Prepare or reuse the execution context under project instructions. Record starting HEAD and an immutable review base covering the complete assigned change, including earlier commits when resuming.
 
-Use `tdd` where the project's testing rules require it, at its accepted seams. Invoke skills through the current client's mechanism; when unavailable, read the named skill's `SKILL.md` and relevant references and follow them. Run targeted checks during the loop and the project's applicable verification level at the end.
+Before implementation, state the expected observable result from the task or spec. Read `testing.md` or the testing contract named by root instructions for the accepted boundaries, environment, development and delivery commands. Use `tdd` where the project requires it. Invoke skills through the current client's mechanism; when unavailable, read the named skill's `SKILL.md` and relevant references and follow them. Run targeted tests during implementation. Before preparing the diff, pass the project's pre-review checks.
+
+## Prepare one delivery
+
+Review everything submitted together. Several tickets in one PR share this step. For separately delivered PRs, complete this step for each PR. A worker contributing a part returns its changes and test results to the author of the combined delivery.
 
 Follow the project's review/commit order. For commit-first review, commit the assigned changes and pass immutable base/head to `code-review`. For required pre-commit review, freeze scoped content as an immutable Git tree using the project helper or a temporary index; preserve the real index and branch. Pass that snapshot and base to `code-review`, then verify the delivered commit tree matches the frozen final content, recording any review corrections separately. Include the requirement source.
 
-Run `code-review` once, then make one fix pass for blocking defects within the assignment. Optional suggestions may be left with a one-line reason. Rerun affected checks and freeze the corrected content under that same project order; retain the review report and correction evidence for delivery.
+Invoke `code-review` once for the delivery. Its independent Standards and Spec reviewers read the same immutable diff in parallel. Combine their findings into one fix pass, record each disposition, rerun affected tests and freeze the corrected content. Give a reason for any optional suggestion left open.
 
-After corrections, follow [independent verification](VERIFICATION.md) when the target requires it; retain observed outcomes and limits separately from test/review results.
+Before opening the PR or waiting for CI, run [local Verify](VERIFICATION.md) once on the corrected revision if the target requires it. Record the project-based reason when it is inapplicable. A failed or unavailable required criterion keeps delivery open.
 
-Follow root `AGENTS.md` delivery pointers for the verified result.
+Pass the task, review endpoints and both reports, fixes and dispositions, test results, and local Verify verdict, revision, artifacts and limits to `ship` for Kit-managed delivery, or to the handoff named by the project.

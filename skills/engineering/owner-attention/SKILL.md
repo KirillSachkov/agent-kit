@@ -11,8 +11,8 @@ post to a tracker, approve a merge, or take any delivery action.
 ## Inputs
 
 The caller supplies the task or specification and its requested scenarios; original Spec notes;
-review dispositions and changes after the reviewed revision; the final delivered revision,
-verification verdict and limits, unresolved findings, and final check results; and the target's
+review dispositions, local Verify revision, observations and limits, subsequent changes,
+unresolved findings, final candidate revision and check results; and the target's
 status rules and authority. Read the conditions and plan first. Use the full diff only if needed
 to decide a consequence the supplied evidence cannot settle.
 

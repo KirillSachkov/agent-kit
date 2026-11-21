@@ -31,32 +31,33 @@ Other manual skills retain their deliberate manual invocation metadata.
 
 ## Shared invariants
 
-Record immutable review endpoints and preserve complete full-diff review coverage.
-Run one independent Standards/Spec review, then one fix pass for blocking defects;
-optional suggestions may be left with a one-line reason. Rerun affected checks and
-retain correction evidence. Do not send corrections back to reviewers unless the
-target explicitly requires another round. For required pre-commit review, keep the reviewed
-snapshot tree separate from the later delivered commit, record corrections, and
-verify the delivered commit matches the frozen final content. A done status, green
-CI, or an agent's review is not a substitute for project-required human acceptance. Never reset a
-foreign context or clean unintegrated work because a generic example says to do so.
-
-`recap` supplies readable narrative; `pr` owns the final PR description and tracker
-contract; `ship` follows the project's actual delivery mode. A main-checkout flow
-does not acquire a mandatory PR.
+The unit of review is the delivery. One PR containing several tickets gets one
+review of their full diff. Separately delivered PRs each get their own review.
+Both independent reviewers read the same immutable endpoints in parallel. The
+author combines the findings into one fix pass, records dispositions and reruns
+affected tests. For pre-commit review, record the reviewed snapshot separately,
+freeze corrections and confirm that the delivered commit matches the final content.
 
 ## Verification and attention
 
-After review corrections, `implement` routes required independent verification through
-[its portable handoff](../skills/engineering/implement/VERIFICATION.md). `implement-spec` and
-`ship` include their handoff steps locally so independently pinned installations remain complete.
-The target owns applicability, scenarios, verdicts, environment limitations, evidence storage and
-freshness. `ship` can call the optional [owner-attention skill](../skills/engineering/owner-attention/SKILL.md)
-once after review dispositions, required verification and final checks. The target supplies
-consequences, statuses, invalidation and approval scope. No shared status creates merge or
-deployment authority. The [starter](first-project.en.md#set-up-delivery) includes copyable
-conditions, a PR body and an evidence manifest.
-`pr` and `recap` report observed outcomes and limits separately from regression checks.
+After corrections, `implement` runs [local Verify](../skills/engineering/implement/VERIFICATION.md)
+once if the project requires it, before opening a PR. The project decides scenarios,
+environment, evidence storage and verifier independence. A failed or unavailable
+required criterion keeps delivery open. `implement-spec` uses the same
+[delivery steps](../skills/engineering/implement/SKILL.md#prepare-one-delivery)
+on each complete deliverable.
+
+`ship` takes the review reports, fixes, affected tests and local Verify evidence
+from the author. It reuses them in acceptance and, for a PR, its description. CI
+corrections receive affected tests and required CI on the new head. The local
+Verify record stays attached to its original revision. The PR or local record
+shows later changes, the final head and its check results.
+
+After technical checks, `ship` invokes the optional [owner-attention classifier](../skills/engineering/owner-attention/SKILL.md)
+once if configured. Project rules govern owner decisions and delivery authority.
+Confirm the actual delivered revision before completing the task and cleaning
+owned resources. The [starter](first-project.en.md#set-up-delivery) includes
+copyable conditions, a PR body and an evidence manifest.
 
 ## Maintenance
 

@@ -23,7 +23,8 @@ A native subagent is not an independently assigned application session.
 
 ## Steps
 
-1. Read the spec and ticket graph. Resolve dependency and acceptance conditions.
+1. Read the spec and ticket graph. Identify which tickets ship together and which
+   deliver separately, the expected result of each delivery, and its dependency gates.
 2. If exploration is needed, a fresh exploration subagent can write scoped notes
    at the location selected by the target project's exploration and evidence policy,
    accessible to later workers. If placement is unresolved, obtain the missing
@@ -31,7 +32,7 @@ A native subagent is not an independently assigned application session.
    location. Read-only exploration does not start another implementation beyond
    the approved graph.
 3. Prepare the owned execution context under project policy. In integration mode,
-   prepare its branch/worktree and draft at the required point. In ticket-PR mode,
+   prepare its branch/worktree. In ticket-PR mode,
    each ticket follows its own delivery and dependency-merge gates. A main-checkout
    project keeps its prescribed context and serialized writers.
 4. Use a fresh implementer for each ready ticket when native delegation is available.
@@ -42,25 +43,14 @@ A native subagent is not an independently assigned application session.
      accepted testing seams and human checkpoints;
    - returns committed changes, checked revisions, evidence and blockers. Integration
      workers update from the integration tip only by the project's permitted procedure.
-5. In integration mode, integrate child work with a fresh merger under project rules.
-   In ticket-PR mode, deliver each ticket and wait for its required acceptance/merge
-   before unblocking dependents. A worker's done status is not acceptance.
+5. For tickets submitted together, have a fresh merger integrate their checked changes
+   where project rules permit.
+   At the boundary of each delivery, follow [Prepare one delivery](../implement/SKILL.md#prepare-one-delivery)
+   on the complete diff. The assigned author runs review, corrections, affected tests
+   and any required local Verify once, then hands their evidence to the delivery owner.
+   Integrators and `ship` consume that record. For separate ticket PRs, do this for
+   each PR and confirm its required acceptance/merge before unblocking dependents.
 6. Recompute the frontier from proven dependency outcomes and start newly ready work.
    Keep independent authorized work moving while owner decisions are pending.
-7. At required ticket/integration checkpoints, pass checks and follow the project's
-   commit/review order. Supply immutable base/head, or an owned pre-commit tree
-   snapshot when required, and requirements to one `code-review` run. Use one fresh
-   implementer in an owned context for a single fix pass on blocking defects; optional
-   suggestions may be left with a one-line reason. Rerun affected checks and freeze
-   the corrected revision. Retain the full-diff review report and correction evidence.
-   Invoke a named skill through the client's mechanism or read its `SKILL.md` and relevant references; a literal Skill tool is not required.
-8. After corrections, run fresh independent verification where the target requires it. Supply
-   the task's scenarios and expected results, immutable corrected head, original review findings,
-   dispositions and post-review changes. The verifier observes the result through the target's
-   user/public interface and returns inspected artifacts, expected/observed outcomes and limits.
-   Apply target freshness and independent red-proof rules; unavailable coverage is not a pass.
-   Keep required scenarios unmet until evidenced. Technical fixes receive affected checks and
-   verification without another review round unless the target requires it.
-   Follow root delivery pointers for the verified result, reusing existing drafts.
-9. Clean only owned, integrated child resources with no active writer or unsaved work.
+7. Clean only owned, integrated child resources with no active writer or unsaved work.
    Follow project rules for retained acceptance trees and unintegrated results.

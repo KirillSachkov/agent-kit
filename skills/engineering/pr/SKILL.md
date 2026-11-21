@@ -9,7 +9,7 @@ metadata:
     url: "https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md"
 ---
 
-Write a report the owner can understand without reading the conversation or every changed line. Root `AGENTS.md` owns audience language, including headings. Preserve technical syntax and the project's declared domain vocabulary. `ship` owns delivery; this skill owns the PR description and its project-specific contract. `recap` may supply readable narrative, but does not independently create or edit the PR.
+Write a report the owner can understand without reading the conversation or every changed line. Root `AGENTS.md` owns audience language, including headings. Preserve technical syntax and the project's declared domain vocabulary. `ship` owns delivery; this skill owns the PR description and its project-specific contract.
 
 ## Build the explanation
 
@@ -38,7 +38,10 @@ Scale this shape to the change. Translate its headings into the team language. O
 <details>
 <summary>Verification details</summary>
 
-Checked head: <commit permalink>. Review base: <full SHA>.
+Review: <immutable base and reviewed endpoint>.
+Local Verify: <revision and verdict or project reason it was inapplicable>.
+Changes since Verify: <later edits, affected tests and revisions, if any>.
+Delivery candidate: <final head and required CI run/result or project-local checks>.
 
 | Check | Result | What it confirms |
 | --- | --- | --- |
