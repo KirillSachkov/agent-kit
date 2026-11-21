@@ -56,7 +56,7 @@ shows later changes, the final head and its check results.
 After technical checks, `ship` invokes the optional [owner-attention classifier](../skills/engineering/owner-attention/SKILL.md)
 once if configured. Project rules govern owner decisions and delivery authority.
 Confirm the actual delivered revision before completing the task and cleaning
-owned resources. The [starter](first-project.en.md#set-up-delivery) includes
+owned resources. The [starter](first-project.en.md) includes
 copyable conditions, a PR body and an evidence manifest.
 
 ## Maintenance

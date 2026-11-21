@@ -2,93 +2,45 @@
 
 [Русский](first-project.ru.md)
 
-This walkthrough uses a new or existing Git repository. Git and Python 3.11 or newer are required.
-The [starter instructions](../templates/project/AGENTS.md) are designed to live in that repository.
-If it already has `AGENTS.md`, compare the two and keep the project's established decisions.
+Use an empty local Git repository for the first trial. Setup succeeds when a fresh session can explain the first task and the point where the owner decides. Have Git, Python 3.11+ and a Kit checkout available.
 
-## Install the workflow
+## Set up the project
 
-Run the commands from the Agent Kit checkout. Set `project` to the absolute path of the target
-repository and `kit_ref` to the full SHA you reviewed. In a new repository with no instructions,
-copy the starter from that revision. Fill in its project decisions before assigning work.
+From the Kit checkout, choose an existing project directory and an immutable revision:
 
 ```bash
 project=/absolute/path/to/project
-kit_ref=FULL_COMMIT_SHA
-git show "$kit_ref:templates/project/AGENTS.md"
-# After checking the output, for a project without AGENTS.md:
-starter=$(git show "$kit_ref:templates/project/AGENTS.md") &&
-  (set -C; printf '%s\n' "$starter" > "$project/AGENTS.md")
+kit_ref=$(git rev-parse HEAD)
+python3 tools/setup.py --project "$project" --ref "$kit_ref"
 ```
 
-Choose the skill set, preview the proposed changes, then install and check the complete folders.
-The same installed files are available to Codex and Claude Code with `--client both`.
+Inspect the proposed settings, skills and diff. Full setup includes all skills released at that revision. The task activates each practice: a question can end with an answer, while a large delivery can use `to-spec`, `to-tickets` and `implement-spec`. Project policy determines when to apply TDD, local Verify or an owner decision.
+
+For an existing project, inspect the sources of instructions, tracker, tests, CI and delivery rules. Reconcile material differences before applying. For example, a project requiring another Verify after CI selects a different workflow. Local checks can cover a project with no external CI.
 
 ```bash
-python3 tools/skills.py select --project "$project" --ref "$kit_ref" --client both \
-  --skill implement --skill implement-spec --skill code-review --skill tdd \
-  --skill ship --skill pr --skill recap --skill diagnosing-bugs \
-  --skill to-spec --skill to-tickets --apply &&
-  python3 tools/skills.py preview --project "$project"
+python3 tools/setup.py --project "$project" --ref "$kit_ref" --apply
+python3 tools/skills.py check --project "$project"
+python3 tools/setup.py --project "$project" --ref "$kit_ref"
 ```
 
-After a successful preview, review the changes before proceeding.
+The same SHA and decisions produce an empty diff on the second preview. Run `python3 tools/setup.py --help` for settings. To take just one skill, use [selection with dependencies](distribution.md).
 
-```bash
-python3 tools/skills.py install --project "$project" &&
-  python3 tools/skills.py check --project "$project"
+## Existing project decisions
+
+Pass `--decisions /path/to/decisions.json` to preview and apply. For example, a project using PRs with its own testing guide can select:
+
+```json
+{"language": "en", "delivery": "pr", "testing_file": "docs/TESTING.md"}
 ```
 
-See [pinned distribution](distribution.md) for updates and existing skill folders.
+The testing file must already exist at that project-relative path. Inspect the final diff and any access, start or acceptance decisions that setup reports. Project authority controls merge and publication.
 
-## Set up delivery
+## What the agent reads
 
-- For GitHub PRs, copy the [PR template](../templates/project/.github/pull_request_template.md)
-  to `.github/pull_request_template.md` in the target and point `AGENTS.md` to it. Compare with
-  any existing PR template before changing it.
-- To enable classification, add `--skill owner-attention` to the selection above. Copy the
-  [conditions](../templates/project/docs/agents/owner-attention.md) into the target and set the
-  **Owner attention** decision in `AGENTS.md` to the conditions path and `owner-attention`.
-  Agree on the conditions and authority before using them. `ship` runs a fresh, read-only
-  classifier once on the finished delivery after review, required verification, and checks.
-- Start each verification record with the [manifest template](../templates/project/evidence-manifest.json)
-  in the evidence location declared by the target. Record the verified commit or tree SHA. Give each
-  scenario its expected and observed outcome and mark it `pass`, `fail` or `not_exercised`.
-  For each artifact fill in `kind`, `file` (relative to the manifest), `source` and `caption`.
-  Add `url` only after publishing it under the target's rules.
+- Root instructions identify start authority, checkout, delivery mode and owner decisions. The [two workflow maps](../templates/project/WORKFLOW.md) show the branches.
+- The spec describes the expected outcome. The project's `testing.md` or existing equivalent names boundaries, commands, data and environment. A discovered command and a successful run have distinct statuses. A separate skill for choosing and configuring test types, static analysis and CI is **in development**.
+- One PR or local delivery gets one `code-review` call. Parallel Standards and Spec reviews feed one correction pass, affected tests and, if required, local Verify. A product failure or unavailable environment leaves a required criterion open.
+- When local Verify passed on A and CI needs a fix on B, retain the observation on A, later edits, affected tests and CI on B. An enabled classifier runs once to identify the owner decision. The agent confirms the actual revision after authorized delivery.
 
-Use a screenshot for a visible state, a short recording for an interaction, and a table for data
-or access. Open the files before attaching them and confirm what they show and which data they
-use. Use synthetic data for files published publicly. Keep private evidence in the project's
-chosen store and use links the intended readers can open. Show each scenario and any important
-limit in the body of the PR. Keep technical details in its disclosure.
-
-## Run the first task
-
-Pick a small change with a result you can see through the project's regular entry point. A fictional
-example is a local status command that should report a missing input file with exit status 2 and a
-specific message. Write the expected behavior before implementation.
-
-| Step | What to keep |
-| --- | --- |
-| Assign and start | Task, acceptance scenario, exact base, assigned checkout or worktree |
-| Change and review | Test result, reviewed revision, independent Standards and Spec findings, corrections |
-| Verify the result | Corrected revision, expected and observed behavior, evidence and any limits |
-| Deliver | Delivered revision, check results, decision requested from the owner if needed, actual merged revision when applicable |
-| Retire | Evidence location, integrated or recoverable task revision, exact resources removed or retained |
-
-For the verification row, have a fresh verifier who did not implement the change run the regular
-command at the corrected revision and capture its exit status and output. Follow the installed
-`implement/VERIFICATION.md`. For a bug fix, retain the failure on the old revision and the
-pass on the corrected one. If a check requires an unavailable account, browser, or service, keep
-that scenario open in the report.
-
-One test in the library provisions a disposable Git repository, installs the pinned workflow, runs
-a local task from a worktree, and verifies its result after integration and retirement:
-
-```bash
-python3 -m unittest discover -s tests -p test_project_starter.py
-```
-
-That test uses local Git and command output. To exercise real CI, agent review, or owner approval,
-run the first task under the target project's configured workflow and record those outcomes.
+Open a fresh project session and ask: “The command should explain why an input file is missing. Which files tell you when to start, how to check that behavior and when you need me?” The first trial is complete when the agent can point to the answers and repeating setup gives an empty diff.
