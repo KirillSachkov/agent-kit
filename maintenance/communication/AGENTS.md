@@ -14,7 +14,6 @@ Session mode: main
 
 - A skill stays thin: steps, one format reference, good examples. Edit a skill by the principles of [writing-for-agents](https://github.com/mattpocock/skills/tree/main/skills/productivity/writing-for-agents).
 - Add a rule only after a real failure, and first check which existing rule it replaces.
-- Pages use the host's theme. `recap` pages load Mermaid from cdn.jsdelivr.net.
 
 ## Checks
 

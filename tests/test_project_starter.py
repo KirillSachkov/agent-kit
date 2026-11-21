@@ -10,7 +10,7 @@ import unittest
 
 KIT = Path(__file__).resolve().parents[1]
 SKILLS = (
-    "implement", "implement-spec", "code-review", "tdd", "ship", "pr", "recap",
+    "implement", "implement-spec", "code-review", "tdd", "ship", "pr",
     "diagnosing-bugs", "to-spec", "to-tickets",
 )
 

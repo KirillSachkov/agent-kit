@@ -41,3 +41,7 @@ Checks cover structure, source identities, complete folders and installer behavi
 ## Removal of explain, 2026-11-15
 
 The owner requested removal of `explain` everywhere. Its canonical folder, catalog entry, build tests and active documentation pointers were removed. Historical Git objects and provenance remain intact; the three other communication skills are unchanged.
+
+## Retirement of communication skills
+
+The release implementing specification #7 drops `recap`, `plain-writing` and `setup-plain-writing` from new selections at that revision. Consumers keep installed folders, local instructions and configuration. Use a historical SHA to reproduce a historical catalog. The original notices and Git histories remain available.

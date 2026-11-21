@@ -22,7 +22,7 @@ README, process, scope, upstream maintenance and experiment guides have equal En
 1. Discuss the desired result and prepare an issue. Use a full spec only when complexity warrants it.
 2. Explicitly select `implement` for a bounded task or `implement-spec` for a spec and its tickets.
 3. Work in a dedicated worktree. Run applicable checks and one independent Standards/Spec review.
-4. Make one fix pass for blocking defects and rerun affected checks.
+4. Make one fix pass for blocking defects and rerun affected checks. Run required local Verify on the corrected revision.
 5. Use `ship` to prepare a PR, wait for current CI and hand the result to the owner.
 6. The owner accepts the result and separately authorizes merge of the checked head, in the PR or in a message.
 

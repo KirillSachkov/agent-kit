@@ -45,6 +45,5 @@ context. A dependency/setup failure is unavailable evidence, not red proof.
 Record base and corrected head, expected/observed outcomes, artifacts, data source and remaining
 notes. A missing environment precondition is reported separately from a product failure. An
 explicitly required scenario that cannot run remains an unmet delivery criterion. Never claim
-coverage from another scenario. Later task edits need renewed verification of affected outcomes;
-record untouched coverage and the new checked head. No additional code-review round is implied.
+coverage from another scenario. For later CI fixes, record the changes since local Verify, rerun affected tests and record CI at the final head.
 See the [synthetic acceptance exercise](../acceptance-exercise.md) for this harness.

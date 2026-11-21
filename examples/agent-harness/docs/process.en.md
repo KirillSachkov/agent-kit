@@ -6,17 +6,7 @@ This human guide explains the agent rules; it adds no authority.
 Issue means a tracked task. Spec means an agreed change description with scenarios and acceptance criteria.
 Worktree means a separate working copy with its own branch. CI means automated repository checks.
 
-```mermaid
-flowchart TD
-    A["Owner and agent agree the issue"] --> B["Owner selects implement or implement-spec"]
-    B --> C["Agent checks for other work on the issue and works in a dedicated worktree linked to it"]
-    C --> D["Checks, commit and independent review"]
-    D --> E["One fix pass and affected checks"]
-    E --> F["ship: PR, current CI, full SHA of the last PR commit"]
-    F --> G["Owner accepts the result"]
-    G --> H["Owner approves merge in the PR or a message"]
-    H --> I["Owner merges, or the agent records the approval and merges that commit"]
-```
+Read the [two workflow maps](../../../templates/project/WORKFLOW.md). This example chooses a named start, task worktrees, an independent local verifier for required scenarios, PR delivery with CI, and owner approval of the final head. Classification is disabled.
 
 ## Choose the route
 
@@ -71,7 +61,7 @@ The main session treats tickets as a dependency graph.
 Ready independent tickets run in their own worker worktrees.
 Merges to the integration branch happen serially.
 Workers use `tdd`; the aggregate integration result receives `code-review`.
-A spec opens a draft PR after its first integrated result and reuses it.
+A spec opens its delivery PR after local Verify of the integrated result, when required.
 One final PR may close the spec and several tickets.
 
 ## Human participation
@@ -90,7 +80,7 @@ Every PR still receives final owner acceptance even when no extra manual test is
 
 `ship` pushes the reviewed branch and uses `pr` for its description.
 It creates or updates a draft, waits for current CI and hands the result to the owner.
-Small tasks open drafts after local checks and review; specs reuse their earlier draft.
+The PR records the locally verified revision and the final CI revision separately.
 CI fixes stay within the assignment and receive affected checks and recorded correction evidence.
 Acceptance and merge approval are separate.
 The owner may approve in the PR or in a message; the agent records the source and full SHA.

@@ -8,11 +8,11 @@ Run from this library's checkout with a known full commit SHA:
 
 ```bash
 python3 tools/skills.py list
-python3 tools/skills.py select --project /path/to/project --ref FULL_COMMIT_SHA --skill tdd --skill recap --client both
-python3 tools/skills.py select --project /path/to/project --ref FULL_COMMIT_SHA --skill tdd --skill recap --client both --apply
+python3 tools/skills.py select --project /path/to/project --ref FULL_COMMIT_SHA --skill implement --feature tdd --client both
+python3 tools/skills.py select --project /path/to/project --ref FULL_COMMIT_SHA --skill implement --feature tdd --client both --apply
 ```
 
-Selection records `.agents/skills-manifest.json`. There is no implicit entire-library selection. `--client both` uses the project's canonical `.agents/skills` index and a Claude alias; conflicting client folders are preserved and stop the change.
+Selection records `.agents/skills-manifest.json`. Use `select --all` for every released skill at the pin. Select a feature with `--feature` to include its conditional dependencies. Required dependencies are included automatically. References remain informational. For project instructions, templates and the complete skill installation together, use the [setup command](first-project.en.md). `--client both` uses the project's canonical `.agents/skills` index and a Claude alias; conflicting client folders are preserved and stop the change.
 
 ```json
 {

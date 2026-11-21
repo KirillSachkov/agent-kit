@@ -2,59 +2,33 @@
 
 [English](README.en.md)
 
-Общая библиотека скиллов для Claude Code, Codex и других агентов, которые читают `SKILL.md`.
-Здесь находятся инженерные процедуры, скиллы для объяснений и отчётов, пример проектного harness и установщик выбранных версий.
+Agent Kit переносит рабочий процесс разработки в новый или существующий проект. Можно настроить весь набор практик или взять один скилл с его зависимостями. Когда агент вправе начать, какие проверки нужны и кто принимает результат, решает проект.
 
-## Что где лежит
+## Первая установка
 
-| Раздел | Что содержит |
-| --- | --- |
-| [skills/engineering](skills/README.md#engineering) | 29 скиллов для обсуждения, проектирования, реализации, проверки и доставки |
-| [skills/communication](skills/README.md#communication) | Отчёты о работе |
-| [examples/agent-harness](examples/agent-harness/AGENTS.md) | Пример самостоятельных правил проекта: запуск работ, worktrees, проверки и приёмка владельцем |
-| [tools/skills.py](tools/skills.py) | Выбор версии, просмотр diff, установка, проверка и принятие точных существующих копий под управление |
-| [provenance](provenance/sources.json) | История источников, лицензии и замороженный upstream для сравнения |
-
-Скилл определяет процедуру. Проект сохраняет собственные команды, правила доступа, проверки и merge/deploy gates. Для рабочего проекта выбирай нужный набор, а не весь каталог.
-
-## Установка в проект
-
-[Первый проект с Agent Kit](docs/first-project.ru.md) даёт стартовый `AGENTS.md`, набор скиллов
-и практический маршрут от задачи до приёмки и уборки.
-
-Нужны Git и Python 3.11 или новее. Сначала клонируй библиотеку и выбери её проверенный commit:
+Из рабочей копии Kit подставь путь к проекту и выбери полный SHA. Первая команда показывает состав и diff. Вторая применяет выбранный вариант.
 
 ```bash
-git clone https://github.com/KirillSachkov/agent-kit.git
-cd agent-kit
-git rev-parse HEAD
+kit_ref=$(git rev-parse HEAD)
+python3 tools/setup.py --project /path/to/project --ref "$kit_ref"
+python3 tools/setup.py --project /path/to/project --ref "$kit_ref" --apply
 ```
 
-Подставь полученный полный SHA и путь проекта:
+После установки новая сессия может прочитать инструкции проекта и объяснить, как взять первую задачу и где нужно решение владельца. Требуются Git и Python 3.11+. [Первый проект](docs/first-project.ru.md) · [Две схемы рабочего цикла](templates/project/WORKFLOW.md)
+
+## Выбрать отдельный скилл
 
 ```bash
-python3 tools/skills.py select --project /path/to/project --ref FULL_COMMIT_SHA --skill tdd --skill recap --client both --apply
+python3 tools/skills.py select --project /path/to/project --ref "$kit_ref" --skill implement --apply
 python3 tools/skills.py preview --project /path/to/project
 python3 tools/skills.py install --project /path/to/project
 python3 tools/skills.py check --project /path/to/project
 ```
 
-`select` без `--apply` показывает план. Существующие неуправляемые папки установщик сохраняет. Для точных копий есть отдельный `adopt`; изменённые версии сначала нужно сравнить и согласовать у владельца проекта. [Формат manifest и обновление](docs/distribution.md).
+Выбор показывает причину каждой зависимости. Например, `implement` включает `code-review`, а `grilling` можно поставить самостоятельно. [Каталог](skills/README.md) · [Версии, обновления и существующие копии](docs/distribution.md)
 
-## Происхождение и эксперименты
+## Как устроен Kit
 
-Agent Kit объединяет публичные Agent Harness и Agent Clarity с сохранением обеих историй Git. Старые source commits и отдельные draft/research-ветки доступны под `history/agent-harness/*` и `history/agent-clarity/*`. [Перенос и границы](docs/migration.md).
-
-Инженерная библиотека содержит адаптации скиллов Matt Pocock. Атрибуция и полные MIT notices сохранены в [NOTICE](NOTICE) и `provenance/engineering/`. [Обновление upstream](docs/upstream.ru.md).
-
-Образец инженерных процедур теперь AI-first Platform. Общие скиллы читают правила целевого harness; старт, тестирование и доставка не унифицируются поверх проекта. [Граница процедур и политики](docs/engineering-contract.md).
-
-## Проверки
-
-```bash
-python3 scripts/check.py
-```
-
-Проверки используют синтетические проекты. Они не авторизуют сервисы и не подтверждают правильность результата, который агент получит при исполнении скилла в другом проекте.
-
-Правила проекта определяют роли трекера, размещение прототипов (включая Storybook), хранение отклонённых запросов и результатов проверок. Setup следует принятому владельцу инструкций; переходы между контекстами учитывают текущий клиент.
+- [Инженерные скиллы](skills/README.md) задают процедуры. [Пример проектного харнеса](examples/agent-harness/README.ru.md) показывает вариант с рабочими деревьями, PR и одобрением конкретного коммита.
+- [Происхождение](docs/migration.md) описывает сохранённые истории Agent Harness и Agent Clarity. Для скиллов Matt Pocock сохранены лицензии, исходная ревизия и механизм сравнения адаптаций. [Обновление upstream](docs/upstream.ru.md)
+- Команда `python3 scripts/check.py` проверяет каталог, целостность источников и поведение инструментов на временных проектах.

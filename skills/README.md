@@ -2,7 +2,7 @@
 
 [Main entry](../README.en.md) · [Distribution](../docs/distribution.md)
 
-One editable source folder per skill. Supporting files stay inside that folder. Select the subset a project needs.
+One editable source folder per skill. Supporting files stay inside that folder. Full setup offers every released skill. A project can also select one procedure and its dependencies.
 
 ## Engineering
 
@@ -38,17 +38,14 @@ One editable source folder per skill. Supporting files stay inside that folder. 
 | [wizard](engineering/wizard/SKILL.md) | Available for explicit selection |
 | [writing-for-agents](engineering/writing-for-agents/SKILL.md) | Available for explicit selection |
 
-## Communication
-
-| Skill | Status |
-| --- | --- |
-| [recap](communication/recap/SKILL.md) | Available for explicit selection |
-
 ## Find a procedure
 
 - Clarify and plan: `ask`, `grill-me`, `grill-with-docs`, `domain-modeling`, `to-spec`, `to-tickets`.
 - Build and diagnose: `implement`, `implement-spec`, `tdd`, `diagnosing-bugs`, `prototype`.
 - Review and deliver: `code-review`, `pr`, `ship`, `owner-attention`, `retro`.
-- Summarize finished work: `recap`.
 
 Read the selected SKILL.md before recommending or running its procedure. Invocation metadata and project policy determine when it can run.
+
+## In development
+
+Project-wide selection and setup of test types, static analysis and CI is in development. Today's setup records the project's existing checks. A separate proposal tracks [generating project Verify instructions](https://github.com/KirillSachkov/agent-kit/issues/6).

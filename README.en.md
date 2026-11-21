@@ -2,59 +2,33 @@
 
 [Русский](README.md)
 
-A shared skill library for Claude Code, Codex and other agents that read `SKILL.md`.
-It contains engineering procedures, communication skills, a project harness example and a pinned-version installer.
+Agent Kit brings a development workflow to a new or existing project. Set up the complete set of practices or select one skill with its dependencies. Each project owns its start rules, checks and acceptance authority.
 
-## Layout
+## First installation
 
-| Area | Contents |
-| --- | --- |
-| [skills/engineering](skills/README.md#engineering) | 29 skills for discussion, design, implementation, review and delivery |
-| [skills/communication](skills/README.md#communication) | Recaps of finished work |
-| [examples/agent-harness](examples/agent-harness/AGENTS.md) | Example project policy: starts, worktrees, checks and owner acceptance |
-| [tools/skills.py](tools/skills.py) | Version selection, diff preview, installation, verification and explicit exact-copy adoption |
-| [provenance](provenance/sources.json) | Source history, licenses and frozen upstream comparison input |
-
-A skill defines a procedure. Each target project keeps its commands, permissions, checks and merge/deploy gates. Select the skills the project needs rather than installing the entire catalog.
-
-## Install into a project
-
-[Start a project with Agent Kit](docs/first-project.en.md) provides starter instructions, a skill
-selection, and a walkthrough from assignment through acceptance and cleanup.
-
-Git and Python 3.11 or later are required. Clone the library and select its verified commit:
+From the Kit checkout, substitute your project path and select a full commit SHA. The first command previews the composition and diff. The second applies that selection.
 
 ```bash
-git clone https://github.com/KirillSachkov/agent-kit.git
-cd agent-kit
-git rev-parse HEAD
+kit_ref=$(git rev-parse HEAD)
+python3 tools/setup.py --project /path/to/project --ref "$kit_ref"
+python3 tools/setup.py --project /path/to/project --ref "$kit_ref" --apply
 ```
 
-Substitute that full SHA and the target project path:
+After setup, a fresh agent can read the project instructions and explain how to take the first task through the owner's decision. Requires Git and Python 3.11+. [Start a project](docs/first-project.en.md) · [Workflow diagrams](templates/project/WORKFLOW.md)
+
+## Select one skill
 
 ```bash
-python3 tools/skills.py select --project /path/to/project --ref FULL_COMMIT_SHA --skill tdd --skill recap --client both --apply
+python3 tools/skills.py select --project /path/to/project --ref "$kit_ref" --skill implement --apply
 python3 tools/skills.py preview --project /path/to/project
 python3 tools/skills.py install --project /path/to/project
 python3 tools/skills.py check --project /path/to/project
 ```
 
-Without `--apply`, `select` previews its plan. Existing unmanaged folders are preserved. Use explicit `adopt` for exact copies; compare and reconcile adapted versions under their owning project's authority first. See [manifests and updates](docs/distribution.md).
+Selection shows why each dependency is included. For example, `implement` includes `code-review`, and `grilling` works on its own. [Skill catalog](skills/README.md) · [Versions, updates and existing copies](docs/distribution.md)
 
-## Sources and experiments
+## Inside the Kit
 
-Agent Kit combines the public Agent Harness and Agent Clarity libraries while retaining both Git histories. Original commits and separate draft/research branches remain under `history/agent-harness/*` and `history/agent-clarity/*`. See [migration and boundaries](docs/migration.md).
-
-Engineering skills include adaptations of Matt Pocock's work. Attribution and complete MIT notices remain in [NOTICE](NOTICE) and `provenance/engineering/`. See [upstream maintenance](docs/upstream.md).
-
-## Checks
-
-```bash
-python3 scripts/check.py
-```
-
-Checks use synthetic projects. They do not authorize services or establish the correctness of an agent's eventual work in another project.
-
-The engineering reference is AI-first Platform. Shared procedures resolve start, testing and delivery from the target harness. See the [portable contract](docs/engineering-contract.md) and [reviewed three-way upstream updates](docs/upstream.md).
-
-Workflow maintenance keeps tracker roles, prototype placement (including Storybook), rejected-request storage and evidence paths under the target project. Setup follows its canonical instruction owner; context boundaries follow the configured client.
+- [Engineering skills](skills/README.md) supply procedures. The [example project harness](examples/agent-harness/README.en.md) shows a project using worktrees, pull requests and owner approval of a specific commit.
+- The [migration record](docs/migration.md) covers the preserved Agent Harness and Agent Clarity histories. Matt Pocock's skills retain their licenses, frozen source revision and adaptation diff. [Upstream maintenance](docs/upstream.md)
+- Run `python3 scripts/check.py` to check the catalog, source integrity and tool behavior on disposable projects.

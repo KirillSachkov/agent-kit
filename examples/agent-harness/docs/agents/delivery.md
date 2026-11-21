@@ -9,9 +9,7 @@ The testing guide owns verification commands; the tracker guide owns GitHub oper
 Independent work targets `main`; a spec uses an integration branch for its tickets.
 Each implementation issue links to a PR. One integration PR may close several tickets.
 A discussion or research issue without repository changes may resolve with an answer.
-For a small task, the draft follows local checks and committed independent review.
-A spec's draft follows its first integrated result.
-A ready PR requires checks and review covering the current change.
+Open the delivery PR after local review, corrections, affected tests and required Verify on the combined result. Keep the original review and Verify revisions in the PR alongside subsequent CI fixes and final checks.
 Keep issues open until delivery criteria are met, normally by merge.
 
 ## Verification evidence
