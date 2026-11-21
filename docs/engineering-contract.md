@@ -27,7 +27,7 @@ loading mechanism, not the target project's permission to start or delegate.
 
 `implement` and `implement-spec` are discoverable in both clients. Their availability
 does not grant execution: a harness may still require the owner to name an entrypoint.
-Other manual skills retain their deliberate manual invocation metadata.
+`grill-me`, `to-spec` and `to-tickets` retain their human-only invocation metadata. The [starter workflow](../templates/project/WORKFLOW.md) hands an accepted spec back for ticketing. A separate implementation assignment consumes the approved, published graph.
 
 ## Shared invariants
 

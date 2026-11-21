@@ -60,6 +60,13 @@ class ProjectStarterTest(unittest.TestCase):
                 self.git(KIT, "show", f"{ref}:skills/engineering/implement/VERIFICATION.md") + "\n",
             )
 
+            for skill in ("grill-me", "to-spec", "to-tickets"):
+                installed = project / ".agents/skills" / skill
+                frontmatter = (installed / "SKILL.md").read_text().split("---", 2)[1]
+                self.assertIn("disable-model-invocation: true", frontmatter.splitlines())
+                policy = (installed / "agents/openai.yaml").read_text().splitlines()
+                self.assertIn("  allow_implicit_invocation: false", policy)
+
             (project / "status.py").write_text('print("ready")\n', encoding="utf-8")
             (project / "input.txt").write_text("fixture\n", encoding="utf-8")
             self.git(project, "add", ".")

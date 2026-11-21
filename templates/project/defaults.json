@@ -1,7 +1,7 @@
 {
   "language": "Use the language of the assignment.",
-  "tracker": "Use the written local task or an issue explicitly assigned by the owner.",
-  "start": "Start an assigned change when its expected result and scope are clear.",
+  "tracker": "Use the assigned issue or local task. For local specifications use docs/tasks/<slug>/spec.md and one numbered file per ticket under its tickets/ directory.",
+  "start": "Start implementation on an explicit assignment to implement a task or a ticketed spec. A named implementation skill or an unambiguous request in chat qualifies.",
   "worktree": "Use the assigned idle checkout. Preserve other writers and record the review base.",
   "access": "Use local synthetic data. Confirm required external services, credentials and access with the project.",
   "tdd": "Use for changes with an observable failing test at an established boundary.",

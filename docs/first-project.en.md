@@ -26,6 +26,18 @@ python3 tools/setup.py --project "$project" --ref "$kit_ref"
 
 The same SHA and decisions produce an empty diff on the second preview. Run `python3 tools/setup.py --help` for settings. To take just one skill, use [selection with dependencies](distribution.md).
 
+## Start work in a fresh session
+
+| What you want | What you say | Where the agent stops |
+| --- | --- | --- |
+| Understand one issue | “Why does #42 lose the discount?” | Reproduction and explanation. |
+| Prepare a spec | `$grill-me` to discuss the idea, then `$to-spec` to save the decision | A link to the saved spec. |
+| Accept and split the spec | “I accept the spec. `$to-tickets <spec>`” | Proposed tickets with their dependencies. Approve the breakdown to save them. |
+| Execute the agreed graph | `$implement-spec <spec>` | The project's delivery endpoint. Add “stop before review” for just the tested change. |
+| Implement one assigned issue | “Implement #42” or `$implement <issue>` | The assigned endpoint. A standalone issue can go straight to implementation. |
+
+After a plain “I accept the spec”, the next command is `$to-tickets`. After ticket publication, start implementation separately. To require a named start for implementation too, set `start` in the setup decisions to “Only begin when the owner explicitly invokes implement or implement-spec for the assigned work.”
+
 ## Existing project decisions
 
 Pass `--decisions /path/to/decisions.json` to preview and apply. For example, a project using PRs with its own testing guide can select:
