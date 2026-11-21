@@ -35,8 +35,7 @@
         "wait-what": "skills/engineering/wait-what",
         "wayfinder": "skills/engineering/wayfinder",
         "wizard": "skills/engineering/wizard",
-        "writing-for-agents": "skills/engineering/writing-for-agents",
-        "recap": "skills/communication/recap"
+        "writing-for-agents": "skills/engineering/writing-for-agents"
       },
       "notices": {
         "LICENSE": {
@@ -51,7 +50,8 @@
         "LICENSE.humanlayer": {
           "source_path": "provenance/engineering/LICENSE.humanlayer"
         }
-      }
+      },
+      "catalog_path": "skills/catalog.json"
     }
   },
   "skills": [
@@ -95,14 +95,30 @@
       "skill": "grill-me",
       "group": "engineering",
       "source": "engineering/grill-me",
-      "internal": false
+      "internal": false,
+      "dependencies": [
+        {
+          "skill": "grilling",
+          "reason": "Conduct the decision interview."
+        }
+      ]
     },
     {
       "provider": "agent-kit",
       "skill": "grill-with-docs",
       "group": "engineering",
       "source": "engineering/grill-with-docs",
-      "internal": false
+      "internal": false,
+      "dependencies": [
+        {
+          "skill": "grilling",
+          "reason": "Conduct the decision interview."
+        },
+        {
+          "skill": "domain-modeling",
+          "reason": "Record domain terms and architecture decisions during the interview."
+        }
+      ]
     },
     {
       "provider": "agent-kit",
@@ -123,21 +139,57 @@
       "skill": "implement",
       "group": "engineering",
       "source": "engineering/implement",
-      "internal": false
+      "internal": false,
+      "dependencies": [
+        {
+          "skill": "code-review",
+          "reason": "Review the delivery against coding standards and its requirements."
+        },
+        {
+          "skill": "tdd",
+          "reason": "Drive implementation through the project-selected test seams.",
+          "feature": "tdd"
+        },
+        {
+          "skill": "ship",
+          "reason": "Deliver the reviewed change using the Kit delivery procedure.",
+          "feature": "delivery"
+        }
+      ]
     },
     {
       "provider": "agent-kit",
       "skill": "implement-spec",
       "group": "engineering",
       "source": "engineering/implement-spec",
-      "internal": false
+      "internal": false,
+      "dependencies": [
+        {
+          "skill": "implement",
+          "reason": "Apply the implementation and verification procedure to each delivery."
+        }
+      ]
     },
     {
       "provider": "agent-kit",
       "skill": "improve-codebase-architecture",
       "group": "engineering",
       "source": "engineering/improve-codebase-architecture",
-      "internal": false
+      "internal": false,
+      "dependencies": [
+        {
+          "skill": "codebase-design",
+          "reason": "Apply the module-depth vocabulary and design principles."
+        },
+        {
+          "skill": "grilling",
+          "reason": "Walk the design decisions for the selected candidate."
+        },
+        {
+          "skill": "domain-modeling",
+          "reason": "Capture terminology and decisions for the selected candidate."
+        }
+      ]
     },
     {
       "provider": "agent-kit",
@@ -172,7 +224,13 @@
       "skill": "retro",
       "group": "engineering",
       "source": "engineering/retro",
-      "internal": false
+      "internal": false,
+      "dependencies": [
+        {
+          "skill": "writing-for-agents",
+          "reason": "Write actionable steering instructions for subsequent sessions."
+        }
+      ]
     },
     {
       "provider": "agent-kit",
@@ -186,14 +244,33 @@
       "skill": "ship",
       "group": "engineering",
       "source": "engineering/ship",
-      "internal": false
+      "internal": false,
+      "dependencies": [
+        {
+          "skill": "pr",
+          "reason": "Write the evidence and acceptance record for pull-request delivery.",
+          "feature": "pr"
+        },
+        {
+          "skill": "owner-attention",
+          "reason": "Classify whether the finished change needs an owner decision.",
+          "feature": "owner-attention"
+        }
+      ]
     },
     {
       "provider": "agent-kit",
       "skill": "tdd",
       "group": "engineering",
       "source": "engineering/tdd",
-      "internal": false
+      "internal": false,
+      "dependencies": [
+        {
+          "skill": "codebase-design",
+          "reason": "Shared vocabulary for discussing test seams.",
+          "reference": true
+        }
+      ]
     },
     {
       "provider": "agent-kit",
@@ -228,7 +305,19 @@
       "skill": "triage",
       "group": "engineering",
       "source": "engineering/triage",
-      "internal": false
+      "internal": false,
+      "dependencies": [
+        {
+          "skill": "grilling",
+          "reason": "Clarify incoming requests that need an interview.",
+          "feature": "triage-interview"
+        },
+        {
+          "skill": "domain-modeling",
+          "reason": "Record terminology decisions from the triage interview.",
+          "feature": "triage-interview"
+        }
+      ]
     },
     {
       "provider": "agent-kit",
@@ -242,7 +331,27 @@
       "skill": "wayfinder",
       "group": "engineering",
       "source": "engineering/wayfinder",
-      "internal": false
+      "internal": false,
+      "dependencies": [
+        {
+          "skill": "grilling",
+          "reason": "Agree the destination and explore decision tickets."
+        },
+        {
+          "skill": "domain-modeling",
+          "reason": "Retain domain decisions while mapping the effort."
+        },
+        {
+          "skill": "prototype",
+          "reason": "Explore prototype tickets using a runnable artifact.",
+          "feature": "prototype"
+        },
+        {
+          "skill": "research",
+          "reason": "Resolve research tickets against primary sources.",
+          "feature": "research"
+        }
+      ]
     },
     {
       "provider": "agent-kit",
@@ -256,13 +365,6 @@
       "skill": "writing-for-agents",
       "group": "engineering",
       "source": "engineering/writing-for-agents",
-      "internal": false
-    },
-    {
-      "provider": "agent-kit",
-      "skill": "recap",
-      "group": "communication",
-      "source": "communication/recap",
       "internal": false
     }
   ]

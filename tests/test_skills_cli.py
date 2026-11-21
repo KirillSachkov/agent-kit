@@ -340,6 +340,123 @@ class SkillsCLI(unittest.TestCase):
         self.assertEqual(self.manifest.read_bytes(), before)
         self.assertEqual((other / "SKILL.md").read_text(), "Keep installed provider\n")
 
+    def pinned_catalog(self, graph):
+        # The consumer catalog locates the provider. Only the committed inventory describes a release.
+        catalog = {"schema_version": 1, "providers": {"test": {
+            "repository": str(self.provider), "skills_prefix": "skills", "catalog_path": "release.json"}},
+            "skills": [{"provider": "test", "skill": name, "group": "engineering", "dependencies": edges}
+                       for name, edges in graph.items()]}
+        for name in graph:
+            folder = self.provider / "skills" / name
+            folder.mkdir(exist_ok=True)
+            (folder / "SKILL.md").write_text(f"---\nname: {name}\ndescription: When asked to {name}.\n---\n# {name}\n")
+        (self.provider / "release.json").write_text(json.dumps(catalog))
+        self.catalog.write_text(json.dumps(catalog))
+        return self.commit()
+
+    def invoke(self, command, *options, success=True):
+        result = subprocess.run([sys.executable, str(CLI), command, "--project", str(self.project),
+                                 "--catalog", str(self.catalog), "--provider", "test", *options],
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode == 0, success, result.stdout + result.stderr)
+        return result
+
+    def test_dependency_reasons_features_and_reference_through_all_commands(self):
+        ref = self.pinned_catalog({
+            "implement": [{"skill": "review", "reason": "Review the delivery."},
+                          {"skill": "tdd", "feature": "tdd", "reason": "Work test-first."}],
+            "review": [{"skill": "guide", "reference": True, "reason": "Terminology."}],
+            "tdd": [], "guide": [], "grilling": []})
+        self.manifest.unlink()
+        listing = self.invoke("list", "--ref", ref).stdout
+        self.assertIn("When asked to grilling.", listing)
+        self.assertIn("reference: guide", listing)
+        self.assertIn("feature tdd", listing)
+        options = ("--skill", "implement", "--ref", ref)
+        result = self.invoke("select", *options)
+        self.assertIn("Review the delivery.", result.stdout)
+        self.assertNotIn("Work test-first.", result.stdout)
+        self.assertFalse(self.manifest.exists())
+        self.invoke("select", *options, "--feature", "tdd", "--apply")
+        expected = {"implement", "review", "tdd"}
+        before = self.manifest.read_bytes()
+        self.assertEqual({e["skill"] for e in json.loads(before)["skills"]}, expected)
+        for command in ["preview", "install", "check"]:
+            with self.subTest(command=command):
+                out = self.invoke(command).stdout
+                self.assertIn("implement (required): Review the delivery.", out)
+                self.assertIn("implement (feature tdd): Work test-first.", out)
+        self.assertEqual({p.name for p in (self.project / ".agents/skills").iterdir()}, expected)
+        self.assertNotIn("selected-manifest", self.invoke("select", *options, "--feature", "tdd", "--apply").stdout)
+        self.assertEqual(before, self.manifest.read_bytes())
+
+    def test_complete_selection_and_removed_skills_follow_the_pin(self):
+        old = self.pinned_catalog({"recap": [], "grilling": []})
+        new = self.pinned_catalog({"grilling": [], "implement": []})
+        self.manifest.unlink()
+        self.assertNotIn("recap", self.invoke("list", "--ref", new).stdout)
+        self.assertIn("recap", self.invoke("list", "--ref", old).stdout)
+        self.invoke("select", "--all", "--ref", old, "--apply")
+        self.invoke("install")
+        self.invoke("check")
+        self.assertIn("# recap\n", (self.project / ".agents/skills/recap/SKILL.md").read_text())
+        self.assertFalse((self.project / ".agents/skills/implement").exists())
+        self.manifest.unlink()
+        self.invoke("select", "--skill", "grilling", "--ref", new, "--apply")
+        self.assertEqual([e["skill"] for e in json.loads(self.manifest.read_text())["skills"]], ["grilling"])
+        self.invoke("select", "--skill", "recap", "--ref", new, success=False)
+
+    def test_dependency_cycles_missing_skills_and_unknown_features_stop_selection(self):
+        self.manifest.unlink()
+        for graph, term in [
+            ({"implement": [{"skill": "review", "reason": "Review it."}]}, "Missing dependency review"),
+            ({"implement": [{"skill": "review", "reason": "Review it."}],
+              "review": [{"skill": "implement", "reason": "Implement it."}]}, "implement -> review -> implement")]:
+            ref = self.pinned_catalog(graph)
+            result = self.invoke("select", "--ref", ref, "--skill", "implement", "--apply", success=False)
+            self.assertIn(term, result.stderr)
+            self.assertFalse(self.manifest.exists())
+        result = self.invoke("select", "--ref", ref, "--all", "--feature", "typo", "--apply", success=False)
+        self.assertIn("Unknown feature", result.stderr)
+        self.assertFalse(self.manifest.exists())
+
+    def test_conflicting_dependency_pins_preserve_manifest_and_local_edits_before_selection(self):
+        old = self.pinned_catalog({"review": []})
+        new = self.pinned_catalog({"implement": [{"skill": "review", "reason": "Review it."}], "review": []})
+        self.manifest.unlink()
+        self.invoke("select", "--ref", old, "--skill", "review", "--apply")
+        self.invoke("install")
+        before = self.manifest.read_bytes()
+        result = self.invoke("select", "--ref", new, "--skill", "implement", "--apply", success=False)
+        self.assertIn("Version conflict", result.stderr)
+        self.assertEqual(self.manifest.read_bytes(), before)
+        installed = self.project / ".agents/skills/review/SKILL.md"
+        installed.write_text("consumer adaptation\n")
+        result = self.invoke("select", "--ref", new, "--all", "--apply", success=False)
+        self.assertIn("locally edited", result.stderr)
+        self.assertEqual(self.manifest.read_bytes(), before)
+        self.assertEqual(installed.read_text(), "consumer adaptation\n")
+        self.assertFalse((self.project / ".agents/skills/implement").exists())
+
+    def test_manually_selected_roots_resolve_dependencies_and_conflicts_on_install(self):
+        graph = {"example": [{"skill": "review", "reason": "Review it."}], "review": []}
+        old = self.pinned_catalog(graph)
+        graph["grilling"] = []
+        ref = self.pinned_catalog(graph)
+        self.select(ref)
+        self.invoke("install")
+        self.invoke("check")
+        self.assertTrue((self.project / ".agents/skills/review/SKILL.md").exists())
+        lock = self.project / ".agents/skills-lock.json"
+        before = lock.read_bytes()
+        manifest = json.loads(self.manifest.read_text())
+        manifest["skills"].append({"provider": "test", "ref": old, "skill": "review",
+                                   "destination": ".agents/skills/review"})
+        self.manifest.write_text(json.dumps(manifest))
+        for command in ("preview", "install", "check"):
+            self.assertIn("Version conflict", self.invoke(command, success=False).stderr)
+        self.assertEqual(lock.read_bytes(), before)
+
     def test_existing_claude_index_alias_is_preserved(self):
         manifest = json.loads(self.manifest.read_text())
         manifest["clients"] = ["claude"]

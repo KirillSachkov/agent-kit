@@ -3,6 +3,7 @@
 import argparse
 from contextlib import contextmanager
 import difflib
+from functools import lru_cache
 import hashlib
 import json
 import os
@@ -60,56 +61,226 @@ def installation_guard(project):
         guard.unlink()
 
 
-def list_skills(catalog):
-    for entry in catalog.get("skills", []):
-        state = " (internal)" if entry.get("internal") else ""
-        print(f"{entry['group']}/{entry['skill']} [{entry['provider']}]{state}")
-
-
-def select(project, catalog, catalog_dir, provider_name, ref, names, client, apply):
+def release(catalog, catalog_dir, name, ref):
+    """Read release metadata at the same pin as the files, using the configured location."""
     if catalog.get("schema_version") != 1 or not isinstance(catalog.get("providers"), dict):
         raise SkillsError("Invalid catalog")
-    if not names or not ref:
-        raise SkillsError("select requires --ref and at least one --skill")
-    provider = catalog["providers"].get(provider_name)
+    provider = catalog["providers"].get(name)
     if provider is None:
-        raise SkillsError(f"Unknown provider: {provider_name}")
-    available = {entry["skill"] for entry in catalog.get("skills", []) if entry["provider"] == provider_name}
-    path = safe_path(project, ".agents/skills-manifest.json")
-    before = path.read_text() if path.exists() else ""
-    manifest = read_json(path) if path.exists() else {"schema_version": 1, "installation": "copies", "skills": []}
+        raise SkillsError(f"Unknown provider: {name}")
+    if not isinstance(ref, str) or not re.fullmatch(r"[0-9a-f]{40}", ref):
+        raise SkillsError("ref must be a full lowercase 40-character commit SHA")
+    inventory = catalog
+    if provider.get("catalog_path") and provider.get("snapshot_ref") != ref:
+        path = Path(provider["catalog_path"])
+        if path.is_absolute() or ".." in path.parts:
+            raise SkillsError("Unsafe pinned catalog path")
+        repo = provider_repository(provider, catalog_dir)
+        inventory = json.loads(git(repo, "show", f"{ref}:{path}"))
+        if inventory.get("schema_version") != 1 or name not in inventory["providers"]:
+            raise SkillsError(f"Invalid pinned catalog for {name}@{ref}")
+        # Only the local configuration determines where to read Git or snapshot data.
+        pinned = inventory["providers"][name]
+        provider = {"repository": provider["repository"], **{
+            key: pinned[key] for key in ("skill_paths", "skills_prefix", "notices") if key in pinned}}
+    rows = {row["skill"]: row for row in inventory.get("skills", []) if row["provider"] == name}
+    return provider, rows
+
+
+def skill_description(skill_md):
+    lines = skill_md.decode("utf-8").splitlines()
+    if not lines or lines[0] != "---" or "---" not in lines[1:]:
+        return ""
+    frontmatter = lines[1:lines.index("---", 1)]
+    for index, line in enumerate(frontmatter):
+        if line.startswith("description:"):
+            value = line.partition(":")[2].strip()
+            if value.rstrip("+-") in {"|", ">"} or not value:
+                parts = []
+                for continuation in frontmatter[index + 1:]:
+                    if continuation and not continuation.startswith((" ", "\t")):
+                        break
+                    parts.append(continuation.strip())
+                return " ".join(part for part in parts if part)
+            if value.startswith('"'):
+                return json.loads(value)
+            if value.startswith("'") and value.endswith("'"):
+                return value[1:-1].replace("''", "'")
+            return value
+    return ""
+
+
+def list_skills(catalog, catalog_dir, provider_name, ref):
+    if ref:
+        provider, entries = release(catalog, catalog_dir, provider_name, ref)
+        rows = entries.values()
+    else:
+        rows = catalog.get("skills", [])
+    for entry in rows:
+        state = " (internal)" if entry.get("internal") else ""
+        print(f"{entry['group']}/{entry['skill']} [{entry['provider']}]{state}")
+        if ref:
+            source = source_files(provider, {**entry, "ref": ref}, catalog_dir)
+            description = skill_description(source["SKILL.md"][0])
+            if description:
+                print("  " + description)
+        for dep in entry.get("dependencies", []):
+            kind = "reference" if dep.get("reference") else "required"
+            if "feature" in dep:
+                kind = f"feature {dep['feature']}"
+            print(f"  {kind}: {dep['skill']} — {dep['reason']}")
+
+
+def skill_entry(provider, ref, name):
+    return {"provider": provider, "ref": ref, "skill": name, "destination": ".agents/skills/" + name}
+
+
+def root_entries(manifest):
     if manifest.get("schema_version") != 1 or not isinstance(manifest.get("skills"), list):
         raise SkillsError("Invalid existing manifest")
+    roots = {}
+    destinations = set()
+    for entry in manifest["skills"]:
+        destination = entry["destination"]
+        if destination in destinations:
+            raise SkillsError(f"Duplicate destination: {destination}")
+        destinations.add(destination)
+        if destination not in manifest.get("dependency_reasons", {}):
+            roots[destination] = entry
+    return roots
+
+
+def resolve_manifest(manifest, catalog, catalog_dir):
+    """Resolve each explicit root in its release with that root's chosen features."""
+    selections = root_entries(manifest)
+    roots = selections.copy()
+    reasons = {}
+    releases = {}
+    visited = set()
+
+    def visit(entry, features, path):
+        provider, ref, name = entry["provider"], entry["ref"], entry["skill"]
+        if name in path:
+            raise SkillsError("Dependency cycle: " + " -> ".join((*path, name)))
+        key = (entry["destination"], features)
+        if key in visited:
+            return
+        if (provider, ref) not in releases:
+            releases[provider, ref] = release(catalog, catalog_dir, provider, ref)[1]
+        rows = releases[provider, ref]
+        for dep in rows.get(name, {}).get("dependencies", []):
+            if dep.get("reference") or ("feature" in dep and dep["feature"] not in features):
+                continue
+            target = dep["skill"]
+            if target not in rows:
+                raise SkillsError(f"Missing dependency {target} required by {name} at {ref}")
+            if dep.get("provider", provider) != provider or dep.get("ref", ref) != ref:
+                raise SkillsError(f"Version conflict: {name} requires {target} outside {provider}@{ref}")
+            dependency = skill_entry(provider, ref, target)
+            destination = dependency["destination"]
+            existing = selections.setdefault(destination, dependency)
+            if any(existing[k] != dependency[k] for k in ("provider", "ref", "skill")):
+                raise SkillsError(f"Version conflict: {name} requires {provider}/{target}@{ref}, "
+                                  f"but {destination} selects {existing['provider']}/{existing['skill']}@{existing['ref']}")
+            if destination not in roots:
+                kind = f"feature {dep['feature']}" if "feature" in dep else "required"
+                reason = f"{name} ({kind}): {dep['reason']}"
+                values = reasons.setdefault(destination, [])
+                if reason not in values:
+                    values.append(reason)
+            visit(existing, features, (*path, name))
+        visited.add(key)
+
+    for destination, entry in roots.items():
+        features = manifest.get("selection_features", {}).get(destination, [])
+        visit(entry, frozenset(features), ())
+    for entry in manifest["skills"]:
+        expected = selections.get(entry["destination"])
+        if expected is not None and expected != entry:
+            raise SkillsError(f"Version conflict in recorded dependency: {entry['destination']}")
+    resolved = {**manifest, "skills": list(selections.values())}
+    resolved.pop("dependency_reasons", None)
+    if reasons:
+        resolved["dependency_reasons"] = reasons
+    return resolved
+
+
+def select_manifest(project, catalog, catalog_dir, provider_name, ref, names, client, features=()):
+    _, rows = release(catalog, catalog_dir, provider_name, ref)
+    if names is None:
+        names = [name for name, row in rows.items() if not row.get("internal")]
+    if not names:
+        raise SkillsError("Select at least one released skill (or --all)")
+    available_features = {dep["feature"] for row in rows.values() for dep in row.get("dependencies", [])
+                          if "feature" in dep}
+    unknown = set(features) - available_features
+    if unknown:
+        raise SkillsError("Unknown feature at selected revision: " + ", ".join(sorted(unknown)))
+    path = safe_path(project, ".agents/skills-manifest.json")
+    manifest = read_json(path) if path.exists() else {"schema_version": 1, "installation": "copies", "skills": []}
     if manifest.get("installation", "copies") != "copies":
         raise SkillsError("Source-link selections belong to their source bootstrap")
-    selections = {}
-    for name in dict.fromkeys(names):
-        if name not in available:
+    roots = root_entries(manifest)
+    selected_features = dict(manifest.get("selection_features", {}))
+    for name in names:
+        if name not in rows:
             raise SkillsError(f"Skill is not in this catalog: {name}")
-        entry = {"provider": provider_name, "ref": ref, "skill": name,
-                 "destination": ".agents/skills/" + name}
-        source_files(provider, entry, catalog_dir)
-        selections[entry["destination"]] = entry
-    existing = []
-    for entry in manifest["skills"]:
-        if not isinstance(entry, dict) or "destination" not in entry:
-            raise SkillsError("Invalid existing skill selection")
-        if entry["destination"] in selections:
-            existing.append(selections.pop(entry["destination"]))
+        entry = skill_entry(provider_name, ref, name)
+        destination = entry["destination"]
+        if destination in roots and roots[destination]["provider"] != provider_name:
+            raise SkillsError(f"Provider conflict at {destination}")
+        roots[destination] = entry
+        if features:
+            selected_features[destination] = sorted(set(features))
         else:
-            existing.append(entry)
-    manifest["skills"] = existing + list(selections.values())
+            selected_features.pop(destination, None)
+    manifest["skills"] = list(roots.values())
+    manifest.pop("dependency_reasons", None)
+    if selected_features:
+        manifest["selection_features"] = selected_features
+    else:
+        manifest.pop("selection_features", None)
     if client is not None:
         manifest["clients"] = ["codex", "claude"] if client == "both" else [client]
     client_discovery(project, manifest)
+    return resolve_manifest(manifest, catalog, catalog_dir)
+
+
+def explain_selection(manifest):
+    for entry in manifest["skills"]:
+        reasons = manifest.get("dependency_reasons", {}).get(entry["destination"], ["selected"])
+        print(f"{entry['skill']} @ {entry['ref']}: " + " / ".join(reasons))
+
+
+def preflight_selection(project, catalog, catalog_dir, manifest):
+    items, lock, _ = plan(project, catalog, catalog_dir, manifest)
+    for entry, path, current, wanted in items:
+        previous = lock["skills"].get(entry["destination"])
+        if previous is not None and digest(current) != previous.get("sha256"):
+            raise SkillsError(f"Refusing locally edited copy: {entry['destination']}")
+        if previous is None and path.exists() and current != wanted:
+            # Permit explicit adoption of an exact source copy that lacks provider notices.
+            provider, _ = release(catalog, catalog_dir, entry["provider"], entry["ref"])
+            if current != source_files(provider, entry, catalog_dir):
+                raise SkillsError(f"Unmanaged destination differs from its pinned copy: {entry['destination']}")
+
+
+def select(project, catalog, catalog_dir, provider_name, ref, names, client, apply, features=()):
+    path = safe_path(project, ".agents/skills-manifest.json")
+    before = path.read_text() if path.exists() else ""
+    manifest = select_manifest(project, catalog, catalog_dir, provider_name, ref, names, client, features)
+    preflight_selection(project, catalog, catalog_dir, manifest)
+    explain_selection(manifest)
     after = json.dumps(manifest, indent=2) + "\n"
     print("".join(difflib.unified_diff(before.splitlines(True), after.splitlines(True),
                                       fromfile="current-manifest", tofile="selected-manifest")), end="")
-    if apply:
+    if apply and before != after:
         path.parent.mkdir(parents=True, exist_ok=True)
         with installation_guard(project):
             if (path.read_text() if path.exists() else "") != before:
                 raise SkillsError("Manifest changed while selecting; retry from its new version")
+            client_discovery(project, manifest)
+            preflight_selection(project, catalog, catalog_dir, manifest)
             descriptor, temporary = tempfile.mkstemp(prefix=".skills-manifest-", dir=path.parent)
             try:
                 with os.fdopen(descriptor, "w") as stream:
@@ -119,8 +290,10 @@ def select(project, catalog, catalog_dir, provider_name, ref, names, client, app
                 if os.path.exists(temporary):
                     os.unlink(temporary)
         print("Selected pinned skills; run preview, then install or explicit adopt.")
+    return manifest
 
 
+@lru_cache(maxsize=1024)
 def git(repo, *args):
     result = subprocess.run(["git", "-c", "core.fsmonitor=false", "-C", str(repo), *args],
                             capture_output=True, env={**os.environ, "GIT_OPTIONAL_LOCKS": "0",
@@ -253,8 +426,10 @@ def client_discovery(project, manifest):
     return source, target
 
 
-def plan(project, catalog, catalog_dir):
-    manifest = read_json(safe_path(project, ".agents/skills-manifest.json"))
+def plan(project, catalog, catalog_dir, manifest=None):
+    if manifest is None:
+        manifest = read_json(safe_path(project, ".agents/skills-manifest.json"))
+    manifest = resolve_manifest(manifest, catalog, catalog_dir)
     if manifest.get("schema_version") != 1 or catalog.get("schema_version") != 1:
         raise SkillsError("Unsupported schema_version")
     installation = manifest.get("installation", "copies")
@@ -267,18 +442,12 @@ def plan(project, catalog, catalog_dir):
     if not isinstance(manifest.get("skills"), list) or not isinstance(catalog.get("providers"), dict):
         raise SkillsError("Manifest needs a skills array; catalog needs providers")
     items = []
-    destinations = set()
     for entry in manifest["skills"]:
         if not isinstance(entry, dict):
             raise SkillsError("Skill entries must be objects")
         if not re.fullmatch(r"\.agents/skills/[a-z0-9][a-z0-9-]*", entry["destination"]):
             raise SkillsError(f"Unsafe destination: {entry['destination']}")
-        if entry["destination"] in destinations:
-            raise SkillsError("Duplicate destination")
-        destinations.add(entry["destination"])
-        provider = catalog["providers"].get(entry["provider"])
-        if provider is None:
-            raise SkillsError(f"Unknown provider: {entry['provider']}")
+        provider, _ = release(catalog, catalog_dir, entry["provider"], entry["ref"])
         wanted = source_files(provider, entry, catalog_dir)
         if installation == "source-links":
             destination = safe_path(project, str(Path(entry["destination"]).parent)) / Path(entry["destination"]).name
@@ -315,7 +484,7 @@ def preview(items):
                 print(f"mode {name}: {current.get(name, (b'', 'absent'))[1]} -> {wanted.get(name, (b'', 'absent'))[1]}")
 
 
-def install(project, items, lock, adoptable=None, client_link=None):
+def preflight_changed(items, lock, adoptable=None):
     # Validate the whole selection before changing any consumer folder.
     changed = []
     for entry, path, current, wanted in items:
@@ -329,12 +498,18 @@ def install(project, items, lock, adoptable=None, client_link=None):
         if current != wanted or previous != {**entry, "sha256": digest(wanted)}:
             changed.append((entry, path, current, wanted))
 
+    return changed
+
+
+def install(project, items, lock, adoptable=None, client_link=None):
+    changed = preflight_changed(items, lock, adoptable)
     backup_root = safe_path(project, ".agents/skills-backups")
     run_id = uuid.uuid4().hex
     backup = backup_root / run_id
     lock_path = safe_path(project, ".agents/skills-lock.json")
     old_lock = lock_path.read_bytes() if lock_path.exists() else None
     stage = Path(tempfile.mkdtemp(prefix=".skills-stage-", dir=project / ".agents"))
+    new_directories = []
     applied = []
     created_link = None
     try:
@@ -347,6 +522,8 @@ def install(project, items, lock, adoptable=None, client_link=None):
                 target.write_bytes(data)
                 target.chmod(0o755 if mode == "100755" else 0o644)
         if changed:
+            if not backup_root.exists():
+                new_directories.append(backup_root)
             backup.mkdir(parents=True)
             if old_lock is not None:
                 (backup / "skills-lock.json").write_bytes(old_lock)
@@ -354,6 +531,8 @@ def install(project, items, lock, adoptable=None, client_link=None):
             safe_path(project, entry["destination"])
             if folder_files(path) != current:
                 raise SkillsError(f"Copy changed during installation: {path}")
+            if not path.parent.exists():
+                new_directories.append(path.parent)
             path.parent.mkdir(parents=True, exist_ok=True)
             previous = backup / path.name
             if path.exists():
@@ -363,6 +542,8 @@ def install(project, items, lock, adoptable=None, client_link=None):
         if client_link is not None:
             source, target = client_link
             if not target.is_symlink():
+                if not target.parent.exists():
+                    new_directories.append(target.parent)
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.symlink_to(os.path.relpath(source, target.parent), target_is_directory=True)
                 created_link = target
@@ -379,6 +560,11 @@ def install(project, items, lock, adoptable=None, client_link=None):
                 shutil.rmtree(path)
             if previous.exists():
                 os.replace(previous, path)
+        if backup.exists():
+            shutil.rmtree(backup)
+        for directory in reversed(new_directories):
+            if directory.is_dir() and not any(directory.iterdir()):
+                directory.rmdir()
         raise
     finally:
         shutil.rmtree(stage)
@@ -394,21 +580,27 @@ def main(argv=None):
     parser.add_argument("--catalog", type=Path, default=ROOT / "skills/catalog.json")
     parser.add_argument("--provider", default="agent-kit", help="provider for select")
     parser.add_argument("--ref", help="full commit SHA for select")
-    parser.add_argument("--skill", action="append", default=[], help="explicit skill for select; repeatable")
+    selection = parser.add_mutually_exclusive_group()
+    selection.add_argument("--all", action="store_true", help="select every released skill at --ref")
+    parser.add_argument("--feature", action="append", default=[], help="enable a conditional dependency; repeatable")
+    selection.add_argument("--skill", action="append", default=[], help="explicit skill for select; repeatable")
     parser.add_argument("--client", choices=["codex", "claude", "both"], help="discovery clients for select")
     parser.add_argument("--apply", action="store_true", help="write select's manifest; otherwise preview only")
     args = parser.parse_args(argv)
     try:
         catalog = read_json(args.catalog)
         if args.command == "list":
-            list_skills(catalog)
+            list_skills(catalog, args.catalog.parent, args.provider, args.ref)
             return 0
         project = args.project.resolve(strict=True)
         if args.command == "select":
-            select(project, catalog, args.catalog.parent, args.provider, args.ref, args.skill, args.client, args.apply)
+            select(project, catalog, args.catalog.parent, args.provider, args.ref, None if args.all else args.skill,
+                   args.client, args.apply, args.feature)
             return 0
-        items, lock, installation = plan(project, catalog, args.catalog.parent)
-        client_link = client_discovery(project, read_json(safe_path(project, ".agents/skills-manifest.json")))
+        manifest = resolve_manifest(read_json(safe_path(project, ".agents/skills-manifest.json")), catalog, args.catalog.parent)
+        items, lock, installation = plan(project, catalog, args.catalog.parent, manifest)
+        client_link = client_discovery(project, manifest)
+        explain_selection(manifest)
         if args.command == "preview":
             preview(items)
             if client_link is not None and not client_link[1].is_symlink():
@@ -426,11 +618,15 @@ def main(argv=None):
                 raise SkillsError("Source links are maintained by the source bootstrap; install never writes through runtime links")
             with installation_guard(project):
                 catalog = read_json(args.catalog)
-                items, lock, installation = plan(project, catalog, args.catalog.parent)
-                client_link = client_discovery(project, read_json(safe_path(project, ".agents/skills-manifest.json")))
+                manifest = read_json(safe_path(project, ".agents/skills-manifest.json"))
+                items, lock, installation = plan(project, catalog, args.catalog.parent, manifest)
+                if installation != "copies":
+                    raise SkillsError("Source-link manifest changed while acquiring installation lock")
+                client_link = client_discovery(project, manifest)
                 adoptable = None
                 if args.command == "adopt":
-                    adoptable = {entry["destination"]: source_files(catalog["providers"][entry["provider"]], entry, args.catalog.parent)
+                    adoptable = {entry["destination"]: source_files(
+                        release(catalog, args.catalog.parent, entry["provider"], entry["ref"])[0], entry, args.catalog.parent)
                                  for entry, path, current, wanted in items}
                 install(project, items, lock, adoptable=adoptable, client_link=client_link)
         return 0
