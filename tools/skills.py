@@ -165,7 +165,10 @@ def source_files(provider, entry, catalog_dir):
             raise SkillsError(f"Pinned snapshot failed content verification: {entry['skill']}")
         return files
     source_path = provider.get("skill_paths", {}).get(entry["skill"])
-    prefix_path = Path(source_path) if source_path else Path(provider["skills_prefix"]) / entry["skill"]
+    source_prefix = provider.get("skills_prefix")
+    if not source_path and source_prefix is None:
+        raise SkillsError(f"Skill is not in the provider catalog: {entry['skill']}")
+    prefix_path = Path(source_path) if source_path else Path(source_prefix) / entry["skill"]
     if prefix_path.is_absolute() or ".." in prefix_path.parts:
         raise SkillsError("Unsafe source prefix")
     prefix = str(prefix_path)

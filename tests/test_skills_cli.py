@@ -65,6 +65,29 @@ class SkillsCLI(unittest.TestCase):
         self.assertEqual(lock["skills"][".agents/skills/example"]["ref"], self.ref)
         self.run_cli("check")
 
+    def test_provider_can_store_skills_at_its_repository_root(self):
+        self.skill.rename(self.provider / "example")
+        self.select(self.commit())
+        catalog = json.loads(self.catalog.read_text())
+        catalog["providers"]["test"]["skills_prefix"] = ""
+        self.catalog.write_text(json.dumps(catalog))
+
+        self.run_cli("install")
+
+        self.assertTrue((self.project / ".agents/skills/example/SKILL.md").is_file())
+
+    def test_manifest_skill_removed_from_catalog_names_the_missing_skill(self):
+        catalog = json.loads(self.catalog.read_text())
+        provider = catalog["providers"]["test"]
+        del provider["skills_prefix"]
+        provider["skill_paths"] = {}
+        self.catalog.write_text(json.dumps(catalog))
+
+        result = self.run_cli("install", success=False)
+
+        self.assertIn("Skill is not in the provider catalog: example", result.stderr)
+        self.assertFalse((self.project / ".agents/skills").exists())
+
     def test_relative_provider_and_notices_resolve_from_the_catalog_directory(self):
         (self.provider / "LICENSE").write_text("Fixture permission notice\n")
         self.select(self.commit())
