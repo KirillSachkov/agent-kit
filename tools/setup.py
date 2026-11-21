@@ -114,13 +114,13 @@ def find_sources(project, templates, lock, testing_file):
     candidates = []
     for source, rules in policy.items():
         for label, href in re.findall(r"\[([^]]+)\]\(([^)]+)\)", rules):
-            if re.search(r"test|verification|quality|checks", label, re.I):
+            if re.search(r"test|verification|quality|checks|тест|проверк|верификаци", label, re.I):
                 target = unquote(href.strip("<>").split("#")[0])
                 if target and not target.startswith(("/", "~")) and ":" not in target:
                     absolute = (project / source).parent / target
                     if absolute.resolve().is_relative_to(project):
                         name = os.path.relpath(absolute, project)
-                        if name.endswith(".md"):
+                        if name.lower().endswith(".md"):
                             candidates.append(name)
     candidates.extend(["TESTING.md", "testing.md", "docs/TESTING.md", "docs/testing.md", TESTING])
     if testing_file:
@@ -328,7 +328,7 @@ def build_plan(project, ref, client, options):
     details["testing_file"] = "<" + testing + ">" if testing and " " in testing else testing or ""
     details["checks"] = "\n".join(checks) or "No local test command or test directory was discovered."
     details["resolution"] = "Project resolution: " + options["resolution"] if "resolution" in options else ""
-    details["owner_attention"] = ("Enabled. Run owner-attention once after technical checks."
+    details["owner_attention"] = ("Enabled. Apply [owner attention conditions](owner-attention.md) once after technical checks."
                                   if choices.get("owner_attention") else "Disabled.")
     edits = []
     managed = dict(state.get("files", {}))

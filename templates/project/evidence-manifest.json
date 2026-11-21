@@ -14,7 +14,14 @@
       "side_effects": [],
       "result": "not_exercised",
       "notes": "<limits, defect, or environment blocker>",
-      "artifacts": []
+      "artifacts": [
+        {
+          "kind": "<screenshot, recording, command output or table>",
+          "file": "<path relative to this manifest>",
+          "source": "<origin of the data>",
+          "caption": "<observed result>"
+        }
+      ]
     }
   ],
   "changes_after_local_verify": [],

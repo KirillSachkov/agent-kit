@@ -36,6 +36,8 @@ Pass `--decisions /path/to/decisions.json` to preview and apply. For example, a 
 
 The testing file must already exist at that project-relative path. Inspect the final diff and any access, start or acceptance decisions that setup reports. Project authority controls merge and publication.
 
+The supported decisions are listed in the [pinned defaults](../templates/project/defaults.json). Set `instruction_owner` when both root files carry independent rules. Record an agreed process exception in `resolution`. Setup preserves unmanaged files and reports edits to managed material before writing. For both clients, pass `--client both` on the first preview and apply.
+
 ## What the agent reads
 
 - Root instructions identify start authority, checkout, delivery mode and owner decisions. The [two workflow maps](../templates/project/WORKFLOW.md) show the branches.
