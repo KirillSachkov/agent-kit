@@ -10,7 +10,7 @@
 | Раздел | Что содержит |
 | --- | --- |
 | [skills/engineering](skills/README.md#engineering) | 29 скиллов для обсуждения, проектирования, реализации, проверки и доставки |
-| [skills/communication](skills/README.md#communication) | Стиль, отчёты, настройка стиля |
+| [skills/communication](skills/README.md#communication) | Отчёты о работе |
 | [examples/agent-harness](examples/agent-harness/AGENTS.md) | Пример самостоятельных правил проекта: запуск работ, worktrees, проверки и приёмка владельцем |
 | [tools/skills.py](tools/skills.py) | Выбор версии, просмотр diff, установка, проверка и принятие точных существующих копий под управление |
 | [provenance](provenance/sources.json) | История источников, лицензии и замороженный upstream для сравнения |
