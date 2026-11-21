@@ -1,12 +1,12 @@
 ---
 name: setup-matt-pocock-skills
-description: "Configure this repo for the engineering skills: set up its issue tracker, triage label vocabulary, human language, and domain doc layout. Run once before first use of the other engineering skills."
+description: "Set up the project tracker, triage labels, human language and domain docs, or guide a full Agent Kit installation."
 disable-model-invocation: true
 ---
 
 # Setup Matt Pocock's Skills
 
-Configure the repository contracts used by these engineering skills. Preserve established project policy when rerunning setup.
+For full Agent Kit setup, run `python3 tools/setup.py --project PROJECT --ref FULL_SHA` from the selected Kit checkout. Read the target's existing policies, test and CI configuration. Compare the proposed route with those files, settle material differences with the owner, then apply the agreed preview with `--apply`. Repeat the preview to confirm an empty diff. For tracker, language, labels or domain docs alone, use the steps below.
 
 Scaffold missing configuration:
 
