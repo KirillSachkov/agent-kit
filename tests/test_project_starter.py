@@ -60,7 +60,7 @@ class ProjectStarterTest(unittest.TestCase):
                 self.git(KIT, "show", f"{ref}:skills/engineering/implement/VERIFICATION.md") + "\n",
             )
 
-            for skill in ("grill-me", "to-spec", "to-tickets"):
+            for skill in ("grill-me", "to-spec", "to-tickets", "implement-spec"):
                 installed = project / ".agents/skills" / skill
                 frontmatter = (installed / "SKILL.md").read_text().split("---", 2)[1]
                 self.assertIn("disable-model-invocation: true", frontmatter.splitlines())

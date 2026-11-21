@@ -19,7 +19,6 @@
         "implement": "skills/engineering/implement",
         "implement-spec": "skills/engineering/implement-spec",
         "improve-codebase-architecture": "skills/engineering/improve-codebase-architecture",
-        "owner-attention": "skills/engineering/owner-attention",
         "pr": "skills/engineering/pr",
         "prototype": "skills/engineering/prototype",
         "research": "skills/engineering/research",
@@ -193,13 +192,6 @@
     },
     {
       "provider": "agent-kit",
-      "skill": "owner-attention",
-      "group": "engineering",
-      "source": "engineering/owner-attention",
-      "internal": false
-    },
-    {
-      "provider": "agent-kit",
       "skill": "pr",
       "group": "engineering",
       "source": "engineering/pr",
@@ -250,11 +242,6 @@
           "skill": "pr",
           "reason": "Write the evidence and acceptance record for pull-request delivery.",
           "feature": "pr"
-        },
-        {
-          "skill": "owner-attention",
-          "reason": "Classify whether the finished change needs an owner decision.",
-          "feature": "owner-attention"
         }
       ]
     },

@@ -21,13 +21,13 @@ to invent another approval, worktree or setup task.
 
 ## Native clients
 
-Use the current client's mechanism to load a named skill. If there is no literal
-Skill tool, read that skill's `SKILL.md` and relevant references. This changes the
+Borrowed skills keep Matt's “call the Skill tool” wording. The starter's root
+instructions tell a client without that tool to read the named `SKILL.md`. This changes the
 loading mechanism, not the target project's permission to start or delegate.
 
-`implement` and `implement-spec` are discoverable in both clients. Their availability
-does not grant execution: a harness may still require the owner to name an entrypoint.
-`grill-me`, `to-spec` and `to-tickets` retain their human-only invocation metadata. The [starter workflow](../templates/project/WORKFLOW.md) hands an accepted spec back for ticketing. A separate implementation assignment consumes the approved, published graph.
+`implement` is discoverable in both clients. Its availability does not grant
+execution: a harness may still require the owner to name an entrypoint.
+`grill-me`, `to-spec`, `to-tickets` and `implement-spec` retain their human-only invocation metadata. The [starter workflow](../templates/project/WORKFLOW.md) hands an accepted spec back for ticketing. A separate implementation assignment consumes the approved, published graph.
 
 ## Shared invariants
 
@@ -53,7 +53,7 @@ corrections receive affected tests and required CI on the new head. The local
 Verify record stays attached to its original revision. The PR or local record
 shows later changes, the final head and its check results.
 
-After technical checks, `ship` invokes the optional [owner-attention classifier](../skills/engineering/owner-attention/SKILL.md)
+After technical checks, `ship` invokes the optional [owner-attention classification](../skills/engineering/ship/OWNER-ATTENTION.md)
 once if configured. Project rules govern owner decisions and delivery authority.
 Confirm the actual delivered revision before completing the task and cleaning
 owned resources. The [starter](first-project.en.md) includes

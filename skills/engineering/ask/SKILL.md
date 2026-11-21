@@ -1,6 +1,6 @@
 ---
 name: ask
-description: Ask where you are and how best to proceed: which skill or flow fits, what size and shape the work needs, in which order to design, and when DDD, EventStorming or a board helps.
+description: "Ask where you are and how best to proceed: which skill or flow fits, what size and shape the work needs, in which order to design, and when DDD, EventStorming or a board helps."
 disable-model-invocation: true
 ---
 

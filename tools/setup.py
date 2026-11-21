@@ -368,16 +368,6 @@ def reconcile(project, policy, ci, options, choices):
             for source, allowed in rules:
                 if key in missing or choices[key] not in allowed:
                     material.append(f"{source}\n  Selected {key}: {json.dumps(choices[key])}.")
-    for key, words in (("start", "authorization to start|implementation starts|start rule"),
-                       ("language", "language"), ("access", "credentials|service access"),
-                       ("publication", "merge authority|deploy permission|publication authority|authorization"),
-                       ("acceptance", "acceptance|owner approval"), ("ci", r"required checks|required CI|CI policy"),
-                       ("evidence", "evidence requirements"), ("cleanup", "cleanup|retire worktrees"),
-                       ("worktree", "worktree"), ("verifier", "independent verif|fresh verifier"),
-                       ("tdd", "TDD|test.driven"), ("tracker", "issue tracker|tracker operations")):
-        existing = [name for name, body in policy.items() if re.search(words, name + "\n" + body, re.I)]
-        if existing and key not in options:
-            choices[key] = "Follow " + ", ".join(f"`{name}`" for name in existing) + "."
     return material, missing
 
 
@@ -518,7 +508,7 @@ def write_documents(project, edits):
             raise
 
 
-def describe(result, project):
+def describe(result, project, full=False):
     for name, content in result.policy.items():
         print(f"Existing project instructions ({name}):\n{content.strip()}")
     for fact in result.checks:
@@ -534,8 +524,16 @@ def describe(result, project):
         print("".join(difflib.unified_diff((edit.before or b"").decode().splitlines(True),
                                           edit.after.decode().splitlines(True),
                                           fromfile="current/" + edit.name, tofile="selected/" + edit.name)), end="")
-    skills.preview(result.changed)
-    if result.changed:
+    if full:
+        skills.preview(result.changed)
+    else:
+        for entry, _, current, wanted in result.changed:
+            count = sum(current.get(name) != wanted.get(name) for name in current.keys() | wanted.keys())
+            print(f"{entry['destination']}: {entry['provider']}@{entry['ref']} / {entry['skill']}, "
+                  f"{count} files {'change' if current else 'new'}")
+        if result.changed:
+            print("Pass --full for the complete skill file differences.")
+    if result.changed and full:
         lock = result.skill_lock
         updated_lock = {**lock, "skills": dict(lock["skills"])}
         for entry, _, _, files in result.items:
@@ -559,6 +557,7 @@ def main(argv=None):
     parser.add_argument("--client", choices=("codex", "claude", "both"), help="project skill discovery clients")
     parser.add_argument("--decisions", type=Path, help="JSON object of project choices overriding release defaults")
     parser.add_argument("--apply", action="store_true", help="write the complete setup after preflight")
+    parser.add_argument("--full", action="store_true", help="print every skill file difference, not one line per skill")
     args = parser.parse_args(argv)
     try:
         project = args.project.resolve(strict=True)
@@ -569,7 +568,7 @@ def main(argv=None):
             raise ERROR("Another installation holds skills-sync.lock; reconcile its owner before retrying")
         options = skills.read_json(args.decisions) if args.decisions else {}
         result = build_plan(project, args.ref, args.client, options)
-        describe(result, project)
+        describe(result, project, args.full)
         if result.blocker:
             return 1
         if not args.apply:

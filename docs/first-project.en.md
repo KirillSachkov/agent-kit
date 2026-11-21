@@ -14,7 +14,7 @@ kit_ref=$(git rev-parse HEAD)
 python3 tools/setup.py --project "$project" --ref "$kit_ref"
 ```
 
-Inspect the proposed settings, skills and diff. Full setup includes all skills released at that revision. The task activates each practice: a question can end with an answer, while a large delivery can use `to-spec`, `to-tickets` and `implement-spec`. Project policy determines when to apply TDD, local Verify or an owner decision.
+Inspect the proposed settings, skills and the project file diff. Skill changes take one line each; `--full` prints their complete diff. Full setup includes all skills released at that revision. The task activates each practice: a question can end with an answer, while a large delivery can use `to-spec`, `to-tickets` and `implement-spec`. Project policy determines when to apply TDD, local Verify or an owner decision.
 
 For an existing project, inspect the sources of instructions, tracker, tests, CI and delivery rules. Reconcile material differences before applying. For example, a project requiring another Verify after CI selects a different workflow. Local checks can cover a project with no external CI.
 

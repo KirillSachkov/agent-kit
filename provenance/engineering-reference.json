@@ -563,5 +563,17 @@
       "Retire recap from the release and preserve pinned historical selections."
     ],
     "matt_baseline_unchanged": true
+  },
+  "stabilization_2026_11_21": {
+    "review_base": "85d95da302cff8eb5b4fe766a5206bac4856fc7e",
+    "changes": [
+      "Restore Matt's pristine folders for grill-me, grill-with-docs, handoff, research, retro, codebase-design, wait-what, wayfinder, triage, prototype, diagnosing-bugs, domain-modeling and tdd, including GLOSSARY.md naming.",
+      "Reduce to-tickets, to-spec, improve-codebase-architecture, pr and the wizard instructions to narrow adaptations of the pristine text. Retain the pr attribution and HumanLayer notice.",
+      "Return implement-spec to human-only invocation in both clients. implement stays model-invocable for a direct assignment.",
+      "Move owner-attention classification into ship as a reference procedure and drop it from the catalog; installed copies at earlier SHAs are unchanged.",
+      "The wizard template writes only single-quoted values, which a shell and dotenv parsers read identically, and rejects a value containing a single quote.",
+      "The starter root instructions own the rule for loading a named skill in a client without a Skill tool."
+    ],
+    "matt_baseline_unchanged": true
   }
 }

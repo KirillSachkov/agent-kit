@@ -5,11 +5,11 @@ description: "Implement an assigned task, spec or ticket after the target projec
 
 Implement the assigned work. First read target root `AGENTS.md`, applicable instructions and its implementation pointers. Satisfy its start rule before writing: a request, readiness label or this skill's discovery does not override that rule.
 
-For a whole specification, use the project's spec execution route and its ticket graph. If the user passes a ticket reference, fetch it from the configured issue tracker and state its title. If the reference is ambiguous, ask.
+For a whole specification, return the owner's command for `implement-spec`. If the user passes a ticket reference, fetch it from the configured issue tracker and state its title. If the reference is ambiguous, ask.
 
 Prepare or reuse the execution context under project instructions. Record starting HEAD and an immutable review base covering the complete assigned change, including earlier commits when resuming.
 
-Before implementation, state the expected observable result from the task or spec. Read `testing.md` or the testing contract named by root instructions for the accepted boundaries, environment, development and delivery commands. Use `tdd` where the project requires it. Invoke skills through the current client's mechanism; when unavailable, read the named skill's `SKILL.md` and relevant references and follow them. Run targeted tests during implementation. Before preparing the diff, pass the project's pre-review checks. At an assigned stop before review, return the tested diff, review base and results.
+Before implementation, state the expected observable result from the task or spec. Read `testing.md` or the testing contract named by root instructions for the accepted boundaries, environment, development and delivery commands. Use `tdd` where the project requires it; the boundaries accepted there or in the task are its pre-agreed seams. Run targeted tests during implementation. Before preparing the diff, pass the project's pre-review checks. At an assigned stop before review, return the tested diff, review base and results.
 
 ## Prepare one delivery
 

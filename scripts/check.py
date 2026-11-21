@@ -15,6 +15,42 @@ def git(*args):
     return subprocess.run(["git", "-C", str(ROOT), *args], capture_output=True, text=True)
 
 
+def frontmatter_errors(text):
+    """Report top-level frontmatter values a strict YAML parser rejects or misreads.
+
+    Clients and installers parse SKILL.md frontmatter as YAML and skip a skill that fails.
+    """
+    lines = text.splitlines()
+    if not lines or lines[0] != "---" or "---" not in lines[1:]:
+        return ["no frontmatter block"]
+    found = {}
+    errors = []
+    for line in lines[1:lines.index("---", 1)]:
+        if not line.strip() or line[0] in " \t#":
+            continue
+        key, separator, value = line.partition(":")
+        value = value.strip()
+        if not separator or (value and line[len(key) + 1] != " "):
+            errors.append(f"not a key: value line: {line}")
+            continue
+        found[key] = value
+        if value[:1] == '"':
+            try:
+                json.loads(value)
+            except ValueError:
+                errors.append(f"{key}: invalid double-quoted value")
+        elif value[:1] == "'":
+            if len(value) < 2 or not value.endswith("'") or "'" in value[1:-1].replace("''", ""):
+                errors.append(f"{key}: invalid single-quoted value")
+        elif value and value.rstrip("+-") not in ("|", ">") and (
+                ": " in value or " #" in value or value.endswith(":") or value[:1] in "[]{}>|*&!%@`,?-"):
+            errors.append(f"{key}: quote a value containing ': ', ' #' or a leading YAML indicator")
+    for key in ("name", "description"):
+        if not found.get(key):
+            errors.append(f"missing {key}")
+    return errors
+
+
 def check_structure():
     errors = []
     catalog = json.loads((ROOT / "skills/catalog.json").read_text())
@@ -36,6 +72,7 @@ def check_structure():
             continue
         found.add(source.relative_to(ROOT))
         metadata = skill.read_text().split("---", 2)
+        errors.extend(f"{skill.relative_to(ROOT)}: {error}" for error in frontmatter_errors(skill.read_text()))
         if len(metadata) != 3 or not re.search(r"^name:\s*" + re.escape(item["skill"]) + r"\s*$", metadata[1], re.M):
             errors.append(f"invalid skill frontmatter: {skill}")
         internal = len(metadata) == 3 and "internal: true" in metadata[1]

@@ -21,7 +21,7 @@ scenarios visible as limitations. A failed or unavailable required check keeps t
 
 ## Timing and authority
 
-Run `owner-attention` once for the finished delivery, after review dispositions, required
+`ship` classifies the finished delivery once, after review dispositions, required
 verification, and checks on the delivered revision. Keep the exact revision, status, reason,
 and required owner action. The caller applies the project's PR state or labels when configured.
 If classification cannot be completed, keep the delivery pending.

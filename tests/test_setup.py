@@ -70,8 +70,13 @@ class SetupTest(unittest.TestCase):
         preview = self.setup("--client", "both")
         self.assertEqual(list(self.project.iterdir()), [])
         self.assertIn("Observe a fixture", preview)
-        self.assertIn("current/.agents/skills-lock.json", preview)
+        self.assertIn(".agents/skills/probe: agent-kit@" + self.ref + " / probe, ", preview)
+        self.assertNotIn("selected/reference.txt", preview)
         self.assertIn("selected/WORKFLOW.md", preview)
+        full = self.setup("--client", "both", "--full")
+        self.assertIn("current/.agents/skills-lock.json", full)
+        self.assertIn("selected/reference.txt", full)
+        self.assertEqual(list(self.project.iterdir()), [])
         self.setup("--client", "both", "--apply")
         self.assertIn("WORKFLOW.md", (self.project / "AGENTS.md").read_text())
         self.assertIn("No local test command", (self.project / "docs/agents/testing.md").read_text())
@@ -106,6 +111,18 @@ class SetupTest(unittest.TestCase):
         self.assertFalse((self.project / "docs/agents/testing.md").exists())
         self.assertIn("Delivery route: pr", (self.project / "docs/agents/project-settings.md").read_text())
         self.assertEqual((self.project / ".claude/settings.json").read_text(), '{"private": true}')
+        self.assertIn("No changes.", self.setup())
+
+    def test_existing_documents_are_listed_without_assigning_them_settings(self):
+        (self.project / "AGENTS.md").write_text("Read [domain](docs/domain.md) and [access](docs/mcp.md).\n")
+        (self.project / "docs").mkdir()
+        (self.project / "docs/domain.md").write_text("The ubiquitous language of orders. TDD is discussed here.\n")
+        (self.project / "docs/mcp.md").write_text("Server authorization uses a token. Cleanup the worktree cache.\n")
+        self.setup("--apply")
+        settings = (self.project / "docs/agents/project-settings.md").read_text()
+        self.assertIn("`docs/domain.md`, `docs/mcp.md`", settings)
+        self.assertNotIn("Follow `", settings)
+        self.assertIn("- Language: Use the language of the assignment.", settings)
         self.assertIn("No changes.", self.setup())
 
     def test_conflict_resolution_is_bound_to_discovered_difference(self):

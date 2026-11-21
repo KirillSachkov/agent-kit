@@ -1,8 +1,4 @@
----
-name: owner-attention
-description: "Classify whether a finished change needs an owner decision. Use once, explicitly from ship, when the target enables classification."
-disable-model-invocation: true
----
+# Owner-attention classification
 
 Read the target's conditions and the final delivery packet as a fresh, read-only subagent. Decide
 whether the owner must look before delivery. Do not edit files, request fixes, review code quality,

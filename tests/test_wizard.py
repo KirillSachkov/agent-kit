@@ -36,8 +36,8 @@ class WizardEnvironment(unittest.TestCase):
                                    capture_output=True)
         if supported.returncode:
             self.skipTest("Node util.parseEnv unavailable")
-        values = ["", "plain", " leading # value = trailing ", "it's data", 'single\' and "double"',
-                  "single' and `backtick`", r"literal\nvalue", "cost $5 \\ path", "$(touch sentinel)"]
+        values = ["", "plain", " leading # value = trailing ", 'a "double" and `backtick`',
+                  r"literal\nvalue", "cost $5 \\ path", "$(touch sentinel)", "`touch sentinel`"]
         for value in values:
             with self.subTest(value=value):
                 result = self.run_library('write_env SAMPLE "$1"; _existing SAMPLE > decoded', value)
@@ -48,6 +48,9 @@ class WizardEnvironment(unittest.TestCase):
                                          "process.stdin.on('end',()=>process.stdout.write(JSON.stringify(require('node:util').parseEnv(t))));"],
                                         input=self.target.read_text(), text=True, capture_output=True, check=True)
                 self.assertEqual(json.loads(parsed.stdout)["SAMPLE"], value)
+                sourced = subprocess.run(["bash", "-c", '. "$1"; printf "%s" "$SAMPLE"', "bash", str(self.target)],
+                                         cwd=self.root, text=True, capture_output=True, check=True)
+                self.assertEqual(sourced.stdout, value)
                 self.assertFalse((self.root / "sentinel").exists())
 
     def test_upsert_preserves_other_lines_and_file_mode(self):
@@ -75,8 +78,8 @@ class WizardEnvironment(unittest.TestCase):
     def test_invalid_or_unrepresentable_input_preserves_existing_file(self):
         self.target.write_bytes(b"OTHER=preserved\n")
         cases = [("INVALID-KEY", "test"), ("BAD\nKEY", "test"), ("SAMPLE", "line\nbreak"),
-                 ("SAMPLE", "line\rbreak"), ("SAMPLE", "all' three\" `delimiters`"),
-                 ("SAMPLE", "single' `backtick` literal\\n")]
+                 ("SAMPLE", "line\rbreak"), ("SAMPLE", "it's data"),
+                 ("SAMPLE", "x'y'; touch sentinel")]
         for key, value in cases:
             with self.subTest(key=key, value=value):
                 result = self.run_library('write_env "$1" "$2"', key, value)
