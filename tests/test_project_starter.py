@@ -9,10 +9,6 @@ import unittest
 
 
 KIT = Path(__file__).resolve().parents[1]
-SKILLS = (
-    "implement", "implement-spec", "code-review", "tdd", "ship", "pr",
-    "diagnosing-bugs", "to-spec", "to-tickets",
-)
 
 
 class ProjectStarterTest(unittest.TestCase):
@@ -46,21 +42,16 @@ class ProjectStarterTest(unittest.TestCase):
             project.mkdir()
             self.git(project, "init", "-q", "-b", "main", "--template=")
             ref = self.git(KIT, "rev-parse", "HEAD")
-            starter = self.git(KIT, "show", f"{ref}:templates/project/AGENTS.md") + "\n"
-            with (project / "AGENTS.md").open("x", encoding="utf-8") as instructions:
-                instructions.write(starter)
-
-            install = [sys.executable, str(KIT / "tools/skills.py")]
-            selection = [argument for skill in SKILLS for argument in ("--skill", skill)]
-            self.run_command([
-                *install, "select", "--project", str(project), "--ref", ref,
-                "--client", "both", *selection, "--apply",
-            ], KIT)
-            self.run_command([*install, "preview", "--project", str(project)], KIT)
+            setup = [sys.executable, str(KIT / "tools/setup.py"), "--project", str(project),
+                     "--ref", ref, "--client", "both"]
+            self.run_command(setup, KIT)
+            self.assertFalse((project / "AGENTS.md").exists())
             self.assertFalse((project / ".agents/skills").exists())
-            self.run_command([*install, "install", "--project", str(project)], KIT)
-            self.run_command([*install, "check", "--project", str(project)], KIT)
-            self.assertEqual((project / "AGENTS.md").read_text(encoding="utf-8"), starter)
+            self.run_command([*setup, "--apply"], KIT)
+            self.run_command([sys.executable, str(KIT / "tools/skills.py"), "check",
+                              "--project", str(project)], KIT)
+            self.assertIn("No changes.", self.run_command(setup, KIT))
+            self.assertIn("docs/agents/testing.md", (project / "AGENTS.md").read_text())
             self.assertEqual(
                 (project / ".claude/skills").resolve(), (project / ".agents/skills").resolve(),
             )
