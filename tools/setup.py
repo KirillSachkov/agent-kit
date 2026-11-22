@@ -370,6 +370,8 @@ def build_plan(project, ref, client, options):
     details["sources"] = ("Documents reached from the existing instructions: " + ", ".join(f"`{f}`" for f in policy) + "."
                           if policy else "No prior project policy was discovered.")
     details["testing_file"] = "<" + testing + ">" if testing and " " in testing else testing or ""
+    # Templates of earlier pins still render this inventory.
+    details["checks"] = "\n".join(checks) or "No local test command or test directory was discovered."
     details["resolution"] = "Project resolution: " + options["resolution"] if "resolution" in options else ""
     conditions = [name for name, body in policy.items()
                   if re.search(CLASSIFIER, name + "\n" + body, re.I)
