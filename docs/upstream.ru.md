@@ -37,3 +37,15 @@ Fingerprint связан с состоянием библиотеки, вход�
 [Полный технический порядок](upstream.md) описывает ограничения, блокировку обновления,
 проверку дрейфа и восстановление. [Контракт процедур](engineering-contract.md)
 объясняет границу общей библиотеки и проектного harness.
+
+## База pstack
+
+`create-verification-skill` взят из [pstack](https://github.com/backnotprop/pstack)
+(MIT, Lauren Tan). Нетронутая папка и лицензия на закреплённой ревизии лежат в
+`provenance/upstream/pstack/create-verification-skill.tar.gz`. Файл `SOURCE` рядом
+хранит репозиторий, ревизию и хеш архива, его сверяет `scripts/check.py`.
+`tools/upstream.py` работает только со скиллами Мэтта. Для сравнения распакуй архив
+во временную папку и выполни `diff -r` его `skills/create-verification-skill` с нашей.
+В нашей копии убраны шаги о карте функций и о сопровождении, добавлены
+`agents/openai.yaml` и `LICENSE.pstack`. Чтобы принять новую ревизию, прочитай её
+изменения, перепакуй архив, обнови `SOURCE`, повтори два удаления и проведи ревью.

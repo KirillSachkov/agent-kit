@@ -80,3 +80,15 @@ Retain [Matt's notice](../provenance/engineering/LICENSE.mattpocock),
 [PR credits](../skills/engineering/pr/CREDITS.md), the root MIT license and NOTICE.
 The [original guide](../examples/agent-harness/docs/upstream.en.md) remains historical
 maintenance context for the example; the current library CLI follows this workflow.
+
+## The pstack baseline
+
+`create-verification-skill` comes from [pstack](https://github.com/backnotprop/pstack)
+(MIT, Lauren Tan). Its pristine folder and license at the pinned revision are packed
+in `provenance/upstream/pstack/create-verification-skill.tar.gz`; `SOURCE` beside it
+records the repository, revision and archive hash, which `scripts/check.py` verifies.
+`tools/upstream.py` covers Matt's skills only. To compare, unpack the archive into a
+temporary directory and `diff -r` its `skills/create-verification-skill` against ours.
+Our copy drops the feature-map and maintenance steps and adds `agents/openai.yaml`
+and `LICENSE.pstack`. To adopt a newer revision, read its changes, repack the
+archive from that revision, update `SOURCE`, reapply the two removals and review.

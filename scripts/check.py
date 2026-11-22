@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Verify the public library, retained histories and synthetic behavioral tests."""
 import ast
+import hashlib
 import json
 import re
 import subprocess
@@ -96,12 +97,17 @@ def check_structure():
         for path in source.rglob("*"):
             if path.is_symlink():
                 errors.append(f"symlink inside distributable folder: {path}")
-    actual = {p.parent.relative_to(ROOT) for group in ("engineering",) for p in (ROOT / "skills" / group).glob("*/SKILL.md")}
+    actual = {p.parent.relative_to(ROOT) for p in (ROOT / "skills/engineering").glob("*/SKILL.md")}
     if actual != found:
         errors.append("canonical catalog coverage mismatch")
     alias = ROOT / ".claude/skills"
     if not alias.is_symlink() or alias.resolve() != (ROOT / ".agents/skills").resolve():
         errors.append("Claude discovery must share the canonical index")
+    pstack = ROOT / "provenance/upstream/pstack"
+    recorded = dict(line.split(": ", 1) for line in (pstack / "SOURCE").read_text().splitlines())
+    archive = hashlib.sha256((pstack / "create-verification-skill.tar.gz").read_bytes()).hexdigest()
+    if recorded.get("sha256") != archive or not re.fullmatch(r"[0-9a-f]{40}", recorded.get("revision", "")):
+        errors.append("pstack baseline does not match its SOURCE record")
     sources = json.loads((ROOT / "provenance/sources.json").read_text())
     for source in sources["sources"]:
         if git("merge-base", "--is-ancestor", source["main"], "HEAD").returncode:

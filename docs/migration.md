@@ -21,7 +21,7 @@ These branches preserve drafts and evidence; they do not promote experiments int
 
 The 28 Agent Harness runtime folders moved to `skills/engineering`. Its project instructions and human guides remain in `examples/agent-harness`; the example uses the canonical library through discovery links. Upstream comparison moved to the library maintenance tools and a frozen baseline under provenance.
 
-The four Agent Clarity folders moved to `skills/communication`; `explain` retains `metadata.internal: true`. Communication checker/build tests remain under `maintenance/communication`. Whole folders include examples, assets and native metadata.
+The four Agent Clarity folders moved to `skills/communication`; `explain` retains `metadata.internal: true`. Communication checker/build tests stayed under `maintenance/communication` until that folder was removed on 2026-11-22, after the communication skills retired. Whole folders include examples, assets and native metadata.
 
 The PR skill's legal reference is made self-contained. Style setup points at this repository. Other procedure semantics are preserved; project policy remains at the target project.
 

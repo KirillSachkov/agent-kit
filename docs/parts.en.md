@@ -70,7 +70,7 @@ A plain assignment in chat (“Implement #42”) counts as invoking `implement` 
 | `create-verification-skill` | you | Create the project's verification skill once | project code, ways to run it | `verify-<app>` in the project | none | pstack, two edits |
 | `verify-<app>` | agent | Launch the app and walk a scenario as a user | its own sections: launch, doctor, drive, evidence, cleanup | verification artifacts | none | generated in the project |
 
-The edits in `create-verification-skill`: the feature-map and maintenance steps are removed. There is no generic verification skill. The project workflow decides what to verify for a task and when: every acceptance criterion, once before a PR, recording the action, the observation and the revision.
+The edits in `create-verification-skill`: the feature-map and maintenance steps are removed. There is no generic verification skill. The project workflow decides what to verify for a task and when: every acceptance criterion, once before a PR, recording the action, the observation and the revision. `implement-spec` opens a draft PR itself, so for it verification runs before the draft is marked ready.
 
 ### 6. Evidence
 
@@ -95,21 +95,21 @@ The edit in `pr`: the project's PR template takes priority. `verify-<app>` produ
 | `improve-codebase-architecture` | you | Find where to deepen modules and show an HTML report | commit history, code, `GLOSSARY.md`, ADRs | a report in the temp directory | `codebase-design`, `grilling`, `domain-modeling` | Matt, one edit |
 | `codebase-design` | agent | The shared vocabulary of deep modules and seams | nothing | nothing | none | Matt |
 
-The edit in `improve-codebase-architecture`: the report language comes from the project instructions.
+The edit in `improve-codebase-architecture`: the report language comes from the project instructions. It touches a line each in `SKILL.md` and `HTML-REPORT.md`.
 
 ### Outside the parts
 
-| Skill | Who starts it | Purpose | Source |
-| --- | --- | --- | --- |
-| `setup-matt-pocock-skills` | you | Configure the tracker, labels, language and domain docs | Matt, extended |
-| `handoff` | you | Hand work to another session | Matt |
-| `wait-what` | you | Ask for a plainer restatement | Matt |
-| `wizard` | agent | A script for steps only a human can take | Matt, template changed |
-| `teach` | you | Learn a topic over several sessions | Matt |
-| `to-questionnaire` | you | A questionnaire for the person who holds the knowledge | Matt |
-| `writing-for-agents` | agent | How to write skills and instructions | Matt |
+| Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
+| --- | --- | --- | --- | --- | --- | --- |
+| `setup-matt-pocock-skills` | you | Configure the tracker, labels, language and domain docs | the remote, root instructions, `docs/agents/` | `docs/agents/issue-tracker.md`, `triage-labels.md`, `domain.md`, a block in the root instructions | none | Matt, extended |
+| `handoff` | you | Hand work to another session | the conversation | a file in the temp directory | none | Matt |
+| `wait-what` | you | Ask for a plainer restatement | `GLOSSARY.md` | nothing | none | Matt |
+| `wizard` | agent | A script for steps only a human can take | `.env`, config, CI workflows | a bash script, and through it `.env` and secrets | none | Matt, template changed |
+| `teach` | you | Learn a topic over several sessions | the current directory | materials in the current directory | none | Matt |
+| `to-questionnaire` | you | A questionnaire for the person who holds the knowledge | the conversation | a questionnaire | none | Matt |
+| `writing-for-agents` | agent | How to write skills and instructions | nothing | nothing | none | Matt |
 
-The change in `wizard`: the template writes only single-quoted values, so `source` and dotenv parsers read them alike.
+The change in `wizard`: `SKILL.md` matches the original and only `template.sh` differs. It writes only single-quoted values, so `source` and dotenv parsers read them alike.
 
 ## Project files
 
@@ -118,9 +118,9 @@ The change in `wizard`: the template writes only single-quoted values, so `sourc
 | The Kit block in `AGENTS.md` | `tools/setup.py` | every session | pointer to the rest |
 | `WORKFLOW.md` | `tools/setup.py` | the agent choosing its next step | workflow assembly |
 | `docs/agents/project-settings.md` | `tools/setup.py` from your decisions | the agent at start, `ship`, `owner-attention` | execution, verification, delivery |
-| `docs/agents/testing.md` | you and the agent | `to-spec`, `tdd` through the root pointer | design, execution |
+| `docs/agents/testing.md` | `tools/setup.py` seeds it once, then you and the agent | `to-spec`, `tdd` through the root pointer | design, execution |
 | `verify-<app>` | `create-verification-skill` | the agent at the verify step | verification |
-| `docs/agents/owner-attention.md` | you | `owner-attention` | acceptance |
+| `docs/agents/owner-attention.md` | `tools/setup.py` seeds it once, then you | `owner-attention` | acceptance |
 | `.github/pull_request_template.md` | `tools/setup.py` or the project | `pr` | evidence |
 | `docs/agents/issue-tracker.md`, `triage-labels.md`, `domain.md` | `setup-matt-pocock-skills` | `to-spec`, `to-tickets`, `triage`, `implement-spec`, `code-review` | intake, design, execution |
 | `GLOSSARY.md`, `docs/adr/` | `domain-modeling` | most of Matt's skills | design |

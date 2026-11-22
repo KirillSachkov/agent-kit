@@ -23,6 +23,8 @@ KIT = Path(__file__).resolve().parents[1]
 LOCK = ".agents/setup-lock.json"
 MANIFEST = ".agents/skills-manifest.json"
 TESTING = "docs/agents/testing.md"
+# Setup seeds these once; the project then owns and edits them.
+SEEDED = (TESTING, "docs/agents/owner-attention.md")
 BEGIN = "<!-- agent-kit project instructions -->"
 END = "<!-- end agent-kit project instructions -->"
 ERROR = skills.SkillsError
@@ -144,7 +146,7 @@ def find_sources(project, templates, lock, testing_file):
              "docs/agents/issue-tracker.md", "docs/agents/requirements.md",
              "docs/agents/verification.md", "docs/agents/verify.md", "docs/agents/owner-attention.md", ".cursorrules")
     fallback = ("TESTING.md", "testing.md", "docs/TESTING.md", "docs/testing.md", TESTING)
-    managed = lock.get("files", {})
+    managed = set(lock.get("files", {})) | set(lock.get("seeded", []))
     if testing_file and ("\n" in testing_file or not read_optional(project, testing_file)):
         raise ERROR(f"Existing testing instruction unavailable: {testing_file}")
     sources = [*known, *fallback]
@@ -297,16 +299,23 @@ class SetupPlan:
     ci: dict
     differences: list
     blocker: str | None
+    notes: list
 
     def needs_link(self):
         return self.link and not self.link[1].is_symlink()
 
 
 def project_choices(defaults, previous, overrides):
-    options = previous | overrides
-    unknown = set(options) - defaults.keys() - {"testing_file", "resolution", "instruction_owner"}
+    known = defaults.keys() | {"testing_file", "resolution", "instruction_owner"}
+    unknown = set(overrides) - known
     if unknown:
         raise ERROR("Unknown decisions for this release: " + ", ".join(sorted(unknown)))
+    # A decision recorded by an earlier release may have left the starter; keep the rest.
+    retired = sorted(set(previous) - known)
+    options = {key: value for key, value in previous.items() if key in known} | overrides
+    for key in ("delivery",):
+        if isinstance(options.get(key), str) and options[key].strip().lower() in ("local", "main", "pr"):
+            options[key] = options[key].strip().lower()
     for key, value in options.items():
         if key == "owner_attention":
             if type(value) is not bool:
@@ -316,7 +325,7 @@ def project_choices(defaults, previous, overrides):
     choices = defaults | options
     if "instruction_owner" in options and options["instruction_owner"] not in ("AGENTS.md", "CLAUDE.md"):
         raise ERROR("instruction_owner must be AGENTS.md or CLAUDE.md")
-    return options, choices
+    return options, choices, retired
 
 
 CLASSIFIER = r"\b(?:owner[- ]attention(?: classification| classifier)?|owner classifier)\b"
@@ -340,7 +349,8 @@ def build_plan(project, ref, client, options):
     defaults = json.loads(templates.pop("defaults.json", b"{}"))
     options = dict(options)
     agreement = options.pop("conflict_id", None)
-    options, choices = project_choices(defaults, previous, options)
+    options, choices, retired = project_choices(defaults, previous, options)
+    notes = [f"Decision from an earlier release no longer applies and is dropped: {key}" for key in retired]
     docs, policy, testing = find_sources(project, templates, state, choices.get("testing_file"))
     checks, ci = project_checks(project)
     material, missing = reconcile(policy, ci, options, choices)
@@ -401,6 +411,7 @@ def build_plan(project, ref, client, options):
             after = (outside + separator + block + "\n").encode()
         add(name, before, after)
         roots[name] = sha(block.encode())
+    seeded = set(state.get("seeded", []))
     for name, raw in sorted(templates.items()):
         if name == TESTING and name != testing:
             continue
@@ -409,20 +420,31 @@ def build_plan(project, ref, client, options):
             continue
         before = read_optional(project, name)
         after = render(raw, details)
+        if name in SEEDED:
+            # Written once and remembered, so later project edits are neither overwritten nor
+            # mistaken for instructions the project had before setup.
+            if managed.pop(name, None) or before is None:
+                seeded.add(name)
+            if before is None:
+                add(name, before, after)
+            continue
         if name not in managed and before is not None:
-            if name in (TESTING, ".github/pull_request_template.md",
-                        "docs/agents/owner-attention.md"):
+            if name == ".github/pull_request_template.md":
                 continue
             raise ERROR(f"Unmanaged project document already exists: {name}")
         if name in managed and (before is None or sha(before) != managed[name]):
             raise ERROR(f"Reconcile locally changed starter document: {name}")
         add(name, before, after)
         managed[name] = sha(after)
+    for name in sorted(set(managed) - set(templates)):
+        del managed[name]
+        if read_optional(project, name) is not None:
+            notes.append(f"{name}: no longer part of the starter; left in place for the project to keep or remove")
     add(MANIFEST, read_optional(project, MANIFEST), encoded(manifest))
     state = dict(schema_version=1, ref=ref, decisions=options, roots=roots,
-                 instruction_owner=canonical, files=managed, conflicts=signature)
+                 instruction_owner=canonical, files=managed, seeded=sorted(seeded), conflicts=signature)
     add(LOCK, old_state, encoded(state))
-    return SetupPlan(edits, items, changed, skill_lock, link, policy, checks, ci, material, blocker)
+    return SetupPlan(edits, items, changed, skill_lock, link, policy, checks, ci, material, blocker, notes)
 
 
 @contextmanager
@@ -477,6 +499,8 @@ def describe(result, project, ref, *, full):
         print("CI configurations found: " + ", ".join(result.ci))
     for message in result.differences:
         print("Project workflow difference: " + message)
+    for note in result.notes:
+        print(note)
     print("Selected skills and activation conditions:")
     for entry, _, _, files in result.items:
         print(f"  {entry['skill']}: " + skills.skill_description(files["SKILL.md"][0]))

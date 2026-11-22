@@ -3,8 +3,9 @@ name: ship
 description: "Deliver assigned and reviewed work under the target project's rules. Use after implementation or when asked to deliver; the harness selects PR or main-checkout delivery, checks, acceptance and merge authority."
 ---
 
-Read the assignment and target root `AGENTS.md` with its delivery, tracker and
-acceptance rules.
+Read the assignment and target root `AGENTS.md` with its delivery and acceptance
+rules. The issue tracker should have been provided to you. If not, tell the user to
+run `/setup-matt-pocock-skills`.
 
 1. Read the implementation handoff. Match the task to its immutable review base and
    endpoint, Standards and Spec reports, dispositions, fixes and affected tests.
