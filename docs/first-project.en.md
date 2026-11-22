@@ -16,7 +16,7 @@ python3 tools/setup.py --project "$project" --ref "$kit_ref"
 
 Inspect the proposed settings, skills and the project file diff. Skill changes take one line each; `--full` prints their complete diff. Full setup includes all skills released at that revision. The task activates each practice: a question can end with an answer, while a large delivery can use `to-spec`, `to-tickets` and `implement-spec`. Project policy determines when to apply TDD, local Verify or an owner decision.
 
-For an existing project, inspect the sources of instructions, tracker, tests, CI and delivery rules. Reconcile material differences before applying. For example, a project requiring another Verify after CI selects a different workflow. Local checks can cover a project with no external CI.
+In a project with its own instructions, setup asks you to state the delivery route: `local`, `main`, `pr`, or the project's rule in words. It does not infer it. Inspect the listed documents and CI files and reconcile material differences before applying. For example, a project requiring another Verify after CI selects a different workflow. Local checks can cover a project with no external CI.
 
 ```bash
 python3 tools/setup.py --project "$project" --ref "$kit_ref" --apply
@@ -24,7 +24,7 @@ python3 tools/skills.py check --project "$project"
 python3 tools/setup.py --project "$project" --ref "$kit_ref"
 ```
 
-The same SHA and decisions produce an empty diff on the second preview. Run `python3 tools/setup.py --help` for settings. To take just one skill, use [selection with dependencies](distribution.md).
+The same SHA and decisions produce an empty diff on the second preview. Then invoke `$setup-matt-pocock-skills` once in the project: it configures the tracker, labels and domain docs that `to-spec`, `to-tickets` and `triage` expect. If the project needs behaviour checks, invoke `$create-verification-skill`: it generates the project's `verify-<app>` skill. Run `python3 tools/setup.py --help` for settings. To take just one skill, use [selection with dependencies](distribution.md).
 
 ## Start work in a fresh session
 
@@ -54,9 +54,9 @@ The supported decisions are listed in the [pinned defaults](../templates/project
 
 ## What the agent reads
 
-- Root instructions identify start authority, checkout, delivery mode and owner decisions. The [two workflow maps](../templates/project/WORKFLOW.md) show the branches.
-- The spec describes the expected outcome. The project's `testing.md` or existing equivalent names boundaries, commands, data and environment. A discovered command and a successful run have distinct statuses. A separate skill for choosing and configuring test types, static analysis and CI is **in development**.
-- One PR or local delivery gets one `code-review` call. Parallel Standards and Spec reviews feed one correction pass, affected tests and, if required, local Verify. A product failure or unavailable environment leaves a required criterion open.
+- Root instructions identify start authority, checkout, delivery mode and owner decisions. The [two workflow maps](../templates/project/WORKFLOW.md) show the branches, and the [parts map](parts.en.md) shows what each skill is for.
+- The spec describes the expected outcome. The project's `testing.md` or existing equivalent holds the testing strategy: the seam and kind of test for each kind of change. `to-spec` and `tdd` read it. The agent takes run commands from the project itself. A separate skill for choosing and configuring test types, static analysis and CI is **in development**.
+- One PR or local delivery gets one `code-review` call. Parallel Standards and Spec reviews feed one correction pass, affected tests and, if required, one pass of the project's `verify-<app>` skill. A product failure or unavailable environment leaves a required criterion open.
 - When local Verify passed on A and CI needs a fix on B, retain the observation on A, later edits, affected tests and CI on B. An enabled classifier runs once to identify the owner decision. The agent confirms the actual revision after authorized delivery.
 
 Open a fresh project session and ask: “The command should explain why an input file is missing. Which files tell you when to start, how to check that behavior and when you need me?” The first trial is complete when the agent can point to the answers and repeating setup gives an empty diff.

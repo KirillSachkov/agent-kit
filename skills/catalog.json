@@ -10,6 +10,7 @@
         "ask": "skills/engineering/ask",
         "code-review": "skills/engineering/code-review",
         "codebase-design": "skills/engineering/codebase-design",
+        "create-verification-skill": "skills/engineering/create-verification-skill",
         "diagnosing-bugs": "skills/engineering/diagnosing-bugs",
         "domain-modeling": "skills/engineering/domain-modeling",
         "grill-me": "skills/engineering/grill-me",
@@ -19,6 +20,7 @@
         "implement": "skills/engineering/implement",
         "implement-spec": "skills/engineering/implement-spec",
         "improve-codebase-architecture": "skills/engineering/improve-codebase-architecture",
+        "owner-attention": "skills/engineering/owner-attention",
         "pr": "skills/engineering/pr",
         "prototype": "skills/engineering/prototype",
         "research": "skills/engineering/research",
@@ -73,6 +75,13 @@
       "skill": "codebase-design",
       "group": "engineering",
       "source": "engineering/codebase-design",
+      "internal": false
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "create-verification-skill",
+      "group": "engineering",
+      "source": "engineering/create-verification-skill",
       "internal": false
     },
     {
@@ -141,18 +150,12 @@
       "internal": false,
       "dependencies": [
         {
-          "skill": "code-review",
-          "reason": "Review the delivery against coding standards and its requirements."
-        },
-        {
           "skill": "tdd",
-          "reason": "Drive implementation through the project-selected test seams.",
-          "feature": "tdd"
+          "reason": "Build the work test-first at pre-agreed seams."
         },
         {
-          "skill": "ship",
-          "reason": "Deliver the reviewed change using the Kit delivery procedure.",
-          "feature": "delivery"
+          "skill": "code-review",
+          "reason": "Review the finished work."
         }
       ]
     },
@@ -164,8 +167,12 @@
       "internal": false,
       "dependencies": [
         {
-          "skill": "implement",
-          "reason": "Apply the implementation and verification procedure to each delivery."
+          "skill": "tdd",
+          "reason": "Each implementer builds its ticket test-first."
+        },
+        {
+          "skill": "code-review",
+          "reason": "Review the integration branch once all tickets are complete."
         }
       ]
     },
@@ -189,6 +196,13 @@
           "reason": "Capture terminology and decisions for the selected candidate."
         }
       ]
+    },
+    {
+      "provider": "agent-kit",
+      "skill": "owner-attention",
+      "group": "engineering",
+      "source": "engineering/owner-attention",
+      "internal": false
     },
     {
       "provider": "agent-kit",
@@ -242,6 +256,11 @@
           "skill": "pr",
           "reason": "Shape the pull-request body.",
           "feature": "pr"
+        },
+        {
+          "skill": "owner-attention",
+          "reason": "Classify whether the finished change needs an owner decision.",
+          "feature": "owner-attention"
         }
       ]
     },

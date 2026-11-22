@@ -30,6 +30,7 @@ Selection shows why each dependency is included. For example, `implement` includ
 ## Inside the Kit
 
 - [Delivery routing experiment](experiments/delivery-routing/README.md) compares skill handoffs with a project-owned workflow on paired model runs.
+- The [parts map](docs/parts.en.md) shows the Kit's eight parts, the skills in each and the project files they read and write.
 - [Engineering skills](skills/README.md) supply procedures. The [example project harness](examples/agent-harness/README.en.md) shows a project using worktrees, pull requests and owner approval of a specific commit.
 - The [migration record](docs/migration.md) covers the preserved Agent Harness and Agent Clarity histories. Matt Pocock's skills retain their licenses, frozen source revision and adaptation diff. [Upstream maintenance](docs/upstream.md)
 - Run `python3 scripts/check.py` to check the catalog, source integrity and tool behavior on disposable projects.

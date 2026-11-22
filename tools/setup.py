@@ -314,71 +314,20 @@ def project_choices(defaults, previous, overrides):
         elif not isinstance(value, str) or not value.strip():
             raise ERROR(f"{key} must be nonempty text")
     choices = defaults | options
-    if choices.get("delivery", "local") not in ("pr", "main", "local"):
-        raise ERROR("delivery must be local, main or pr")
     if "instruction_owner" in options and options["instruction_owner"] not in ("AGENTS.md", "CLAUDE.md"):
         raise ERROR("instruction_owner must be AGENTS.md or CLAUDE.md")
     return options, choices
 
 
-PR = r"(?:pull requests?|PRs?)\b"
-NEGATION = r"(?:never|do not|must not|don't|cannot|no|without)\s+"
-PR_ACTION = r"(?:(?:open|create|submit|use|require)\s+)?(?:an? |the |draft )*"
 CLASSIFIER = r"\b(?:owner[- ]attention(?: classification| classifier)?|owner classifier)\b"
-DISABLED = r"(?:disabled?|off|optional and disabled|not (?:enabled|required)|never run|do not (?:use|run))"
-ENABLED = r"(?:enable[ds]?|on|require[ds]?|mandatory|must run|must use|always run|run|use)"
 
 
-def policy_constraints(line):
-    """Recognize explicit, unconditional choices, keeping each source sentence as evidence."""
-    prohibited = re.search(r"\b" + NEGATION + PR_ACTION + PR, line, re.I)
-    if prohibited:
-        if not re.search(r"\b(before|until|without|unless)\b", line[prohibited.end():], re.I):
-            yield "delivery", {"local", "main"}
-    elif re.search(r"\b(via|through|requires?|open|submit|create|use)\s+(?:an? |the |draft )*" + PR
-                   + r"|\b(?:delivery route|delivery)\s*:\s*pr\b", line, re.I):
-        yield "delivery", {"pr"}
-    if re.search(r"\b(?:deliver(?:y)?|land|commit)\s+(?:directly\s+)?(?:on|to|in|via)\s+"
-                 r"(?:the\s+)?main\b|\b(?:delivery route|delivery)\s*:\s*main\b", line, re.I):
-        yield "delivery", {"main"}
-    if re.search(r"\b(?:keep|deliver|delivery)\b.{0,38}\blocal(?:ly)?\b(?:\s+only)?\s*$|"
-                 r"\b(?:delivery route|delivery)\s*:\s*local\b", line, re.I):
-        yield "delivery", {"local"}
-    if re.search(r"\bno owner[- ]attention (?:classifier|classification)\b", line, re.I):
-        yield "owner_attention", {False}
-        return
-    for indicator, enabled in ((DISABLED, False), (ENABLED, True)):
-        if re.search(CLASSIFIER + r"\s*(?::|is|must be|=)?\s*" + indicator + r"\b|"
-                     r"\b" + indicator + r"\s+(?:the |an? )?" + CLASSIFIER, line, re.I):
-            yield "owner_attention", {enabled}
-            break
-
-
-def reconcile(project, policy, ci, options, choices):
+def reconcile(policy, ci, options, choices):
+    """Report process conflicts and the decisions an existing project must state itself."""
     if ci and "ci" not in options:
         choices["ci"] = "Found " + ", ".join(f"`{path}`" for path in ci) + ". Confirm required jobs and delivered revision with the project before delivery."
-    if (project / ".github/ISSUE_TEMPLATE").is_dir() and "tracker" not in options:
-        choices["tracker"] = "Use the assigned issue and the project's .github/ISSUE_TEMPLATE conventions."
-    material = conflicts(policy | ci)
-    constraints = {}
-    for name, body in policy.items():
-        for line in re.split(r"[\n.!?;]", body):
-            for key, allowed in policy_constraints(line):
-                constraints.setdefault(key, []).append((f"{name}: {line.strip()}", allowed))
-    missing = []
-    for key, rules in constraints.items():
-        if key not in choices:
-            continue
-        permitted = set.intersection(*(values for _, values in rules))
-        if key not in options and len(permitted) == 1:
-            choices[key] = next(iter(permitted))
-        if choices[key] not in permitted:
-            if key not in options:
-                missing.append(key)
-            for source, allowed in rules:
-                if key in missing or choices[key] not in allowed:
-                    material.append(f"{source}\n  Selected {key}: {json.dumps(choices[key])}.")
-    return material, missing
+    missing = ["delivery"] if policy and "delivery" not in options else []
+    return conflicts(policy | ci), missing
 
 
 def build_plan(project, ref, client, options):
@@ -394,7 +343,7 @@ def build_plan(project, ref, client, options):
     options, choices = project_choices(defaults, previous, options)
     docs, policy, testing = find_sources(project, templates, state, choices.get("testing_file"))
     checks, ci = project_checks(project)
-    material, missing = reconcile(project, policy, ci, options, choices)
+    material, missing = reconcile(policy, ci, options, choices)
     if defaults and "WORKFLOW.md" not in templates:
         raise ERROR(f"Missing pinned workflow template at {ref}")
     signature = sha(encoded(material))
@@ -405,12 +354,12 @@ def build_plan(project, ref, client, options):
         blocker = ("Resolve the displayed process conflict before --apply. Record the agreed 'resolution' "
                    f"and this conflict_id in the decisions JSON: {signature}")
     if missing:
-        blocker = "Choose " + ", ".join(missing) + " in the decisions JSON and preview the differences again."
+        blocker = ("This project has its own instructions. State " + ", ".join(missing) + " in the decisions JSON "
+                   "(local, main, pr, or the project's own rule in words) and preview again.")
     details = dict(choices)
     details["sources"] = ("Documents reached from the existing instructions: " + ", ".join(f"`{f}`" for f in policy) + "."
                           if policy else "No prior project policy was discovered.")
     details["testing_file"] = "<" + testing + ">" if testing and " " in testing else testing or ""
-    details["checks"] = "\n".join(checks) or "No local test command or test directory was discovered."
     details["resolution"] = "Project resolution: " + options["resolution"] if "resolution" in options else ""
     conditions = [name for name, body in policy.items()
                   if re.search(CLASSIFIER, name + "\n" + body, re.I)
@@ -455,13 +404,13 @@ def build_plan(project, ref, client, options):
     for name, raw in sorted(templates.items()):
         if name == TESTING and name != testing:
             continue
-        if defaults and ((name.startswith(".github/") and choices["delivery"] != "pr") or
+        if defaults and ((name.startswith(".github/") and choices["delivery"] in ("local", "main")) or
                          (name.endswith("/owner-attention.md") and (not choices["owner_attention"] or conditions))):
             continue
         before = read_optional(project, name)
         after = render(raw, details)
         if name not in managed and before is not None:
-            if name in (TESTING, "evidence-manifest.json", ".github/pull_request_template.md",
+            if name in (TESTING, ".github/pull_request_template.md",
                         "docs/agents/owner-attention.md"):
                 continue
             raise ERROR(f"Unmanaged project document already exists: {name}")

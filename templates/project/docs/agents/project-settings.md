@@ -9,7 +9,6 @@ settles a difference. Use defaults for questions the project leaves open.
 ## Taking a task
 
 - Language: @@language@@
-- Tracker: @@tracker@@
 - Start: @@start@@
 - Working context: @@worktree@@
 - Access and test data: @@access@@
@@ -25,6 +24,7 @@ settles a difference. Use defaults for questions the project leaves open.
 - Acceptance: @@acceptance@@
 - Push, merge, deployment and publication: @@publication@@
 - Cleanup: @@cleanup@@
+- Delivery checks: @@delivery_checks@@
 - Required CI: @@ci@@
 
 @@resolution@@

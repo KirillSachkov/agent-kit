@@ -31,8 +31,7 @@ A static pass does not establish live-agent adherence, semantic translation pari
 
 Tests protect behavior. Review checks the implementation. Where the task requires an observable
 scenario, a fresh agent that did not write the change verifies the corrected result after the
-single review and correction pass. Follow the portable
-[verification handoff](../../../../skills/engineering/implement/VERIFICATION.md).
+single review and correction pass.
 Use the task's acceptance criteria, not a global feature inventory. For this documentation-only
 example, an isolated synthetic walkthrough, an output table or an inspectable snippet can show
 the outcome; no browser or application server is required. Ordinary prose-only changes need

@@ -1,0 +1,5 @@
+repository: https://github.com/backnotprop/pstack
+revision: c3464c11c60b1352d5e8f5f0428a3a6943837568
+license: MIT, Copyright (c) 2026 Lauren Tan
+paths: skills/create-verification-skill, LICENSE
+sha256: 64ca15e295626d424f422c30e155c4f4ddba7bc327085963ba9ae1acbbdd8191

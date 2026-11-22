@@ -4,58 +4,39 @@ description: "Implement the result of /to-spec and /to-tickets in code."
 disable-model-invocation: true
 ---
 
-Read root `AGENTS.md` and its requirements, worktree, testing, human-participation,
-tracker and delivery pointers. Satisfy its start rule before writing. Confirm the
-approved spec, its published tickets, criteria, blockers and human checkpoints.
-If the ticket graph is missing, return the spec reference and the project's ticket-planning
-entrypoint. Resume on assignment once the agreed tickets exist. An authorized
-spec run covers its agreed child tasks, not new requirements.
+You have been provided a spec. This spec should have tickets associated with it, describing how to implement the spec.
 
-The goal is the assigned spec delivered in the project's selected mode: ticket
-PRs, an approved integration branch, or main-checkout delivery. Keep spec status,
-review reports and verification evidence in the project-selected ticket, PR,
-integration record or main-checkout evidence location; do not create a PR or branch
-solely to hold evidence. Record an immutable review base against
-the intended target. This procedure does not choose another acceptance mode.
+The issue tracker should have been provided to you. If not, tell the user to run `/setup-matt-pocock-skills`.
 
-Tickets form a **task graph** with blocking relationships and a ready **frontier**.
-Start each native subagent with a fresh context. Communicate through short context
-pointers to the spec, ticket, research and commits, rather than copying their bodies.
-Run independent workers in the background where the client and project permit it.
-A native subagent is not an independently assigned application session.
+The goal is the entire spec implemented on a single **integration branch**, with every ticket resolved the way the issue tracker closes work.
+
+The tickets are not a list of steps. They are a **task graph** with blocking relationships between them. This means there is always a **frontier** of tickets which are ready to be grabbed.
+
+Start every subagent with a fresh context window.
+
+Communication to and from subagents should be sparse. Communicate primarily through **context pointers**: to the spec, tickets, research notes, and previous commits. Don't duplicate information already available via pointers.
+
+**Implementer subagents** should be run in the background where possible for maximum concurrency.
 
 ## Steps
 
-1. Read the spec and ticket graph. Identify which tickets ship together and which
-   deliver separately, the expected result of each delivery, and its dependency gates.
-2. If exploration is needed, a fresh exploration subagent can write scoped notes
-   at the location selected by the target project's exploration and evidence policy,
-   accessible to later workers. If placement is unresolved, obtain the missing
-   project decision before writing notes; do not assume an inside- or outside-repo
-   location. Read-only exploration does not start another implementation beyond
-   the approved graph.
-3. Prepare the owned execution context under project policy. In integration mode,
-   prepare its branch/worktree. In ticket-PR mode,
-   each ticket follows its own delivery and dependency-merge gates. A main-checkout
-   project keeps its prescribed context and serialized writers.
-4. Use a fresh implementer for each ready ticket when native delegation is available.
-   Use separate owned worktrees/branches when permitted; serialize writers where the
-   project requires one main checkout. Each worker:
-   - verifies ownership and required immutable base; reports mismatch without reset;
-   - reads the project contract and task, uses `tdd` where required, and observes
-     accepted testing seams and human checkpoints;
-   - returns committed changes, checked revisions, evidence and blockers. Integration
-     workers update from the integration tip only by the project's permitted procedure.
-5. For tickets submitted together, have a fresh merger integrate their checked changes
-   where project rules permit.
-   If the owner requested a stop before review, return the assembled changes, review base
-   and affected test results at that boundary. For a full delivery, follow [Prepare one delivery](../implement/SKILL.md#prepare-one-delivery)
-   on the complete diff. For its single correction pass, use a fresh
-   implementer in an owned context. Run affected tests and required local Verify,
-   then hand the evidence to the delivery owner.
-   Integrators and `ship` consume that record. For separate ticket PRs, do this for
-   each PR and confirm its required acceptance/merge before unblocking dependents.
-6. Recompute the frontier from proven dependency outcomes and start newly ready work.
-   Keep independent authorized work moving while owner decisions are pending.
-7. Clean only owned, integrated child resources with no active writer or unsaved work.
-   Follow project rules for retained acceptance trees and unintegrated results.
+1. Read the spec and tickets to understand the task graph.
+
+2. (optional) Use an **exploration subagent** to conduct any exploration required by the tickets - relevant codebase files or external documentation. Ensure the exploration subagent can save files - it should save its markdown notes in a directory outside the repo, accessible by all future subagents. This lets **implementer subagents** focus on implementation rather than exploration.
+
+3. Create the integration branch. If the issue tracker closes work through PRs, or the user asks for one, open a draft PR after the first merge in step 5 (a branch with no commits ahead of main can't open one), marked as closing the spec and tickets.
+
+4. Use a fresh **implementer subagent** for each ticket, each in its own worktree on its own branch. Each implementer subagent:
+   - confirms its worktree is based on the integration branch before starting, and resets onto it if not;
+   - calls the Skill tool with `tdd` to build the ticket;
+   - merges the integration branch tip into its own branch before reporting done
+
+5. Once an **implementer subagent** completes, merge its work to the integration branch with a **merger subagent**.
+
+6. If this changes the **frontier** of available tickets, kick off more **implementer subagents** to work on the new tickets. This allows for maximum concurrency.
+
+7. Once all tickets are complete, call the Skill tool with `code-review` on the integration branch. Fix all issues raised by the code review in a single fresh **implementer subagent**.
+
+8. If a draft PR exists, mark it ready for review. Otherwise, resolve each ticket the way the issue tracker closes work, and report the integration branch.
+
+9. Clean up all **implementer subagent** worktrees.

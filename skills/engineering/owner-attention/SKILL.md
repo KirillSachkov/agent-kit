@@ -1,4 +1,7 @@
-# Owner-attention classification
+---
+name: owner-attention
+description: "Classify whether a finished change needs the owner's decision before delivery. Use once after technical checks pass, when the project enables owner-attention classification."
+---
 
 Read the target's conditions and the final delivery packet as a fresh, read-only subagent. Decide
 whether the owner must look before delivery. Do not edit files, request fixes, review code quality,

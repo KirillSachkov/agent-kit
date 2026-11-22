@@ -56,11 +56,13 @@ class ProjectStarterTest(unittest.TestCase):
                 (project / ".claude/skills").resolve(), (project / ".agents/skills").resolve(),
             )
             self.assertEqual(
-                (project / ".agents/skills/implement/VERIFICATION.md").read_text(),
-                self.git(KIT, "show", f"{ref}:skills/engineering/implement/VERIFICATION.md") + "\n",
+                (project / ".agents/skills/create-verification-skill/SKILL.md").read_text(),
+                self.git(KIT, "show", f"{ref}:skills/engineering/create-verification-skill/SKILL.md") + "\n",
             )
+            self.assertFalse((project / "evidence-manifest.json").exists())
 
-            for skill in ("grill-me", "to-spec", "to-tickets", "implement-spec"):
+            for skill in ("grill-me", "to-spec", "to-tickets", "implement", "implement-spec",
+                          "create-verification-skill"):
                 installed = project / ".agents/skills" / skill
                 frontmatter = (installed / "SKILL.md").read_text().split("---", 2)[1]
                 self.assertIn("disable-model-invocation: true", frontmatter.splitlines())

@@ -25,7 +25,7 @@ Omit otherwise. -->
 
 <!-- Record the review base, reviewed revision, delivered revision, original
 findings and dispositions, local Verify revision and limits, subsequent changes, CI on the final revision, and any
-rollback steps. Link the evidence manifest where permitted. -->
+rollback steps. Link the verification evidence where permitted. -->
 
 </details>
 

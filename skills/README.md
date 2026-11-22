@@ -2,7 +2,7 @@
 
 [Main entry](../README.en.md) · [Distribution](../docs/distribution.md)
 
-One editable source folder per skill. Supporting files stay inside that folder. Full setup offers every released skill. A project can also select one procedure and its dependencies.
+One editable source folder per skill. The [parts map](../docs/parts.en.md) shows which part each skill belongs to, who starts it and what it reads and writes. Supporting files stay inside that folder. Full setup offers every released skill. A project can also select one procedure and its dependencies.
 
 ## Engineering
 
@@ -10,6 +10,7 @@ One editable source folder per skill. Supporting files stay inside that folder. 
 | --- | --- |
 | [ask](engineering/ask/SKILL.md) | Available for explicit selection |
 | [code-review](engineering/code-review/SKILL.md) | Available for explicit selection |
+| [create-verification-skill](engineering/create-verification-skill/SKILL.md) | Available for explicit selection |
 | [codebase-design](engineering/codebase-design/SKILL.md) | Available for explicit selection |
 | [diagnosing-bugs](engineering/diagnosing-bugs/SKILL.md) | Available for explicit selection |
 | [domain-modeling](engineering/domain-modeling/SKILL.md) | Available for explicit selection |
@@ -20,6 +21,7 @@ One editable source folder per skill. Supporting files stay inside that folder. 
 | [implement](engineering/implement/SKILL.md) | Available for explicit selection |
 | [implement-spec](engineering/implement-spec/SKILL.md) | Available for explicit selection |
 | [improve-codebase-architecture](engineering/improve-codebase-architecture/SKILL.md) | Available for explicit selection |
+| [owner-attention](engineering/owner-attention/SKILL.md) | Available for explicit selection |
 | [pr](engineering/pr/SKILL.md) | Available for explicit selection |
 | [prototype](engineering/prototype/SKILL.md) | Available for explicit selection |
 | [research](engineering/research/SKILL.md) | Available for explicit selection |
@@ -41,7 +43,7 @@ One editable source folder per skill. Supporting files stay inside that folder. 
 
 - Clarify and plan: `ask`, `grill-me`, `grill-with-docs`, `domain-modeling`, `to-spec`, `to-tickets`.
 - Build and diagnose: `implement`, `implement-spec`, `tdd`, `diagnosing-bugs`, `prototype`.
-- Review and deliver: `code-review`, `pr`, `ship`, `retro`.
+- Review and deliver: `code-review`, `create-verification-skill`, `pr`, `ship`, `owner-attention`, `retro`.
 
 Read the selected SKILL.md before recommending or running its procedure. Invocation metadata and project policy determine when it can run.
 

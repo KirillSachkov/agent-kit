@@ -1,24 +1,17 @@
 ---
 name: implement
-description: "Implement an assigned task, spec or ticket after the target project's start rule is satisfied. Use for implementation requests; the harness decides whether ordinary assignment or a named entrypoint is required."
+description: "Implement a piece of work based on a spec or set of tickets."
+disable-model-invocation: true
 ---
 
-Implement the assigned work. First read target root `AGENTS.md`, applicable instructions and its implementation pointers. Satisfy its start rule before writing: a request, readiness label or this skill's discovery does not override that rule.
+Implement the work described by the user in the spec or tickets.
 
-For a whole specification, return the owner's command for `implement-spec`. If the user passes a ticket reference, fetch it from the configured issue tracker and state its title. If the reference is ambiguous, ask.
+If the user passes a ticket reference, fetch it from the issue tracker and state its title before starting. If the reference is ambiguous, ask.
 
-Prepare or reuse the execution context under project instructions. Record starting HEAD and an immutable review base covering the complete assigned change, including earlier commits when resuming.
+Call the Skill tool with "tdd" where possible, at pre-agreed seams.
 
-Before implementation, state the expected observable result from the task or spec. Read `testing.md` or the testing contract named by root instructions for the accepted boundaries, environment, development and delivery commands. Use `tdd` where the project requires it; the boundaries accepted there or in the task are its pre-agreed seams. Run targeted tests during implementation. Before preparing the diff, pass the project's pre-review checks. At an assigned stop before review, return the tested diff, review base and results.
+Run typechecking regularly, single test files regularly, and the full test suite once at the end.
 
-## Prepare one delivery
+Once done, call the Skill tool with "code-review" to review the work.
 
-Review everything submitted together. Several tickets in one PR share this step. For separately delivered PRs, complete this step for each PR. A worker contributing a part returns its changes and test results to the author of the combined delivery.
-
-Identify the delivery's immutable base, complete candidate snapshot and requirement source in the project's review/commit order. For commit-first review, commit the assigned changes. For pre-commit review, freeze scoped content as an immutable Git tree with the project helper or a temporary index, preserving the real index and branch.
-
-Match any existing review handoff to that scope and those endpoints. Reuse both reports for a matching snapshot, or resume at the recorded step when the only later edits are its documented corrections. Otherwise invoke `code-review` on the complete delivery once. Its independent Standards and Spec reviewers read the same immutable diff in parallel. Complete one fix pass, record each disposition, rerun affected tests and freeze the corrected content. For pre-commit review, verify the delivered commit tree against that final content. Give a reason for any optional suggestion left open.
-
-Before opening the PR or waiting for CI, run [local Verify](VERIFICATION.md) once on the corrected revision if the target requires it. Record the project-based reason when it is inapplicable. A failed or unavailable required criterion keeps delivery open.
-
-Pass the task, review endpoints and both reports, fixes and dispositions, test results, and local Verify verdict, revision, artifacts and limits to `ship` for Kit-managed delivery, or to the handoff named by the project.
+Commit your work to the current branch.

@@ -7,7 +7,7 @@ Use only fictional data. Keep the observed table and copied instructions outside
 
 ## Context
 
-Copy the example and the complete `implement`, `implement-spec`, `code-review`, `ship` and `pr` folders,
+Copy the example and the complete `implement`, `implement-spec`, `code-review`, `ship`, `pr` and `owner-attention` folders,
 preserving their relative paths. Start with this example's root `AGENTS.md` and follow its pointers.
 No implementation is assigned by copying files. Record the exact source commit and task inputs.
 Use the following requests as simulations; do not push, merge or contact an owner.

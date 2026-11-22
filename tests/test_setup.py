@@ -52,7 +52,13 @@ class SetupTest(unittest.TestCase):
         self.git("commit", "-qm", title)
         return self.git("rev-parse", "HEAD")
 
-    def setup(self, *flags, status=0):
+    def setup(self, *flags, status=0, decide=True):
+        # A project with its own instructions must state its delivery route. Fixtures choose local
+        # on the first run; later runs reuse the recorded decision.
+        if decide and "--decisions" not in flags and not (self.project / ".agents/setup-lock.json").exists():
+            default = self.base / "default-decisions.json"
+            default.write_text(json.dumps({"delivery": "local"}))
+            flags = ("--decisions", default, *flags)
         run = subprocess.run([sys.executable, self.provider / "tools/setup.py", "--project", self.project,
                               "--ref", self.ref, *flags], capture_output=True, text=True, env=self.env)
         self.assertEqual(run.returncode, status, run.stdout[-3000:] + run.stderr)
@@ -60,6 +66,7 @@ class SetupTest(unittest.TestCase):
 
     def decisions(self, **choices):
         path = self.base / "decisions.json"
+        choices.setdefault("delivery", "local")
         path.write_text(json.dumps(choices))
         return ["--decisions", path]
 
@@ -80,7 +87,7 @@ class SetupTest(unittest.TestCase):
         self.assertEqual(list(self.project.iterdir()), [])
         self.setup("--client", "both", "--apply")
         self.assertIn("WORKFLOW.md", (self.project / "AGENTS.md").read_text())
-        self.assertIn("No local test command", (self.project / "docs/agents/testing.md").read_text())
+        self.assertIn("No testing strategy is agreed yet", (self.project / "docs/agents/testing.md").read_text())
         self.assertNotIn("Unselected", (self.project / "WORKFLOW.md").read_text())
         self.assertEqual((self.project / ".agents/skills/probe/reference.txt").read_text(), "v1\n")
         self.assertTrue((self.project / ".claude/skills").is_symlink())
@@ -103,8 +110,12 @@ class SetupTest(unittest.TestCase):
         workflows = self.project / ".github/workflows"
         workflows.mkdir(parents=True)
         (workflows / "test.yaml").write_text("name: Sample CI\n")
-        self.assertIn("fixture database", self.setup("--client", "both", "--full"))
-        preview = self.setup("--client", "both", "--apply")
+        self.assertIn("State delivery in the decisions JSON", self.setup("--client", "both", status=1, decide=False))
+        self.assertEqual({p.name for p in self.project.iterdir()},
+                         {".claude", "CLAUDE.md", "docs", "Makefile", ".github"})
+        route = self.decisions(delivery="pr")
+        self.assertIn("fixture database", self.setup(*route, "--client", "both", "--full"))
+        preview = self.setup(*route, "--client", "both", "--apply")
         for found in ("Existing project document: docs/checks.md", "make check", ".github/workflows/test.yaml"):
             self.assertIn(found, preview)
         self.assertNotIn("fixture database", preview)
@@ -176,24 +187,20 @@ class SetupTest(unittest.TestCase):
         external = self.base / "private.md"
         external.write_text("UNRELATED PRIVATE DATA")
         (gates / "linked.md").symlink_to(external)
-        for route, choice, classifier, enabled in (
-                ("Deliver on main only.", "main", "Every delivery requires the owner-attention classifier.", True),
-                ("Keep every change local.", "local", "Owner attention classifier is disabled.", False)):
-            contract.write_text(f"Never open a PR. {route} {classifier}\n"
-                                "Read [release](../release.md) and [external](../../../private.md).\n"
-                                "Read [linked](linked.md).\n")
-            preview = self.setup()
-            self.assertNotIn("UNRELATED PRIVATE DATA", preview)
-            self.assertIn(f"Delivery route: {choice}", preview)
-            self.assertIn("Owner attention classifier: " + ("Enabled" if enabled else "Disabled"), preview)
-            self.assertNotIn("pull_request_template", preview)
-            contrary = self.setup(*self.decisions(delivery="pr", owner_attention=not enabled), "--apply", status=1)
-            self.assertIn("Selected delivery:", contrary)
-            self.assertIn("Selected owner_attention:", contrary)
-            self.assertFalse((self.project / ".agents").exists())
+        contract.write_text("Never open a PR. Deliver on main only.\n"
+                            "Read [release](../release.md) and [external](../../../private.md).\n"
+                            "Read [linked](linked.md).\n")
+        preview = self.setup("--full")
+        self.assertNotIn("UNRELATED PRIVATE DATA", preview)
+        self.assertIn("Never open a PR", preview)
+        self.assertIn("Delivery route: local", preview)
+        self.assertNotIn("pull_request_template", preview)
+        mixed = self.setup(*self.decisions(delivery="Small fixes land on main; larger changes use a PR."))
+        self.assertIn("Delivery route: Small fixes land on main; larger changes use a PR.", mixed)
+        self.assertIn("pull_request_template", mixed)
         contract.write_text("Every delivery requires the owner-attention classifier.\n"
                             "Its statuses are Owner signoff and No owner attention needed.\n")
-        self.setup("--apply")
+        self.setup(*self.decisions(owner_attention=True), "--apply")
         settings = (self.project / "docs/agents/project-settings.md").read_text()
         self.assertIn("Enabled. Apply `policy/gates/acceptance.md`", settings)
         self.assertFalse((self.project / "docs/agents/owner-attention.md").exists())
@@ -245,18 +252,25 @@ class SetupTest(unittest.TestCase):
         self.assertTrue(lock.exists())
         self.assertFalse((self.project / "AGENTS.md").exists())
 
-    def test_generated_check_inventory_and_project_decisions(self):
+    def test_project_decisions_and_discovered_commands(self):
         (self.project / "package.json").write_text(json.dumps({"packageManager": "pnpm@9",
                                 "scripts": {"test:unit": "vitest run", "lint": "eslint src"}}))
         args = self.decisions(ci="No remote CI.", access="Use the synthetic fixture service.",
-                              development_checks="Run the unit suite.", delivery="pr", owner_attention=True)
-        self.setup(*args, "--apply")
+                              testing="Order rules are tested at the checkout API.",
+                              delivery="pr", owner_attention=True)
+        preview = self.setup(*args, "--apply")
+        for fact in ("pnpm run test:unit", "vitest run", "pnpm run lint"):
+            self.assertIn(fact, preview)
         testing = (self.project / "docs/agents/testing.md").read_text()
-        for content in ("pnpm run test:unit", "vitest run", "pnpm run lint", "project root",
-                        "synthetic fixture service", "No remote CI.", "Run the unit suite."):
-            self.assertIn(content, testing)
+        self.assertIn("Order rules are tested at the checkout API.", testing)
+        self.assertNotIn("pnpm", testing)
+        settings = (self.project / "docs/agents/project-settings.md").read_text()
+        for content in ("synthetic fixture service", "No remote CI.", "Delivery checks:"):
+            self.assertIn(content, settings)
+        self.assertNotIn("Tracker", settings)
         self.assertTrue((self.project / "docs/agents/owner-attention.md").is_file())
         self.assertTrue((self.project / ".github/pull_request_template.md").is_file())
+        self.assertFalse((self.project / "evidence-manifest.json").exists())
         self.assertIn("No changes.", self.setup())
 
     def test_two_instruction_roots_delegate_or_require_an_explicit_owner(self):

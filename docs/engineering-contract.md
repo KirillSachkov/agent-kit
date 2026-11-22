@@ -19,50 +19,52 @@ valid; consumers do not need to recreate the donor's `docs/agents` folder. A mis
 required decision remains unresolved, but an absent optional filename is not a reason
 to invent another approval, worktree or setup task.
 
+## Parts and assembly
+
+The Kit is a set of parts that each work alone; the [parts map](parts.en.md) lists
+every skill and project file with its part. Matt Pocock's skills are the unedited
+base. The Kit adds its own skills only where he has none: `ship`, `owner-attention`
+and the pstack `create-verification-skill`. The [starter workflow](../templates/project/WORKFLOW.md)
+connects the parts a project enables. A rule about how parts connect lives in that
+workflow, never inside a borrowed skill.
+
 ## Native clients
 
 Borrowed skills keep Matt's “call the Skill tool” wording. The starter's root
-instructions tell a client without that tool to read the named `SKILL.md`. This changes the
-loading mechanism, not the target project's permission to start or delegate.
+instructions tell a client without that tool to read the named `SKILL.md`.
 
-`implement` is discoverable in both clients. Its availability does not grant
-execution: a harness may still require the owner to name an entrypoint.
-`grill-me`, `to-spec`, `to-tickets` and `implement-spec` retain their human-only invocation metadata. The [starter workflow](../templates/project/WORKFLOW.md) hands an accepted spec back for ticketing. A separate implementation assignment consumes the approved, published graph.
+`implement`, `implement-spec`, `grill-me`, `to-spec`, `to-tickets` and
+`create-verification-skill` keep their human-only invocation metadata. The starter
+workflow hands an accepted spec back for ticketing, and lets a plain assignment count
+as invoking `implement` when the project's start rule allows it.
 
-## Shared invariants
+## Review, verification and delivery
 
-The unit of review is the delivery. One PR containing several tickets gets one
-review of their full diff. Separately delivered PRs each get their own review.
-Both independent reviewers read the same immutable endpoints in parallel. The
-author combines the findings into one fix pass, records dispositions and reruns
-affected tests. For pre-commit review, record the reviewed snapshot separately,
-freeze corrections and confirm that the delivered commit matches the final content.
+`implement` and `implement-spec` call `code-review` once on the finished work. Its
+two reviewers read the same diff in parallel. The workflow has the author resolve
+the findings in one pass and rerun the affected tests.
 
-## Verification and attention
+`create-verification-skill` generates a project-local `verify-<app>` skill that
+launches the app and drives it as a user. When the project requires verification,
+the workflow runs that skill once on the corrected revision before a PR, checks
+every acceptance criterion and records the action, observation and revision. A
+product failure or an unavailable environment keeps delivery open.
 
-After corrections, `implement` runs [local Verify](../skills/engineering/implement/VERIFICATION.md)
-once if the project requires it, before opening a PR. The project decides scenarios,
-environment, evidence storage and verifier independence. A failed or unavailable
-required criterion keeps delivery open. `implement-spec` uses the same
-[delivery steps](../skills/engineering/implement/SKILL.md#prepare-one-delivery)
-on each complete deliverable.
+`ship` takes the review reports, fixes, test results and verification record from
+the author. It reuses them in acceptance and, for a PR, its description. CI
+corrections receive affected tests and required CI on the new head. The
+verification record stays attached to its original revision.
 
-`ship` takes the review reports, fixes, affected tests and local Verify evidence
-from the author. It reuses them in acceptance and, for a PR, its description. CI
-corrections receive affected tests and required CI on the new head. The local
-Verify record stays attached to its original revision. The PR or local record
-shows later changes, the final head and its check results.
-
-After technical checks, `ship` invokes the optional [owner-attention classification](../skills/engineering/ship/OWNER-ATTENTION.md)
-once if configured. Project rules govern owner decisions and delivery authority.
-Confirm the actual delivered revision before completing the task and cleaning
-owned resources. The [starter](first-project.en.md) includes
-copyable conditions, a PR body and an evidence manifest.
+After technical checks, `ship` invokes the optional [owner-attention](../skills/engineering/owner-attention/SKILL.md)
+skill once if configured. Project rules govern owner decisions and delivery
+authority. Confirm the actual delivered revision before completing the task and
+cleaning owned resources.
 
 ## Maintenance
 
 The [reference record](../provenance/engineering-reference.json) records the source
-commit and deliberate adaptations. Matt's pristine baseline, licenses and rename
-map stay intact. Use the [three-way update workflow](upstream.md); commit and review
-the library before a consumer explicitly selects the new full SHA. Shared source
-updates never silently refresh installed copies or change project authority.
+commits and deliberate adaptations. Matt's pristine baseline, licenses and rename
+map stay intact; use the [three-way update workflow](upstream.md) for it. The pstack
+baseline and its revision are kept under `provenance/upstream/pstack`. Commit and
+review the library before a consumer explicitly selects the new full SHA. Shared
+source updates never silently refresh installed copies or change project authority.
