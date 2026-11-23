@@ -1,15 +1,10 @@
 {
   "language": "Use the language of the assignment.",
-  "start": "Start implementation when the owner invokes `implement` or `implement-spec` for the task.",
-  "worktree": "Use the checkout you were started in. Preserve other writers.",
   "access": "Use local synthetic data. Confirm required external services, credentials and access with the project.",
   "delivery": "local",
   "verify": "Verify when user-visible behaviour changes or the task has key scenarios. Otherwise the delivery says in one line why not.",
   "verifier": "A fresh agent that did not write the change.",
   "evidence": "Attach evidence files to the PR (`gh --attach` on GitHub), test data only. Without a PR keep them where the project's verify skill names.",
-  "acceptance": "Report the result and open criteria to the task owner for acceptance.",
-  "publication": "Obtain specific authority from the owner before pushing, merging, deploying or publishing.",
-  "cleanup": "Retire only assigned resources after authorized delivery and checking for unpublished work.",
   "ci": "No external CI is required for the local baseline.",
   "delivery_checks": "Run all required local checks and record results at the delivery revision.",
   "owner_gate": "owner"

@@ -265,8 +265,10 @@ class SetupTest(unittest.TestCase):
         self.assertIn("Data and services tests may use: Use the synthetic fixture service.", testing)
         self.assertNotIn("pnpm", testing)
         settings = (self.project / "docs/agents/project-settings.md").read_text()
-        for content in ("synthetic fixture service", "No remote CI.", "Delivery checks:"):
+        for content in ("No remote CI.", "Delivery checks:", "## Read by `ship`"):
             self.assertIn(content, settings)
+        for retired in ("Start:", "Working context:", "Acceptance:", "Cleanup:", "synthetic fixture service"):
+            self.assertNotIn(retired, settings)
         self.assertNotIn("Tracker", settings)
         self.assertTrue((self.project / "docs/agents/owner-gate.md").is_file())
         self.assertFalse((self.project / ".github").exists())

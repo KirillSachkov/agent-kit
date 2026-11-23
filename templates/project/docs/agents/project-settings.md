@@ -1,29 +1,25 @@
 # Project settings
 
-These choices apply to the workflow in [WORKFLOW.md](../../WORKFLOW.md). The project's own
-instructions govern their scope. Apply the recorded project resolution where it
-settles a difference. Use defaults for questions the project leaves open.
+The project's own instructions govern their scope; apply the recorded resolution where it
+settles a difference.
 
 @@sources@@
 
-## Taking a task
-
-- Language: @@language@@
-- Start: @@start@@
-- Working context: @@worktree@@
-- Access and test data: @@access@@
-
-## Delivering a change
+## Read by `ship`
 
 - Delivery route: @@delivery@@
-- Verification: @@verify@@
-- Verifier: @@verifier@@
-- Evidence: @@evidence@@
-- Owner gate: @@owner_gate@@
-- Acceptance: @@acceptance@@
-- Push, merge, deployment and publication: @@publication@@
-- Cleanup: @@cleanup@@
 - Delivery checks: @@delivery_checks@@
 - Required CI: @@ci@@
+- Owner gate: @@owner_gate@@
+
+## Read at the verify step
+
+- Verification: @@verify@@
+- Verifier: @@verifier@@
+
+## Read by `pr`
+
+- Language: @@language@@
+- Evidence: @@evidence@@
 
 @@resolution@@
