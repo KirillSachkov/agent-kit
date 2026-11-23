@@ -30,7 +30,17 @@ SITUATIONS = {
     "ci-fix": "needs-owner",         # CI fails once on a fixable docs check
     "ci-outage": "blocked",          # CI fails for a reason outside the repository
     "spec": "needs-owner",           # a spec with three tickets, one blocked by another, delivered together
+    "rework": "needs-owner",         # the owner comments on the open PR and the chain takes the work again
 }
+FEEDBACK = "Trim the name: `python3 greet.py ' Ada '` must print `Hello, Ada!`."
+# A trial leaves no session history and reads no personal client settings.
+CLIENTS = """
+[agents.claude]
+command = 'claude -p {prompt} --setting-sources project --model {model} --no-session-persistence --output-format stream-json --verbose --dangerously-skip-permissions'
+
+[agents.codex]
+command = '''codex exec --ignore-user-config --ephemeral --skip-git-repo-check --sandbox danger-full-access --disable apps --disable plugins --enable skip_host_skill_discovery -c 'web_search="disabled"' -m {model} --json {prompt}'''
+"""
 EXECUTORS = ("steps", "conductor", "steps-direct")  # the first two start from /deliver in a session
 
 
@@ -60,7 +70,7 @@ def prepare(root, situation, ref=None, executor="steps", agent="claude", model="
     for key, value in (("executor", "conductor" if executor == "conductor" else "steps"), ("agent", agent), ("model", model)):
         text, count = re.subn(rf'^{key} = "[^"]*"', f'{key} = "{value}"', text, count=1, flags=re.M)
         assert count == 1, key
-    pipeline.write_text(text)
+    pipeline.write_text(text + CLIENTS)
     git = ["git", "-c", "user.name=Bench", "-c", "user.email=bench@example.invalid", "-c", "commit.gpgsign=false"]
     sh([*git, "init", "-q", "-b", "main"], project)
     ref = ref or sh(["git", "rev-parse", "HEAD"], KIT).stdout.strip()
@@ -79,25 +89,39 @@ def prepare(root, situation, ref=None, executor="steps", agent="claude", model="
     env = {key: value for key, value in os.environ.items() if not key.startswith("ORCA_")}
     path = [part for part in env["PATH"].split(os.pathsep) if not (Path(part) / "orca").exists()]
     env |= {"PATH": os.pathsep.join([str(HERE / "bin"), *path]), "FAKE_GH_STATE": str(state), "PYTHONDONTWRITEBYTECODE": "1"}
+    # Codex runs commands in a login shell, which rebuilds PATH from the profile: keep the gh double first there too.
+    profile = root / "zsh"
+    profile.mkdir()
+    (profile / ".zprofile").write_text(f'export PATH="{HERE / "bin"}:$PATH"\n')
+    env["ZDOTDIR"] = str(profile)
     return project, env
 
 
-def execute(project, env, executor, agent, model, timeout, task):
+def execute(project, env, executor, agent, model, timeout, task, situation="happy"):
     """`steps-direct` runs the program from a terminal. The other two say /deliver to one session,
     which leads the chain as the pipeline's `executor` tells it."""
     started = time.monotonic()
-    logs = project / ".factory/logs/session"
+    logs = project / ".factory/_session"
     logs.mkdir(parents=True)
+    program = [sys.executable, str(project / ".agents/skills/deliver/factory.py")]
+    tail = [task, "--project", str(project), "--timeout", str(timeout)]
     if executor == "steps-direct":
-        argv = [sys.executable, str(project / ".agents/skills/deliver/factory.py"), "run", task,
-                "--project", str(project), "--timeout", str(timeout)]
+        argv = [*program, "run", *tail]
     else:
-        argv = factory.agent_argv(agent, model, ("$" if agent == "codex" else "/") + "deliver " + task)
-    with (logs / "session-1.jsonl").open("w") as out, (logs / "session-1.stderr").open("w") as err:
-        try:
-            subprocess.run(argv, cwd=project, env=env, stdin=subprocess.DEVNULL, stdout=out, stderr=err, timeout=timeout * 4)
-        except subprocess.TimeoutExpired:
-            pass
+        argv = factory.agent_argv(factory.load_pipeline(project)[0], agent, model, "/deliver " + task)
+    def call(argv, name):
+        with (logs / f"{name}.jsonl").open("w") as out, (logs / f"{name}.stderr").open("w") as err:
+            try:
+                subprocess.run(argv, cwd=project, env=env, stdin=subprocess.DEVNULL, stdout=out, stderr=err, timeout=timeout * 4)
+            except subprocess.TimeoutExpired:
+                pass
+    call(argv, "session-1")
+    call([*program, "wait", *tail], "wait-1")  # the session may end while the run it started goes on
+    if situation == "rework" and factory.Task(project, task).stage() == "needs-owner":
+        state = json.loads((project.parent / "gh-state.json").read_text())
+        state["prs"][0].setdefault("comments", []).append(FEEDBACK)
+        (project.parent / "gh-state.json").write_text(json.dumps(state) + "\n")
+        call([*program, "run", *tail, "--stage", "rework"], "rework-run")
     return round(time.monotonic() - started, 1)
 
 
@@ -151,28 +175,29 @@ def reached_outside(logs):
 def grade(root, project, situation):
     """Read the end state from git, the task file and the gh double. Nothing here trusts what the agent said."""
     state = json.loads((root / "gh-state.json").read_text())
-    task = project / work(situation)
-    branch = "task/" + factory.work_name(task)
-    def git(*args):
-        return sh(["git", *args], project, check=False).stdout.strip()
-    commits = git("log", "--oneline", f"main..{branch}").splitlines()
-    tests = sh([sys.executable, "-m", "unittest", "discover", "-s", "tests", "-q"], project, check=False)
+    task = factory.Task(project, work(situation))
+    place = Path(task.state().get("worktree") or project)  # where the work happened
+    commits = sh(["git", "log", "--oneline", "main..HEAD"], place, check=False).stdout.splitlines()
+    tests = sh([sys.executable, "-m", "unittest", "discover", "-s", "tests", "-q"], place, check=False)
     def cli(*args):
-        done = sh([sys.executable, "greet.py", *args], project, check=False)
+        done = sh([sys.executable, "greet.py", *args], place, check=False)
         return done.returncode, done.stdout.strip(), done.stderr.strip()
-    logs = sorted((project / ".factory/logs").rglob("*.jsonl"))
-    logs = [log for log in logs if log.name != "steps.jsonl"]
-    used = {log.relative_to(project / ".factory/logs").as_posix(): skills_used(log) for log in logs}
+    logs = sorted(log for log in (project / ".factory").rglob("*.jsonl")
+                  if log.name != "steps.jsonl" and not log.name.startswith("wait-"))
+    used = {log.relative_to(project / ".factory").as_posix(): skills_used(log) for log in logs}
     everything = [name for names in used.values() for name in names]
-    report = project / ".evidence/report.md"
+    report = place / ".evidence/report.md"
     pr = state["prs"][0] if state["prs"] else None
     facts = {
-        "final_stage": factory.stage(task),
+        "final_stage": task.stage(),
+        "own_worktree": place != project,
+        "branch": sh(["git", "branch", "--show-current"], place, check=False).stdout.strip(),
         "expected_stage": SITUATIONS[situation],
         "commits_on_branch": len(commits),
         "tests_pass": tests.returncode == 0,
         "behaviour": cli("Ada") == (0, "Hello, Ada!", "") and cli()[0] == 2 and "Name required" in cli()[2]
-                     and (situation != "spec" or cli("--shout", "Ada")[:2] == (0, "HELLO, ADA!")),
+                     and (situation != "spec" or cli("--shout", "Ada")[:2] == (0, "HELLO, ADA!"))
+                     and (situation != "rework" or cli(" Ada ")[:2] == (0, "Hello, Ada!")),
         "outside": reached_outside(logs),
         "review_ran": "code-review" in everything,
         "tdd_loaded": "tdd" in everything,
@@ -190,7 +215,7 @@ def grade(root, project, situation):
         "skills_by_session": used,
     }
     passed = (facts["final_stage"] == facts["expected_stage"] and facts["merge_attempts"] == 0 and facts["review_ran"]
-              and not facts["outside"])
+              and not facts["outside"] and facts["own_worktree"])
     if facts["expected_stage"] == "needs-owner":
         passed = passed and facts["behaviour"] and facts["tests_pass"] and facts["pr_opened"] and facts["ci_runs"][-1:] == [True]
     if situation == "verify-blocked":
@@ -215,7 +240,7 @@ def main(argv=None):
     if args.prepare_only:
         print(project)
         return 0
-    seconds = execute(project, env, args.executor, args.agent, args.model, args.timeout, work(args.situation))
+    seconds = execute(project, env, args.executor, args.agent, args.model, args.timeout, work(args.situation), args.situation)
     facts = grade(root, project, args.situation) | {"situation": args.situation, "executor": args.executor,
                                                     "agent": args.agent, "model": args.model, "seconds": seconds}
     (root / "result.json").write_text(json.dumps(facts, indent=2, ensure_ascii=False) + "\n")

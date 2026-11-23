@@ -11,6 +11,7 @@
 
 - Verification: verify when user-visible behaviour changes or the task has key scenarios
 - Verifier: a fresh agent that did not write the change
+- Verification report: `.evidence/`
 
 ## Read by `pr`
 

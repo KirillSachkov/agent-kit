@@ -25,11 +25,17 @@ elif step == "verify":
     print('{"item":{"type":"command_execution","command":"cat .agents/skills/verify-greet/SKILL.md"}}')
 elif step == "ship":
     run("git", "push", "-q", "-u", "origin", "HEAD")
-    run("gh", "pr", "create", "--title", "Greet by name", "--body", "## What changed\n\nGreets by name.")
+    run("gh", "pr", "create", "--title", "Greet by name", "--body", "## What changed\n\nGreets by name.", check=False)
     if run("gh", "pr", "checks", "--required", check=False).returncode and "usage line" in run("gh", "run", "view", "--log-failed").stdout:
         readme = Path("README.md")
         readme.write_text(readme.read_text() + "\nUsage: `python3 greet.py <name>`\n")
         run("git", "commit", "-qam", "Document the usage line")
         run("git", "push", "-q")
+elif step == "rework":
+    assert "Trim the name" in run("gh", "pr", "view", "--json", "comments").stdout
+    greet = Path("greet.py")
+    greet.write_text(greet.read_text().replace("{sys.argv[1]}", "{sys.argv[1].strip()}"))
+    run("git", "commit", "-qam", "Trim the name")
+    print('{"item":{"type":"command_execution","command":"cat .agents/skills/code-review/SKILL.md"}}')
 else:
     sys.exit(f"fake agent: no script for step {step}")

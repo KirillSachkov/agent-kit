@@ -2,9 +2,12 @@
 # A step starts from the stage in `when`, runs one fresh agent session with `run`,
 # and moves the task to `then` when `check` exits 0. Exit 3 from a check means a retry cannot help.
 executor = "steps"          # who leads the chain under /deliver: "steps" or "conductor"
-agent = "claude"            # the client and model the step sessions use
+agent = "claude"            # the client and model of every step; a step may name its own
 model = "sonnet"
+base = "main"               # a run started on this branch gets a worktree of its own
+worktrees = "../{project}-worktrees"
 branch = "task/{name}"
+# setup = "npm ci"          # run once in a new worktree
 
 [[step]]
 name = "implement"
@@ -33,7 +36,18 @@ then = "delivery"
 [[step]]
 name = "ship"
 when = "delivery"
-run = "Ship the committed work on this branch for the task in {task}. The verification report is at .evidence/report.md."
+run = "Ship the committed work on this branch for the task in {task}."
 check = """gh pr view --json state -q .state | grep -q OPEN && gh pr checks --required >/dev/null"""
 attempts = 2
 then = "needs-owner"
+
+# The owner asked for changes on the PR: `run <task> --stage rework`.
+[[step]]
+name = "rework"
+when = "rework"
+run = "Address the owner's unresolved feedback on this branch's pull request for the task in {task}: read its reviews and comments, change the code and commit."
+check = """test -n "$(git log main..HEAD --oneline)" \
+  && test -z "$(git status --porcelain -- . ':!.scratch')" \
+  && python3 -m unittest discover -s tests -q"""
+attempts = 2
+then = "verify"

@@ -123,7 +123,8 @@ def main(argv):
                 emit({"number": pr["number"], "title": pr["title"], "body": pr["body"], "state": pr["state"],
                       "isDraft": pr["isDraft"], "headRefName": pr["head"], "baseRefName": pr["base"],
                       "headRefOid": sha if run else "", "mergeCommit": None, "reviewDecision": "REVIEW_REQUIRED",
-                      "url": f"https://github.com/fixture-owner/greet/pull/{pr['number']}"}, rest)
+                      "comments": [{"author": {"login": "fixture-owner"}, "body": body} for body in pr.get("comments", [])],
+                      "reviews": [], "url": f"https://github.com/fixture-owner/greet/pull/{pr['number']}"}, rest)
             elif action == "edit":
                 body = option(rest, "--body", "-b")
                 body_file = option(rest, "--body-file", "-F")
