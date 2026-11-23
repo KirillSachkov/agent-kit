@@ -1,4 +1,4 @@
-# Project instructions
+## Agent Kit
 
 Read [project settings](docs/agents/project-settings.md) for delivery, verification and the owner gate. When the settings file is missing, tell the user to run the `setup-agent-kit` skill.
 A standalone question ends with its answer.

@@ -297,8 +297,22 @@ class SetupTest(unittest.TestCase):
         catalog.write_text(json.dumps(inventory))
         self.ref = self.release("Retire it")
         preview = self.setup()
-        self.assertIn(f".agents/skills/retired: not in this release, stays installed at {old}", preview)
+        self.assertIn(".agents/skills/retired: no longer in the Kit; removed, as the project never edited it", preview)
         self.assertRegex(preview, r"/ probe, sha256 [0-9a-f]{12}, pin only\n")
+        self.assertTrue((self.project / ".agents/skills/retired").is_dir())  # a preview removes nothing
+        edited = self.base / "edited"
+        shutil.copytree(self.project, edited, symlinks=True)
+        (edited / ".agents/skills/retired/SKILL.md").write_text("local edit\n")
+        run = subprocess.run([sys.executable, self.provider / "tools/setup.py", "--project", edited, "--ref", self.ref, "--apply"],
+                             capture_output=True, text=True, env=self.env)
+        self.assertIn("Refusing locally edited copy: .agents/skills/retired", run.stdout + run.stderr)
+        self.assertTrue((edited / ".agents/skills/retired").is_dir())
+        self.setup("--apply")
+        self.assertFalse((self.project / ".agents/skills/retired").exists())
+        self.assertNotIn("retired", (self.project / ".agents/skills-lock.json").read_text())
+        self.assertNotIn("retired", (self.project / ".agents/skills-manifest.json").read_text())
+        self.assertEqual(len(list((self.project / ".agents/skills-backups").glob("retired-*/retired/SKILL.md"))), 1)
+        self.assertIn("No changes.", self.setup("--apply"))
         (self.provider / "skills/engineering/probe/reference.txt").write_text("v2\n")
         self.ref = self.release("Change one file")
         self.assertRegex(self.setup(), r"/ probe, sha256 [0-9a-f]{12}, 1 changed file\n")

@@ -148,6 +148,7 @@ class SetupPlan:
     skill_lock: dict
     link: tuple | None
     notes: list
+    retired: list  # destinations of skills that left the Kit and that the project never edited
 
     def needs_link(self):
         return self.link and not self.link[1].is_symlink()
@@ -179,7 +180,19 @@ def build_plan(project, ref, client, owner_choice):
     catalog_dir = KIT / "skills"
     catalog = skills.read_json(catalog_dir / "catalog.json")
     manifest = skills.select_manifest(project, catalog, catalog_dir, "agent-kit", ref, None, client)
+    # A skill that left the Kit is removed when the project never edited it. An edited copy is refused
+    # like any other edited skill, so the owner reconciles it first.
+    recorded = json.loads(read_optional(project, ".agents/skills-lock.json") or b"{}").get("skills", {})
+    retired = [entry["destination"] for entry in manifest["skills"]
+               if entry["ref"] != ref and skills.safe_path(project, entry["destination"]).is_dir()
+               and skills.digest(skills.folder_files(skills.safe_path(project, entry["destination"])))
+               == recorded.get(entry["destination"], {}).get("sha256")]
+    manifest["skills"] = [entry for entry in manifest["skills"] if entry["destination"] not in retired]
+    for destination in retired:
+        manifest.get("selection_features", {}).pop(destination, None)
     items, skill_lock, _ = skills.plan(project, catalog, catalog_dir, manifest=manifest)
+    for destination in retired:
+        skill_lock["skills"].pop(destination, None)
     changed = skills.preflight_changed(project, items, skill_lock)
     link = skills.client_discovery(project, manifest)
     root_template = render(templates.pop("AGENTS.md"), {}).decode().rstrip()
@@ -225,7 +238,8 @@ def build_plan(project, ref, client, owner_choice):
     add(MANIFEST, read_optional(project, MANIFEST), encoded(manifest))
     state = dict(schema_version=1, ref=ref, roots=roots, instruction_owner=canonical, files=managed)
     add(LOCK, old_state, encoded(state))
-    return SetupPlan(edits, items, changed, skill_lock, link, notes)
+    notes += [f"{destination}: no longer in the Kit; removed, as the project never edited it" for destination in retired]
+    return SetupPlan(edits, items, changed, skill_lock, link, notes, retired)
 
 
 @contextmanager
@@ -346,10 +360,16 @@ def main(argv=None):
                     raise ERROR("Project changed during setup; preview the updated plan")
                 if latest.edits or latest.changed or latest.needs_link():
                     with write_documents(project, latest.edits):
-                        if latest.changed or latest.needs_link():
+                        if latest.changed or latest.needs_link() or latest.retired:
                             # Report only after the whole setup is committed, even if stdout closes.
                             with redirect_stdout(io.StringIO()):
                                 skills.install(project, latest.items, latest.skill_lock, client_link=latest.link)
+                        if latest.retired:  # kept beside the other previous copies, not deleted
+                            backups = skills.safe_path(project, ".agents/skills-backups")
+                            backups.mkdir(exist_ok=True)
+                            kept = Path(tempfile.mkdtemp(prefix="retired-", dir=backups))
+                            for destination in latest.retired:
+                                os.replace(skills.safe_path(project, destination), kept / Path(destination).name)
                     print(f"Applied complete setup at {args.ref}.")
         finally:
             if created:
