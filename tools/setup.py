@@ -24,7 +24,11 @@ LOCK = ".agents/setup-lock.json"
 MANIFEST = ".agents/skills-manifest.json"
 TESTING = "docs/agents/testing.md"
 # Setup seeds these once; the project then owns and edits them.
-SEEDED = (TESTING, "docs/agents/owner-attention.md")
+SEEDED = (TESTING, "docs/agents/owner-gate.md")
+GATES = {
+    "owner": "Every delivery waits for the owner. The agent never merges.",
+    "none": "The agent may merge without the owner.",
+}
 BEGIN = "<!-- agent-kit project instructions -->"
 END = "<!-- end agent-kit project instructions -->"
 ERROR = skills.SkillsError
@@ -144,7 +148,7 @@ def find_sources(project, templates, lock, testing_file):
             policy[name] = outside
     known = ("CONTRIBUTING.md", "docs/agents/delivery.md", "docs/agents/worktrees.md",
              "docs/agents/issue-tracker.md", "docs/agents/requirements.md",
-             "docs/agents/verification.md", "docs/agents/verify.md", "docs/agents/owner-attention.md", ".cursorrules")
+             "docs/agents/verification.md", "docs/agents/verify.md", ".cursorrules")
     fallback = ("TESTING.md", "testing.md", "docs/TESTING.md", "docs/testing.md", TESTING)
     managed = set(lock.get("files", {})) | set(lock.get("seeded", []))
     if testing_file and ("\n" in testing_file or not read_optional(project, testing_file)):
@@ -312,15 +316,17 @@ def project_choices(defaults, previous, overrides):
         raise ERROR("Unknown decisions for this release: " + ", ".join(sorted(unknown)))
     # A decision recorded by an earlier release may have left the starter; keep the rest.
     retired = sorted(set(previous) - known)
-    options = {key: value for key, value in previous.items() if key in known} | overrides
+    options = {key: value for key, value in previous.items() if key in known}
+    if previous.get("owner_attention") is True and "owner_gate" in known:
+        options["owner_gate"] = "conditions"  # the setting's earlier boolean form
+    options |= overrides
     for key in ("delivery",):
         if isinstance(options.get(key), str) and options[key].strip().lower() in ("local", "main", "pr"):
             options[key] = options[key].strip().lower()
     for key, value in options.items():
-        if key == "owner_attention":
-            if type(value) is not bool:
-                raise ERROR("owner_attention must be true or false")
-        elif not isinstance(value, str) or not value.strip():
+        if key == "owner_gate" and value not in ("owner", "conditions", "none"):
+            raise ERROR("owner_gate must be owner, conditions or none")
+        if not isinstance(value, str) or not value.strip():
             raise ERROR(f"{key} must be nonempty text")
     choices = defaults | options
     if "instruction_owner" in options and options["instruction_owner"] not in ("AGENTS.md", "CLAUDE.md"):
@@ -328,7 +334,8 @@ def project_choices(defaults, previous, overrides):
     return options, choices, retired
 
 
-CLASSIFIER = r"\b(?:owner[- ]attention(?: classification| classifier)?|owner classifier)\b"
+CLASSIFIER = r"\b(?:owner[- ]gate|owner[- ]attention(?: classification| classifier)?|owner classifier)\b"
+LEGACY_CONDITIONS = "docs/agents/owner-attention.md"
 
 
 def reconcile(policy, ci, options, choices):
@@ -376,9 +383,12 @@ def build_plan(project, ref, client, options):
     conditions = [name for name, body in policy.items()
                   if re.search(CLASSIFIER, name + "\n" + body, re.I)
                   and re.search(r"\b(status(?:es)?|conditions|decision rules)\b", body, re.I)]
-    condition_refs = ", ".join(f"`{name}`" for name in conditions) or "[owner attention conditions](owner-attention.md)"
-    details["owner_attention"] = (f"Enabled. Apply {condition_refs} once after technical checks."
-                                  if choices.get("owner_attention") else "Disabled.")
+    if read_optional(project, LEGACY_CONDITIONS) is not None and LEGACY_CONDITIONS not in conditions:
+        conditions.append(LEGACY_CONDITIONS)  # seeded by an earlier release, now the project's own
+    condition_refs = ", ".join(f"`{name}`" for name in conditions) or "[owner gate conditions](owner-gate.md)"
+    gate = choices.get("owner_gate", "owner")
+    details["owner_gate"] = GATES.get(gate) or (
+        f"Run `owner-gate` once before delivery against {condition_refs}. A status that needs no owner permits the merge.")
     edits = []
     managed = dict(state.get("files", {}))
     def add(name, before, after):
@@ -420,7 +430,7 @@ def build_plan(project, ref, client, options):
     for name, raw in sorted(templates.items()):
         if name == TESTING and name != testing:
             continue
-        if defaults and name.endswith("/owner-attention.md") and (not choices["owner_attention"] or conditions):
+        if defaults and name.endswith("/owner-gate.md") and (choices.get("owner_gate") != "conditions" or conditions):
             continue
         before = read_optional(project, name)
         after = render(raw, details)

@@ -85,7 +85,9 @@ The `pr` format joins two sources. From Matt: the visuals of the change and the 
 | Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
 | --- | --- | --- | --- | --- | --- | --- |
 | `ship` | agent | Take committed work to a merged PR or a local delivery: open the PR, get checks green, confirm the merge | the route, required checks and merge authority from the project settings | the PR, the merge, the closed task | `pr` | Kit |
-| `owner-attention` | agent | Decide whether the owner must look before delivery. Nothing calls it automatically yet | project conditions, the delivery facts | status, reason, action | none | Kit |
+| `owner-gate` | agent | Decide whether the owner is needed before delivery: a status, a reason and the questions for them | the task, the diff, the verification report, the project's conditions page | nothing, only its answer | none | Kit, after Inside Platform |
+
+Acceptance has three levels, set by the project's `owner_gate` setting. `owner`: every delivery waits for the owner and the agent never merges; this is the default and the skill does not run. `conditions`: a fresh agent judges the change once against the conditions page and returns a status; a status that needs no owner permits the merge. `none`: the agent merges by itself. The conditions page has a “Cases from history” section where the owner adds examples of a status that turned out wrong.
 
 ### 8. Improvement
 
@@ -117,10 +119,10 @@ The change in `wizard`: `SKILL.md` matches the original and only `template.sh` d
 | --- | --- | --- | --- |
 | The Kit block in `AGENTS.md` | `tools/setup.py` | every session | pointer to the rest |
 | `WORKFLOW.md` | `tools/setup.py` | the agent at the verify step | rules connecting skills |
-| `docs/agents/project-settings.md` | `tools/setup.py` from your decisions | the agent at start, `ship`, `owner-attention` | execution, verification, delivery |
+| `docs/agents/project-settings.md` | `tools/setup.py` from your decisions | the agent at start, `ship`, `pr` | execution, verification, delivery |
 | `docs/agents/testing.md` | `tools/setup.py` seeds it once, then you and the agent | `to-spec`, `tdd` through the root pointer | design, execution |
 | `verify-<app>` | `create-verification-skill` | the agent at the verify step | verification |
-| `docs/agents/owner-attention.md` | `tools/setup.py` seeds it once, then you | `owner-attention` | acceptance |
+| `docs/agents/owner-gate.md` | `tools/setup.py` seeds it once at the “conditions” level, then only you | `owner-gate` | acceptance |
 | `.github/pull_request_template.md` | the project, when it has its own | `pr` | evidence |
 | `docs/agents/issue-tracker.md`, `triage-labels.md`, `domain.md` | `setup-matt-pocock-skills` | `to-spec`, `to-tickets`, `triage`, `implement-spec`, `code-review` | intake, design, execution |
 | `GLOSSARY.md`, `docs/adr/` | `domain-modeling` | most of Matt's skills | design |

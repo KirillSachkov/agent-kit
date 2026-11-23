@@ -200,10 +200,10 @@ class SetupTest(unittest.TestCase):
         self.assertIn("Delivery route: Small fixes land on main; larger changes use a PR.", mixed)
         contract.write_text("Every delivery requires the owner-attention classifier.\n"
                             "Its statuses are Owner signoff and No owner attention needed.\n")
-        self.setup(*self.decisions(owner_attention=True), "--apply")
+        self.setup(*self.decisions(owner_gate="conditions"), "--apply")
         settings = (self.project / "docs/agents/project-settings.md").read_text()
-        self.assertIn("Enabled. Apply `policy/gates/acceptance.md`", settings)
-        self.assertFalse((self.project / "docs/agents/owner-attention.md").exists())
+        self.assertIn("Run `owner-gate` once before delivery against `policy/gates/acceptance.md`.", settings)
+        self.assertFalse((self.project / "docs/agents/owner-gate.md").exists())
         self.assertIn("No changes.", self.setup())
         contract.write_text("Do not use subagents.\n")
         report = self.setup("--apply", status=1)
@@ -256,7 +256,7 @@ class SetupTest(unittest.TestCase):
         (self.project / "package.json").write_text(json.dumps({"packageManager": "pnpm@9",
                                 "scripts": {"test:unit": "vitest run", "lint": "eslint src"}}))
         args = self.decisions(ci="No remote CI.", access="Use the synthetic fixture service.",
-                              delivery="pr", owner_attention=True)
+                              delivery="pr", owner_gate="conditions")
         preview = self.setup(*args, "--apply")
         for fact in ("pnpm run test:unit", "vitest run", "pnpm run lint"):
             self.assertIn(fact, preview)
@@ -268,7 +268,7 @@ class SetupTest(unittest.TestCase):
         for content in ("synthetic fixture service", "No remote CI.", "Delivery checks:"):
             self.assertIn(content, settings)
         self.assertNotIn("Tracker", settings)
-        self.assertTrue((self.project / "docs/agents/owner-attention.md").is_file())
+        self.assertTrue((self.project / "docs/agents/owner-gate.md").is_file())
         self.assertFalse((self.project / ".github").exists())
         self.assertFalse((self.project / "evidence-manifest.json").exists())
         self.assertIn("No changes.", self.setup())
@@ -404,12 +404,12 @@ class SetupTest(unittest.TestCase):
         current_strategy = (templates / "docs/agents/testing.md").read_text()
         (templates / "docs/agents/testing.md").write_text("# Testing\n\n@@checks@@\n\n- Tracker: @@tracker@@\n")
         self.ref = self.release("Earlier release with a tracker setting and a manifest")
-        self.setup(*self.decisions(tracker="Use Linear.", delivery="PR", owner_attention=True), "--apply")
+        self.setup(*self.decisions(tracker="Use Linear.", delivery="PR", owner_gate="conditions"), "--apply")
         strategy = self.project / "docs/agents/testing.md"
         self.assertIn("No local test command", strategy.read_text())
         self.assertIn("Tracker: Use Linear.", strategy.read_text())
         strategy.write_text(strategy.read_text() + "Orders are tested at the checkout API.\n")
-        conditions = self.project / "docs/agents/owner-attention.md"
+        conditions = self.project / "docs/agents/owner-gate.md"
         conditions.write_text(conditions.read_text() + "Owner signoff for pricing.\n")
         self.assertIn("No changes.", self.setup())
         (templates / "defaults.json").write_text(json.dumps(defaults))
@@ -427,10 +427,31 @@ class SetupTest(unittest.TestCase):
         self.assertIn("checkout API", strategy.read_text())
         self.assertIn("pricing", conditions.read_text())
         lock = json.loads((self.project / ".agents/setup-lock.json").read_text())
-        self.assertEqual(lock["decisions"], {"delivery": "pr", "owner_attention": True})
+        self.assertEqual(lock["decisions"], {"delivery": "pr", "owner_gate": "conditions"})
         self.assertEqual(sorted(lock["files"]), ["WORKFLOW.md", "docs/agents/project-settings.md"])
-        self.assertEqual(lock["seeded"], ["docs/agents/owner-attention.md", "docs/agents/testing.md"])
+        self.assertEqual(lock["seeded"], ["docs/agents/owner-gate.md", "docs/agents/testing.md"])
         self.assertIn("No changes.", self.setup())
+
+    def test_owner_gate_levels_and_the_earlier_boolean_setting(self):
+        self.setup("--apply", decide=False)
+        settings = self.project / "docs/agents/project-settings.md"
+        self.assertIn("Owner gate: Every delivery waits for the owner. The agent never merges.", settings.read_text())
+        self.assertFalse((self.project / "docs/agents/owner-gate.md").exists())
+        self.assertIn("owner_gate must be owner, conditions or none",
+                      self.setup(*self.decisions(owner_gate="sometimes"), status=1))
+        self.setup(*self.decisions(owner_gate="none"), "--apply")
+        self.assertIn("Owner gate: The agent may merge without the owner.", settings.read_text())
+        lock = self.project / ".agents/setup-lock.json"
+        state = json.loads(lock.read_text())
+        state["decisions"] = {"owner_attention": True}
+        lock.write_text(json.dumps(state, indent=2) + "\n")
+        legacy = self.project / "docs/agents/owner-attention.md"
+        legacy.write_text("Owner attention statuses kept by the project.\n")
+        self.setup("--apply", decide=False)
+        self.assertEqual(json.loads(lock.read_text())["decisions"], {"owner_gate": "conditions"})
+        self.assertIn("Run `owner-gate` once before delivery against `docs/agents/owner-attention.md`.", settings.read_text())
+        self.assertFalse((self.project / "docs/agents/owner-gate.md").exists())
+        self.assertIn("No changes.", self.setup(decide=False))
 
     def test_installer_failure_restores_setup_and_prior_backups(self):
         (self.project / "AGENTS.md").write_text("Keep project instructions.\n")

@@ -21,7 +21,7 @@ One editable source folder per skill. The [parts map](../docs/parts.en.md) shows
 | [implement](engineering/implement/SKILL.md) | Available for explicit selection |
 | [implement-spec](engineering/implement-spec/SKILL.md) | Available for explicit selection |
 | [improve-codebase-architecture](engineering/improve-codebase-architecture/SKILL.md) | Available for explicit selection |
-| [owner-attention](engineering/owner-attention/SKILL.md) | Available for explicit selection |
+| [owner-gate](engineering/owner-gate/SKILL.md) | Available for explicit selection |
 | [pr](engineering/pr/SKILL.md) | Available for explicit selection |
 | [prototype](engineering/prototype/SKILL.md) | Available for explicit selection |
 | [research](engineering/research/SKILL.md) | Available for explicit selection |
@@ -43,6 +43,6 @@ One editable source folder per skill. The [parts map](../docs/parts.en.md) shows
 
 - Clarify and plan: `ask`, `grill-me`, `grill-with-docs`, `domain-modeling`, `to-spec`, `to-tickets`.
 - Build and diagnose: `implement`, `implement-spec`, `tdd`, `diagnosing-bugs`, `prototype`.
-- Review and deliver: `code-review`, `create-verification-skill`, `pr`, `ship`, `owner-attention`, `retro`.
+- Review and deliver: `code-review`, `create-verification-skill`, `pr`, `ship`, `owner-gate`, `retro`.
 
 Read the selected SKILL.md before recommending or running its procedure. Invocation metadata and project policy determine when it can run.

@@ -20,7 +20,7 @@
         "implement": "skills/engineering/implement",
         "implement-spec": "skills/engineering/implement-spec",
         "improve-codebase-architecture": "skills/engineering/improve-codebase-architecture",
-        "owner-attention": "skills/engineering/owner-attention",
+        "owner-gate": "skills/engineering/owner-gate",
         "pr": "skills/engineering/pr",
         "prototype": "skills/engineering/prototype",
         "research": "skills/engineering/research",
@@ -199,9 +199,9 @@
     },
     {
       "provider": "agent-kit",
-      "skill": "owner-attention",
+      "skill": "owner-gate",
       "group": "engineering",
-      "source": "engineering/owner-attention",
+      "source": "engineering/owner-gate",
       "internal": false
     },
     {

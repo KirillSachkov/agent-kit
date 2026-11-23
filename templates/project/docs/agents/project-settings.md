@@ -19,7 +19,7 @@ settles a difference. Use defaults for questions the project leaves open.
 - Verification: @@verify@@
 - Verifier: @@verifier@@
 - Evidence: @@evidence@@
-- Owner attention classifier: @@owner_attention@@
+- Owner gate: @@owner_gate@@
 - Acceptance: @@acceptance@@
 - Push, merge, deployment and publication: @@publication@@
 - Cleanup: @@cleanup@@

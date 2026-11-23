@@ -48,7 +48,7 @@ Skip all preambles and keep prose brief. Use the user's domain language from `GL
 
 ### Needs you
 
-One concrete question or action per line, with what the answer decides. Omit the section when the owner has nothing to do.
+Start with the owner-gate status and reason when one was given. Then one concrete question or action per line, with what the answer decides. Omit the section when the owner has nothing to do.
 
 ### What changed
 
