@@ -8,6 +8,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -85,32 +86,37 @@ def execute(project, env, executor, agent, model, timeout):
     return round(time.monotonic() - started, 1)
 
 
-def skills_used(log):
-    """Skill names an agent loaded in one session log: Claude's Skill tool, or a SKILL.md read by either client."""
-    used = []
+def events(log):
     for line in log.read_text(errors="replace").splitlines():
         try:
-            event = json.loads(line)
+            yield json.loads(line)
         except ValueError:
             continue
-        text = json.dumps(event)
+
+
+def skills_used(log):
+    """Skills a session loaded, read only from what the agent did: Claude's Skill tool calls and
+    commands or file reads that open a SKILL.md, in the main session and its subagents."""
+    used = []
+    for event in events(log):
+        actions = []
         for part in (event.get("message") or {}).get("content") or []:
-            if isinstance(part, dict) and part.get("type") == "tool_use" and part.get("name") == "Skill":
-                used.append(str((part.get("input") or {}).get("skill")))
-        used += __import__("re").findall(r"skills/([a-z0-9-]+)/SKILL\.md", text)
+            if isinstance(part, dict) and part.get("type") == "tool_use":
+                if part.get("name") == "Skill":
+                    used.append(str((part.get("input") or {}).get("skill")))
+                actions.append(json.dumps(part.get("input") or {}))
+        item = event.get("item") or {}
+        if item.get("type") == "command_execution":  # Codex
+            actions.append(str(item.get("command")))
+        for action in actions:
+            used += re.findall(r"skills/([a-z0-9-]+)/SKILL\.md", action)
     return list(dict.fromkeys(used))
 
 
 def cost(log):
-    total = 0.0
-    for line in log.read_text(errors="replace").splitlines():
-        try:
-            event = json.loads(line)
-        except ValueError:
-            continue
-        if event.get("type") == "result" and isinstance(event.get("total_cost_usd"), (int, float)):
-            total += event["total_cost_usd"]
-    return total
+    """Claude reports a running total in each result event; the session's cost is the largest."""
+    return max((event["total_cost_usd"] for event in events(log)
+                if event.get("type") == "result" and isinstance(event.get("total_cost_usd"), (int, float))), default=0.0)
 
 
 def grade(root, project, situation):
@@ -143,6 +149,8 @@ def grade(root, project, situation):
         "verdict": (report.read_text().splitlines() or [""])[0] if report.is_file() else None,
         "pr_opened": pr is not None,
         "pr_body_words": len(pr["body"].split()) if pr else 0,
+        "pr_cites_verification": bool(pr) and "PASS" in pr["body"] and "not verified: no" not in pr["body"].lower()
+                                 and "not independently verified" not in pr["body"].lower(),
         "merge_attempts": len(state.get("merge_attempts", [])),
         "ci_runs": [run["ok"] for run in state.get("runs", {}).values()],
         "ci_reruns": len(state.get("reruns", [])),

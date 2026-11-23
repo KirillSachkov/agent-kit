@@ -29,7 +29,7 @@ then = "delivery"
 [[step]]
 name = "ship"
 when = "delivery"
-run = "Ship the committed work on this branch for the task in {task}."
+run = "Ship the committed work on this branch for the task in {task}. The verification report is at .evidence/report.md."
 check = """gh pr view --json state -q .state | grep -q OPEN && gh pr checks --required >/dev/null"""
 attempts = 2
 then = "needs-owner"
