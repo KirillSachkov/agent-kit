@@ -614,8 +614,14 @@
       "The starter workflow keeps only rules no skill can carry; the previous full route moves to experiments/workflow-candidates/full-route.md.",
       "Human-invoked skills are protected by a root instruction line and a check that both client flags agree and match Matt's set.",
       "The starter drops its tdd setting; the testing strategy is a table of seams that grows from the owner's answers.",
-      "Rewrite ship as a minimal standalone skill: open the PR, get required checks green, confirm the merge, close the task. It no longer reads an implementation handoff or calls owner-attention."
+      "Rewrite ship as a minimal standalone skill: open the PR, get required checks green, confirm the merge, close the task. It no longer reads an implementation handoff or calls owner-attention.",
+      "pr joins Matt's visuals and merge danger with the Inside Platform form: the owner's action first, one line and one attachment per scenario, a 70-word owner text and collapsed details for agents. The starter's PR template is removed.",
+      "create-verification-skill gains a Report section: a verdict, the checked commit and one line per scenario, written beside the evidence.",
+      "Starter defaults: verify when user-visible behaviour changes, by a fresh agent; evidence attaches to the PR with gh --attach."
     ],
-    "matt_baseline_unchanged": true
+    "matt_baseline_unchanged": true,
+    "removed_at_review_base": {
+      "templates/project/.github/pull_request_template.md": "blob 3a6e65926c7277cd244946ac617e36a0a97a608c"
+    }
   }
 }

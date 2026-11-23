@@ -16,7 +16,7 @@ settles a difference. Use defaults for questions the project leaves open.
 ## Delivering a change
 
 - Delivery route: @@delivery@@
-- Local Verify: @@verify@@
+- Verification: @@verify@@
 - Verifier: @@verifier@@
 - Evidence: @@evidence@@
 - Owner attention classifier: @@owner_attention@@

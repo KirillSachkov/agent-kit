@@ -196,10 +196,8 @@ class SetupTest(unittest.TestCase):
         self.assertNotIn("UNRELATED PRIVATE DATA", preview)
         self.assertIn("Never open a PR", preview)
         self.assertIn("Delivery route: local", preview)
-        self.assertNotIn("pull_request_template", preview)
         mixed = self.setup(*self.decisions(delivery="Small fixes land on main; larger changes use a PR."))
         self.assertIn("Delivery route: Small fixes land on main; larger changes use a PR.", mixed)
-        self.assertIn("pull_request_template", mixed)
         contract.write_text("Every delivery requires the owner-attention classifier.\n"
                             "Its statuses are Owner signoff and No owner attention needed.\n")
         self.setup(*self.decisions(owner_attention=True), "--apply")
@@ -271,7 +269,7 @@ class SetupTest(unittest.TestCase):
             self.assertIn(content, settings)
         self.assertNotIn("Tracker", settings)
         self.assertTrue((self.project / "docs/agents/owner-attention.md").is_file())
-        self.assertTrue((self.project / ".github/pull_request_template.md").is_file())
+        self.assertFalse((self.project / ".github").exists())
         self.assertFalse((self.project / "evidence-manifest.json").exists())
         self.assertIn("No changes.", self.setup())
 
@@ -424,8 +422,7 @@ class SetupTest(unittest.TestCase):
         self.assertIn("pricing", conditions.read_text())
         lock = json.loads((self.project / ".agents/setup-lock.json").read_text())
         self.assertEqual(lock["decisions"], {"delivery": "pr", "owner_attention": True})
-        self.assertEqual(sorted(lock["files"]), [".github/pull_request_template.md", "WORKFLOW.md",
-                                                 "docs/agents/project-settings.md"])
+        self.assertEqual(sorted(lock["files"]), ["WORKFLOW.md", "docs/agents/project-settings.md"])
         self.assertEqual(lock["seeded"], ["docs/agents/owner-attention.md", "docs/agents/testing.md"])
         self.assertIn("No changes.", self.setup())
 

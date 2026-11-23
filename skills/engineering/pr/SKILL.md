@@ -9,36 +9,50 @@ metadata:
     url: "https://github.com/humanlayer/skills/blob/main/plugins/show-me/skills/show-me/SKILL.md"
 ---
 
-Use the project's PR template when it has one. Otherwise use this template for writing the PR body:
+Use the project's PR template when it has one. Otherwise use this template for writing the PR body, with its headings in the project's language:
 
 ```markdown
-## Summary
+## Needs you
 
-<diagram, diff-sketch, or tree>
+<the decision or check the owner must make>
 
-## Evidence
+## What changed
 
-- **Before:** <screenshot/output/failing test run>
-  **After:** <screenshot/output/passing test run>
+<one to three sentences, with a diagram, diff-sketch, or tree when it helps>
+
+## Verified
+
+- <scenario: what was done and what was seen> ![what it shows](./evidence.png)
+
+Not verified: <what was left unchecked and why>
 
 ## Merge Danger
 
-**Door:** <one-way or two-way>
+**Door:** <one-way or two-way>. **Blast Radius:** <one-word description>
 
-<optional: description>
+<details>
+<summary>Details</summary>
 
-**Blast Radius:** <one-word description>
+<for agents: base and head, check runs with links, review reports>
 
-<optional: potential ramifications of merge>
+</details>
+
+Closes #<issue>
 ```
 
 ## Sections
 
+The owner reads everything outside **Details** and nothing inside it. Keep the owner's text under 70 words, headings aside: it should read in a minute. Omit a section that has nothing to say. Keep file names and commit hashes inside Details.
+
 Skip all preambles and keep prose brief. Use the user's domain language from `GLOSSARY.md`.
 
-### Summary
+### Needs you
 
-Pick the smallest view that makes the key point clear.
+One concrete question or action per line, with what the answer decides. Omit the section when the owner has nothing to do.
+
+### What changed
+
+Say what is different for the user. Pick the smallest view that makes the key point clear.
 
 - Show logic or an algorithm as pseudocode:
 
@@ -155,16 +169,22 @@ Place each visual next to the short text it supports. Keep only the calls, files
 
 You may use one of these, you may use several, it is unlikely you will use all of them. Use your judgement and don't overwhelm the user.
 
-### Evidence
+### Verified
 
-Concrete evidence that the change works. Show a before and after.
+One line and one piece of evidence per scenario. Take both from the verification report when there is one; otherwise show a before and after.
 
 Screenshots are S-tier - when the environment is set up for it and the change is visual.
 
 Execution-based evidence is A-tier. Test results, console output. Show the exact test that now fails and passes, using pseudocode.
+
+Store evidence files the way the project says. On GitHub with no project rule, attach them with `gh pr create --attach` or `gh pr edit --attach` and reference each as `![what it shows](./file.png)`. An attachment is public and permanent: attach test data only, and when in doubt describe the result in words.
 
 ### Merge Danger
 
 Describe whether it's a one-way or two-way door. You can walk back through two-way doors, but not one-way doors. A PR that is cheap to roll back is lower risk. Changes that involve destructive actions or hard-to-reverse decisions are one-way doors.
 
 The blast radius is the potential impact or scope of the changes introduced by this PR. Consider all possibilities. Examples are layout shift, breakages for consumers, mobile responsiveness, etc.
+
+### Details
+
+Written for agents, not the owner: the base and head, each check with a link to its run, the review reports. Never retell the diff.

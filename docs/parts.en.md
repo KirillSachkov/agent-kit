@@ -67,18 +67,18 @@ The edit in `implement`: the work is committed before review, and the review rea
 
 | Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
 | --- | --- | --- | --- | --- | --- | --- |
-| `create-verification-skill` | you | Create the project's verification skill once | project code, ways to run it | `verify-<app>` in the project | none | pstack, two edits |
-| `verify-<app>` | agent | Launch the app and walk a scenario as a user | its own sections: launch, doctor, drive, evidence, cleanup | verification artifacts | none | generated in the project |
+| `create-verification-skill` | you | Create the project's verification skill once | project code, ways to run it | `verify-<app>` in the project | none | pstack, three edits |
+| `verify-<app>` | agent | Launch the app, walk a scenario as a user, take screenshots and recordings | its own sections: launch, doctor, drive, evidence, report, cleanup | evidence files and a `report.md` with the verdict | none | generated in the project |
 
-The edits in `create-verification-skill`: the feature-map and maintenance steps are removed. There is no generic verification skill. The project workflow decides what to verify for a task and when: every acceptance criterion, once before a PR, recording the action, the observation and the revision. `implement-spec` opens a draft PR itself, so for it verification runs before the draft is marked ready.
+The edits in `create-verification-skill`: the feature-map and maintenance steps are removed and a Report section with a verdict and one line per scenario is added. There is no generic verification skill. The project settings say when verification is needed and who runs it: by default when user-visible behaviour changes, by a fresh agent, once before the PR is marked ready.
 
 ### 6. Evidence
 
 | Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
 | --- | --- | --- | --- | --- | --- | --- |
-| `pr` | agent | Shape the PR body: a visual of the change, before and after, merge danger | the diff, check results, the project's PR template | the PR text | none | Matt, one edit |
+| `pr` | agent | Write a PR body the owner reads in a minute: what is needed from them, what changed, what was verified, merge danger | the diff, the verification report, the evidence storage setting, the project's PR template | the PR text and attachments | none | Matt and Inside Platform |
 
-The edit in `pr`: the project's PR template takes priority. `verify-<app>` produces the evidence itself; its Evidence section names where it is kept.
+The `pr` format joins two sources. From Matt: the visuals of the change and the merge danger section. From Inside Platform: the owner's action first, one line and one attachment per scenario, the 70-word limit and collapsed Details for agents. The project's PR template takes priority. `verify-<app>` produces the evidence: screenshots, recordings and a short `report.md` beside them. `pr` attaches them the way the project settings say, by default with `gh --attach`.
 
 ### 7. Delivery and acceptance
 
@@ -121,7 +121,7 @@ The change in `wizard`: `SKILL.md` matches the original and only `template.sh` d
 | `docs/agents/testing.md` | `tools/setup.py` seeds it once, then you and the agent | `to-spec`, `tdd` through the root pointer | design, execution |
 | `verify-<app>` | `create-verification-skill` | the agent at the verify step | verification |
 | `docs/agents/owner-attention.md` | `tools/setup.py` seeds it once, then you | `owner-attention` | acceptance |
-| `.github/pull_request_template.md` | `tools/setup.py` or the project | `pr` | evidence |
+| `.github/pull_request_template.md` | the project, when it has its own | `pr` | evidence |
 | `docs/agents/issue-tracker.md`, `triage-labels.md`, `domain.md` | `setup-matt-pocock-skills` | `to-spec`, `to-tickets`, `triage`, `implement-spec`, `code-review` | intake, design, execution |
 | `GLOSSARY.md`, `docs/adr/` | `domain-modeling` | most of Matt's skills | design |
 | `CODING_STANDARDS.md` | the project | `code-review` | review |

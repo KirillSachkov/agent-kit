@@ -420,8 +420,7 @@ def build_plan(project, ref, client, options):
     for name, raw in sorted(templates.items()):
         if name == TESTING and name != testing:
             continue
-        if defaults and ((name.startswith(".github/") and choices["delivery"] in ("local", "main")) or
-                         (name.endswith("/owner-attention.md") and (not choices["owner_attention"] or conditions))):
+        if defaults and name.endswith("/owner-attention.md") and (not choices["owner_attention"] or conditions):
             continue
         before = read_optional(project, name)
         after = render(raw, details)
@@ -434,8 +433,6 @@ def build_plan(project, ref, client, options):
                 add(name, before, after)
             continue
         if name not in managed and before is not None:
-            if name == ".github/pull_request_template.md":
-                continue
             raise ERROR(f"Unmanaged project document already exists: {name}")
         if name in managed and (before is None or sha(before) != managed[name]):
             raise ERROR(f"Reconcile locally changed starter document: {name}")
