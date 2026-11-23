@@ -134,7 +134,7 @@ Let them edit before writing.
 Do not create a parallel authority file or duplicate shared configuration.
 
 If an `## Agent skills` block exists, update it in place. When equivalent pointers already exist elsewhere, update those instead.
-Preserve the current navigation structure and surrounding policies. When CLAUDE.md points to AGENTS.md, edit the shared target once.
+Outside what Section I settled, preserve the current navigation structure and surrounding policies. When CLAUDE.md points to AGENTS.md, edit the shared target once.
 
 The block:
 
