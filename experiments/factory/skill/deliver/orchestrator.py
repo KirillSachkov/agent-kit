@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""Lead tasks through a project's pipeline, one step command at a time.
+"""Lead tickets through a project's pipeline, one run at a time.
 
-Experimental. A step reads the task's stage, starts one fresh agent session with the
-step's command, runs the step's check and moves the task to the next stage. The chain
-lives in the project's docs/agents/pipeline.toml; this program only walks it.
+Experimental. The orchestrator reads a ticket's stage, starts one run of the task that
+stage calls for (a fresh headless session of the client), runs the task's check and
+moves the ticket to the next stage. The tasks live in the project's
+docs/agents/pipeline.toml; this program only walks them, on this machine as the runner.
 
-State is the task's stage (a line in a task file, else state.json) and one folder per
-task under .factory/: state.json, the step journal and each session's log. A run that
-dies or is stopped loses nothing: the next run starts from the recorded stage.
+State is the ticket's stage (a line in a ticket file, else state.json) and one folder per
+ticket under .factory/: state.json, the journal of runs and each run's log. An
+orchestrator that dies or is stopped loses nothing: the next one starts from the
+recorded stage.
 """
 import argparse
 import fcntl
@@ -28,7 +30,7 @@ except ImportError:
 STAGE = re.compile(r"^\*\*Stage:\*\* *(\S+) *$", re.M)
 SESSION = re.compile(r'"(?:session_id|thread_id|sessionID)"\s*:\s*"([^"]+)"')
 BLOCKED = "blocked"
-# How to start one headless session of a client, and the sign that invokes a skill in it.
+# How to start one run in a client, and the sign that invokes a skill in it.
 # A pipeline adds or replaces clients in its [agents.<name>] tables.
 CLIENTS = {
     "claude": {"command": "claude -p {prompt} --model {model} --output-format stream-json --verbose "
@@ -51,21 +53,21 @@ def load_pipeline(project):
     if not path.is_file():
         raise FactoryError(f"No pipeline at {path}")
     data = tomllib.loads(path.read_text())
-    steps = data.get("step", [])
-    for step in steps:
-        missing = [key for key in ("name", "when", "run", "check", "then") if not step.get(key)]
+    tasks = data.get("task", [])
+    for task in tasks:
+        missing = [key for key in ("name", "when", "run", "check", "then") if not task.get(key)]
         if missing:
-            raise FactoryError(f"Step {step.get('name', '?')} lacks: {', '.join(missing)}")
-    if len({step["name"] for step in steps}) != len(steps) or len({step["when"] for step in steps}) != len(steps):
-        raise FactoryError("Step names and their starting stages must be unique")
-    return data, steps
+            raise FactoryError(f"Task {task.get('name', '?')} lacks: {', '.join(missing)}")
+    if len({task["name"] for task in tasks}) != len(tasks) or len({task["when"] for task in tasks}) != len(tasks):
+        raise FactoryError("Task names and their starting stages must be unique")
+    return data, tasks
 
 
 def git(folder, *args):
     return subprocess.run(["git", "-C", str(folder), *args], capture_output=True, text=True)
 
 
-class Task:
+class Ticket:
     """A ticket or spec file of the local tracker, or a reference the host tracker understands."""
 
     def __init__(self, project, ref, spec=False):
@@ -82,7 +84,7 @@ class Task:
         else:
             self.name = path.stem
         if not self.name:
-            raise FactoryError(f"Cannot name the task: {ref}")
+            raise FactoryError(f"Cannot name the ticket: {ref}")
         self.folder = project / ".factory" / self.name
         known = self.state().get("ref", self.ref)
         if known != self.ref:
@@ -94,7 +96,7 @@ class Task:
         return json.loads(path.read_text()) if path.is_file() else {}
 
     def update(self, **changes):
-        """Only the process that leads the task writes its state; a whole file replaces the old one."""
+        """Only the process that leads the ticket writes its state; a whole file replaces the old one."""
         state = self.state() | {"ref": self.ref} | changes
         self.folder.mkdir(parents=True, exist_ok=True)
         ignore = self.project / ".factory/.gitignore"
@@ -106,7 +108,7 @@ class Task:
         return state
 
     def lock(self):
-        """Hold the task for this process. The lock dies with the process, so it never goes stale."""
+        """Hold the ticket for this process. The lock dies with the process, so it never goes stale."""
         self.folder.mkdir(parents=True, exist_ok=True)
         held = (self.folder / "lock").open("w")
         try:
@@ -141,8 +143,8 @@ class Task:
 
     def journal(self, **record):
         self.folder.mkdir(parents=True, exist_ok=True)
-        with (self.folder / "steps.jsonl").open("a") as out:
-            out.write(json.dumps(dict(task=self.name) | record) + "\n")
+        with (self.folder / "runs.jsonl").open("a") as out:
+            out.write(json.dumps(dict(ticket=self.name) | record) + "\n")
 
 
 def agent_argv(pipeline, agent, model, prompt):
@@ -157,44 +159,44 @@ def agent_argv(pipeline, agent, model, prompt):
     return [prompt if part == "{prompt}" else part.replace("{model}", model) for part in shlex.split(client["command"])]
 
 
-def place(pipeline, task):
-    """The folder the task's sessions work in: the checkout the owner chose by leaving the base
-    branch, else a worktree of the task's own, created once."""
-    state = task.state()
-    project = task.project
+def place(pipeline, ticket):
+    """The folder the ticket's runs work in: the checkout the owner chose by leaving the base
+    branch, else a worktree of the ticket's own, created once."""
+    state = ticket.state()
+    project = ticket.project
     if state.get("worktree") and Path(state["worktree"]).is_dir():
         work = Path(state["worktree"])
         if not state.get("ready"):
-            prepare(pipeline, task, work)
+            prepare(pipeline, ticket, work)
         return work
     current = git(project, "branch", "--show-current").stdout.strip()
     if current != pipeline.get("base", "main"):
-        task.update(worktree=str(project), branch=current, spec=task.spec, ready=True)
+        ticket.update(worktree=str(project), branch=current, spec=ticket.spec, ready=True)
         return project
     root = Path(os.path.expanduser(pipeline.get("worktrees", "../{project}-worktrees").format(project=project.name)))
-    work = (project / root).resolve() / task.name
-    branch = pipeline.get("branch", "task/{name}").format(name=task.name)
+    work = (project / root).resolve() / ticket.name
+    branch = pipeline.get("branch", "deliver/{name}").format(name=ticket.name)
     exists = git(project, "rev-parse", "--verify", "--quiet", "refs/heads/" + branch).returncode == 0
     added = git(project, "worktree", "add", str(work), branch) if exists else git(project, "worktree", "add", "-b", branch, str(work))
     if added.returncode:
         raise FactoryError(f"Cannot create the worktree {work}: {added.stderr.strip()}")
-    task.update(worktree=str(work), branch=branch, spec=task.spec, ready=False)
-    prepare(pipeline, task, work)
+    ticket.update(worktree=str(work), branch=branch, spec=ticket.spec, ready=False)
+    prepare(pipeline, ticket, work)
     return work
 
 
-def prepare(pipeline, task, work):
+def prepare(pipeline, ticket, work):
     """Run the pipeline's setup in a new worktree; a failed setup runs again next time."""
     if pipeline.get("setup"):
         # The pipeline's setup and checks are shell lines the owner wrote, so they run through the shell.
         done = subprocess.run(pipeline["setup"], shell=True, cwd=work, capture_output=True, text=True)
         if done.returncode:
             raise FactoryError(f"The worktree setup failed: {(done.stdout + done.stderr).strip()[-300:]}")
-    task.update(ready=True)
+    ticket.update(ready=True)
 
 
-def session(argv, work, env, log, timeout):
-    """Run one agent session in its own process group, so a stop ends everything it started."""
+def start_run(argv, work, env, log, timeout):
+    """Start one run in its own process group and wait for it, so a stop ends everything it started."""
     with log.open("w") as out, log.with_suffix(".stderr").open("w") as err:
         # Some clients take their folder from PWD rather than from the process.
         child = subprocess.Popen(argv, cwd=work, env=env | {"PWD": str(work)}, stdin=subprocess.DEVNULL, stdout=out,
@@ -203,7 +205,7 @@ def session(argv, work, env, log, timeout):
             return child.wait(timeout=timeout)
         except subprocess.TimeoutExpired:
             return 124
-        finally:  # a timeout, a stop or a crash here: nothing the session started outlives it
+        finally:  # a timeout, a stop or a crash here: nothing the run started outlives it
             for sign in (signal.SIGTERM, signal.SIGKILL):
                 if child.poll() is not None:
                     break
@@ -214,55 +216,55 @@ def session(argv, work, env, log, timeout):
                     pass
 
 
-def run_step(pipeline, steps, task, timeout):
-    """Run the step the task's stage calls for. Return the new stage, or None when no step applies."""
-    step = next((item for item in steps if item["when"] == task.stage()), None)
-    if step is None:
+def run_task(pipeline, tasks, ticket, timeout):
+    """Run the task the ticket's stage calls for. Return the new stage, or None when no task applies."""
+    task = next((item for item in tasks if item["when"] == ticket.stage()), None)
+    if task is None:
         return None
-    work = place(pipeline, task)
-    branch = task.state().get("branch")
+    work = place(pipeline, ticket)
+    branch = ticket.state().get("branch")
     current = git(work, "branch", "--show-current").stdout.strip()
     if branch and current != branch:
-        if work == task.project:
-            raise FactoryError(f"{task.name} works on {branch}, but this checkout is on {current}")
+        if work == ticket.project:
+            raise FactoryError(f"{ticket.name} works on {branch}, but this checkout is on {current}")
         switched = git(work, "switch", branch)
         if switched.returncode:
             raise FactoryError(f"Cannot switch to {branch}: {switched.stderr.strip()}")
-    # A session reads the task where it works; a task file git does not carry stays in the project.
-    ref = task.ref if not task.file or (work / task.ref).is_file() else str(task.file)
-    env = os.environ | {"FACTORY_TASK": ref, "FACTORY_TASK_NAME": task.name, "FACTORY_STEP": step["name"]}
-    agent = step.get("agent", pipeline.get("agent", "claude"))
-    model = step.get("model", pipeline.get("model", "sonnet"))
-    instruction = step.get("run_spec", step["run"]) if task.spec else step["run"]
-    argv = agent_argv(pipeline, agent, model, instruction.format(task=ref, name=task.name))
-    reason = "the step's check did not pass"
-    for attempt in range(1, int(step.get("attempts", 1)) + 1):
-        number = len(list(task.folder.glob(f"{step['name']}-*.jsonl"))) + 1  # every session keeps its own log
-        log = task.folder / f"{step['name']}-{number}.jsonl"
-        task.update(running=dict(step=step["name"], attempt=attempt, started=int(time.time()), log=log.name))
+    # A run reads the ticket where it works; a ticket file git does not carry stays in the project.
+    ref = ticket.ref if not ticket.file or (work / ticket.ref).is_file() else str(ticket.file)
+    env = os.environ | {"FACTORY_TICKET": ref, "FACTORY_TICKET_NAME": ticket.name, "FACTORY_TASK": task["name"]}
+    agent = task.get("agent", pipeline.get("agent", "claude"))
+    model = task.get("model", pipeline.get("model", "sonnet"))
+    instruction = task.get("run_spec", task["run"]) if ticket.spec else task["run"]
+    argv = agent_argv(pipeline, agent, model, instruction.format(ticket=ref, name=ticket.name))
+    reason = "the task's check did not pass"
+    for attempt in range(1, int(task.get("attempts", 1)) + 1):
+        number = len(list(ticket.folder.glob(f"{task['name']}-*.jsonl"))) + 1  # every run keeps its own log
+        log = ticket.folder / f"{task['name']}-{number}.jsonl"
+        ticket.update(running=dict(task=task["name"], attempt=attempt, started=int(time.time()), log=log.name))
         started = time.monotonic()
         try:
-            code = session(argv, work, env, log, int(step.get("timeout", timeout)))
+            code = start_run(argv, work, env, log, int(task.get("timeout", timeout)))
         except Stopped:
-            task.journal(step=step["name"], attempt=attempt, stopped=True, session=session_id(log), log=log.name)
+            ticket.journal(task=task["name"], attempt=attempt, stopped=True, session=session_id(log), log=log.name)
             raise
         finally:
-            task.update(running=None)
-        check = subprocess.run(step["check"], shell=True, cwd=work, env=env, capture_output=True, text=True)
-        task.journal(step=step["name"], attempt=attempt, agent=agent, model=model, agent_exit=code,
+            ticket.update(running=None)
+        check = subprocess.run(task["check"], shell=True, cwd=work, env=env, capture_output=True, text=True)
+        ticket.journal(task=task["name"], attempt=attempt, agent=agent, model=model, agent_exit=code,
                      check_exit=check.returncode, seconds=round(time.monotonic() - started, 1),
                      session=session_id(log), log=log.name)
-        # The skill may have moved the work to a branch of its own; later steps and attempts follow it.
-        task.update(branch=git(work, "branch", "--show-current").stdout.strip() or branch)
+        # The skill may have moved the work to a branch of its own; later tasks and attempts follow it.
+        ticket.update(branch=git(work, "branch", "--show-current").stdout.strip() or branch)
         if check.returncode == 0:
-            task.update(blocked_at=None)
-            task.set_stage(step["then"])
-            return step["then"]
+            ticket.update(blocked_at=None)
+            ticket.set_stage(task["then"])
+            return task["then"]
         reason = ((check.stdout + check.stderr).strip().splitlines() or [reason])[-1]
         if check.returncode == 3:  # the check says a retry cannot help
             break
-    task.update(blocked_at=step["when"])
-    task.set_stage(BLOCKED, f"Blocked at {step['name']}: {reason}")
+    ticket.update(blocked_at=task["when"])
+    ticket.set_stage(BLOCKED, f"Blocked at {task['name']}: {reason}")
     return BLOCKED
 
 
@@ -271,55 +273,55 @@ def session_id(log):
     return found[1] if found else None
 
 
-def lead(pipeline, steps, task, timeout, prepare_stage=None):
-    """Advance one task until it reaches a stage no step starts from. Return whether it moved."""
-    held = task.lock()
+def lead(pipeline, tasks, ticket, timeout, prepare_stage=None):
+    """Advance one ticket until it reaches a stage no task starts from. Return whether it moved."""
+    held = ticket.lock()
     if held is None:
-        raise FactoryError(f"{task.name} is already running")
+        raise FactoryError(f"{ticket.name} is already running")
     moved = False
     try:
-        task.update(pid=os.getpid())
+        ticket.update(pid=os.getpid())
         if prepare_stage:
             prepare_stage()
         while True:
-            result = run_step(pipeline, steps, task, timeout)
+            result = run_task(pipeline, tasks, ticket, timeout)
             if result is None:
                 return moved
-            print(f"{task.ref}: {result}", flush=True)
+            print(f"{ticket.ref}: {result}", flush=True)
             moved = True
     finally:
-        task.update(pid=None)
+        ticket.update(pid=None)
         held.close()
 
 
-def tasks_in(project, pattern):
+def tickets_in(project, pattern):
     found = set(project.glob(pattern)) | set(project.glob(".scratch/*/issues/*.md"))
     files = {path for path in found if path.is_file() and STAGE.search(path.read_text())}
-    tasks = {task.name: task for task in (Task(project, str(path.relative_to(project))) for path in sorted(files))}
-    for state in sorted(project.glob(".factory/*/state.json")):  # tasks of a host tracker have no file
+    tickets = {ticket.name: ticket for ticket in (Ticket(project, str(path.relative_to(project))) for path in sorted(files))}
+    for state in sorted(project.glob(".factory/*/state.json")):  # tickets of a host tracker have no file
         saved = json.loads(state.read_text())
-        if state.parent.name not in tasks and "stage" in saved:
-            tasks[state.parent.name] = Task(project, saved.get("ref", state.parent.name))
-    return list(tasks.values())
+        if state.parent.name not in tickets and "stage" in saved:
+            tickets[state.parent.name] = Ticket(project, saved.get("ref", state.parent.name))
+    return list(tickets.values())
 
 
-def status_line(task):
-    state = task.state()
-    running = state.get("running") if task.running() else None
-    journal = task.folder / "steps.jsonl"
+def status_line(ticket):
+    state = ticket.state()
+    running = state.get("running") if ticket.running() else None
+    journal = ticket.folder / "runs.jsonl"
     last = json.loads(journal.read_text().splitlines()[-1]) if journal.is_file() and journal.read_text().strip() else {}
-    parts = [task.name, task.stage() or "-"]
+    parts = [ticket.name, ticket.stage() or "-"]
     if running:
         minutes = (int(time.time()) - running["started"]) // 60
-        parts.append(f"running {running['step']} attempt {running['attempt']} for {minutes} min")
-        current = session_id(task.folder / running.get("log", ""))
+        parts.append(f"running {running['task']} attempt {running['attempt']} for {minutes} min")
+        current = session_id(ticket.folder / running.get("log", ""))
         if current:
             parts.append(f"session {current}")
     else:
         parts.append("not running")
     if last and not running:
         result = "stopped" if last.get("stopped") else ("passed" if last.get("check_exit") == 0 else "failed")
-        parts.append(f"last: {last['step']} attempt {last['attempt']} {result}")
+        parts.append(f"last: {last['task']} attempt {last['attempt']} {result}")
         if last.get("session"):
             parts.append(f"session {last['session']}")
     if state.get("worktree"):
@@ -329,64 +331,55 @@ def status_line(task):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0], allow_abbrev=False)
-    parser.add_argument("command", choices=("run", "status", "stop", "wait", "place", "stage"))
-    parser.add_argument("task", nargs="?", help="ticket or spec file relative to the project, or a tracker reference; "
-                                                "run and status take every staged task without it")
-    parser.add_argument("value", nargs="?", help="stage: the stage to record; without it the stage is printed")
+    parser.add_argument("command", choices=("run", "status", "stop", "wait"))
+    parser.add_argument("ticket", nargs="?", help="ticket or spec file relative to the project, or a tracker reference; "
+                                                "run and status take every staged ticket without it")
     parser.add_argument("--project", type=Path, default=Path.cwd())
-    parser.add_argument("--tasks", default=".scratch/*/*.md", help="glob of local task files that may carry a stage")
-    parser.add_argument("--stage", help="run: start the named task from this stage, such as rework")
+    parser.add_argument("--tickets", default=".scratch/*/*.md", help="glob of local ticket files that may carry a stage")
+    parser.add_argument("--stage", help="run: start the named ticket from this stage, such as rework")
     parser.add_argument("--spec", action="store_true", help="run: the tracker reference is a spec with tickets")
     parser.add_argument("--detach", action="store_true", help="run: return at once and leave the run in the background")
-    parser.add_argument("--timeout", type=int, default=1800, help="seconds for one agent session")
+    parser.add_argument("--timeout", type=int, default=1800, help="seconds for one run")
     args = parser.parse_args(argv)
     try:
         project = args.project.resolve()
-        pipeline, steps = load_pipeline(project)
-        task = Task(project, args.task, args.spec) if args.task else None
-        if args.command not in ("run", "status") and task is None:
-            raise FactoryError(f"{args.command} needs a task")
+        pipeline, tasks = load_pipeline(project)
+        ticket = Ticket(project, args.ticket, args.spec) if args.ticket else None
+        if args.command not in ("run", "status") and ticket is None:
+            raise FactoryError(f"{args.command} needs a ticket")
         if args.command == "status":
-            for item in [task] if task else tasks_in(project, args.tasks):
+            for item in [ticket] if ticket else tickets_in(project, args.tickets):
                 print(status_line(item))
             return 0
-        if args.command == "place":  # for a session that leads the chain itself
-            print(place(pipeline, task))
-            return 0
-        if args.command == "stage":  # for a session that leads the chain itself
-            if args.value:
-                task.set_stage(args.value)
-            print(task.stage() or "-")
-            return 0
         if args.command == "stop":
-            if not task.running():
-                print(f"{task.name} is not running")
+            if not ticket.running():
+                print(f"{ticket.name} is not running")
                 return 0
-            pid = task.state().get("pid")
+            pid = ticket.state().get("pid")
             if pid:  # the lock is held, so this pid is the run
                 os.kill(pid, signal.SIGTERM)
             for _ in range(150):
-                if not task.running():
+                if not ticket.running():
                     break
                 time.sleep(0.2)
-            print(f"Stopped {task.name}; run it again to continue from {task.stage()}")
+            print(f"Stopped {ticket.name}; run it again to continue from {ticket.stage()}")
             return 0
         if args.command == "wait":
-            while task.running():
+            while ticket.running():
                 time.sleep(2)
-            print(status_line(task))
+            print(status_line(ticket))
             return 0
         if args.detach:
-            if task and task.running():
-                raise FactoryError(f"{task.name} is already running")
+            if ticket and ticket.running():
+                raise FactoryError(f"{ticket.name} is already running")
             again = [sys.executable, str(Path(__file__).resolve()), *[arg for arg in (argv or sys.argv[1:]) if arg != "--detach"]]
-            folder = task.folder if task else project / ".factory"
+            folder = ticket.folder if ticket else project / ".factory"
             folder.mkdir(parents=True, exist_ok=True)
             with (folder / "run.log").open("a") as out:
                 child = subprocess.Popen(again, cwd=Path.cwd(), stdin=subprocess.DEVNULL, stdout=out, stderr=out,
                                          start_new_session=True)
-            while task and child.poll() is None and not task.running():
-                time.sleep(0.05)  # return once the run holds the task, so a wait that follows sees it
+            while ticket and child.poll() is None and not ticket.running():
+                time.sleep(0.05)  # return once the run holds the ticket, so a wait that follows sees it
             if child.poll() not in (None, 0):
                 raise FactoryError(f"The run did not start; see {folder / 'run.log'}")
             print(f"Started in the background (pid {child.pid}); follow it with status")
@@ -396,18 +389,18 @@ def main(argv=None):
             raise Stopped()
         for sign in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
             signal.signal(sign, stop)
-        if task:
+        if ticket:
             def first_stage():
-                current = task.stage()
+                current = ticket.stage()
                 if args.stage:
-                    task.set_stage(args.stage)
-                elif current == BLOCKED and task.state().get("blocked_at"):
-                    task.set_stage(task.state()["blocked_at"])  # the owner dealt with the block; take the step again
-                elif current is None and steps:
-                    task.set_stage(steps[0]["when"])
-            lead(pipeline, steps, task, args.timeout, first_stage)
+                    ticket.set_stage(args.stage)
+                elif current == BLOCKED and ticket.state().get("blocked_at"):
+                    ticket.set_stage(ticket.state()["blocked_at"])  # the owner dealt with the block; take the task again
+                elif current is None and tasks:
+                    ticket.set_stage(tasks[0]["when"])
+            lead(pipeline, tasks, ticket, args.timeout, first_stage)
             return 0
-        while any([lead(pipeline, steps, item, args.timeout) for item in tasks_in(project, args.tasks)]):
+        while any([lead(pipeline, tasks, item, args.timeout) for item in tickets_in(project, args.tickets)]):
             pass
         return 0
     except Stopped:

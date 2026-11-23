@@ -11,9 +11,9 @@ import sys
 HERE = Path(__file__).resolve().parent
 
 
-def trial(root, situation, executor, agent, model, repeat, timeout):
-    folder = root / f"{situation}_{executor}_{agent}_{model}_{repeat}"
-    subprocess.run([sys.executable, str(HERE / "bench.py"), str(folder), "--situation", situation, "--executor", executor,
+def trial(root, situation, entry, agent, model, repeat, timeout):
+    folder = root / f"{situation}_{entry}_{agent}_{model.replace('/', '-')}_{repeat}"
+    subprocess.run([sys.executable, str(HERE / "bench.py"), str(folder), "--situation", situation, "--entry", entry,
                     "--agent", agent, "--model", model, "--timeout", str(timeout)], capture_output=True, text=True)
     result = folder / "result.json"
     facts = json.loads(result.read_text()) if result.is_file() else {"pass": False, "final_stage": "no result"}
@@ -24,7 +24,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("root", type=Path)
     parser.add_argument("--situations", nargs="+", default=["happy", "verify-blocked", "ci-fix", "ci-outage", "spec", "rework"])
-    parser.add_argument("--executors", nargs="+", default=["steps", "conductor"])
+    parser.add_argument("--entries", nargs="+", default=["deliver"])
     parser.add_argument("--agent", default="claude")
     parser.add_argument("--models", nargs="+", default=["haiku", "sonnet"])
     parser.add_argument("--repeats", type=int, default=3)
@@ -32,10 +32,10 @@ def main():
     parser.add_argument("--timeout", type=int, default=1200)
     args = parser.parse_args()
     args.root.mkdir(parents=True)
-    cells = itertools.product(args.situations, args.executors, args.models, range(1, args.repeats + 1))
+    cells = itertools.product(args.situations, args.entries, args.models, range(1, args.repeats + 1))
     with ThreadPoolExecutor(max_workers=args.jobs) as pool:
-        for situation, executor, model, repeat in cells:
-            pool.submit(trial, args.root.resolve(), situation, executor, args.agent, model, repeat, args.timeout)
+        for situation, entry, model, repeat in cells:
+            pool.submit(trial, args.root.resolve(), situation, entry, args.agent, model, repeat, args.timeout)
 
 
 if __name__ == "__main__":

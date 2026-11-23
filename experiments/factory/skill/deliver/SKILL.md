@@ -4,35 +4,18 @@ description: "Lead an agreed ticket or spec through the project's pipeline until
 disable-model-invocation: true
 ---
 
-Lead the work the user named through the pipeline in `docs/agents/pipeline.toml`, from its current stage to a stage no step starts from.
+Lead the ticket or spec the user named through the tasks in `docs/agents/pipeline.toml`, from its current stage to a stage no task starts from. If the pipeline file is missing, say so and stop.
 
-If the pipeline file is missing, say so and stop.
+`orchestrator.py`, beside this file, does the leading: it gives the ticket a worktree, starts one run per task in a fresh session of the client, runs each task's check and records the stage. You start it, answer for it and pass the owner's words on. Do none of the tasks yourself.
 
-A step starts from the stage in its `when`. Its `run` is the instruction for one session; `run_spec` replaces it when the work is a spec with tickets. Its `check` is a shell command that decides whether the step is done. `then` is the next stage.
+Call it by its path with Python 3.11 or newer, from the project root.
 
-`factory.py` is the program beside this file. Call it by its path with Python 3.11 or newer, from the project root. Read `executor` in the pipeline and follow that section only.
-
-## steps
-
-The program leads the chain: it gives the task a worktree, starts one fresh session per step, runs each check and moves the stage. You start it, answer for it and pass the owner's words on. Do none of the steps yourself.
-
-- **Start or continue:** `python3 factory.py run <task> --detach`, then `python3 factory.py wait <task>` in the background. A task the tracker holds is named by its reference; add `--spec` when it is a spec with tickets. Tell the user the run has started and end your turn. A blocked task continues from the step that blocked it.
-- **Status:** when asked, run `python3 factory.py status` and say each task's stage, the running step and the last result.
-- **Stop:** `python3 factory.py stop <task>`. It returns when the run has ended.
-- **Feedback on the result:** post the owner's words as a comment on the task's PR, then start the task with `--stage rework`.
-- **A changed task:** stop the run, let the owner change the task in the tracker, then start it again.
-
-## conductor
-
-Run `python3 factory.py place <task>` and work in the folder it prints. Then, for each step from the stage `python3 factory.py stage <task>` prints:
-
-1. Start a subagent with a fresh context window and give it the step's instruction, word for word.
-2. When the subagent returns, run the step's `check` yourself.
-3. Exit 0: record the step's `then` with `python3 factory.py stage <task> <stage>` and go on.
-4. Any other exit: start the step again, up to its `attempts`. On exit 3, or when the attempts are spent, record the stage `blocked`, add a line to the task saying which step and why, and stop.
-
-You lead and check; the subagents do the work. A step is done when its check passes, never when a subagent says so.
+- **Start or continue:** `python3 orchestrator.py run <ticket> --detach`, then `python3 orchestrator.py wait <ticket>` in the background. A ticket the tracker holds is named by its reference; add `--spec` when it is a spec with tickets. Tell the user the ticket has started and end your turn. A blocked ticket continues from the task that blocked it.
+- **Status:** when asked, run `python3 orchestrator.py status` and say each ticket's stage, the running task and the last result.
+- **Stop:** `python3 orchestrator.py stop <ticket>`. It returns when the run has ended.
+- **Feedback on the result:** post the owner's words as a comment on the ticket's PR, then start the ticket with `--stage rework`.
+- **A changed ticket:** stop it, let the owner change the ticket in the tracker, then start it again.
 
 ## Report
 
-When a run ends, say the stage the work ended in. For a stage that waits for the owner, give the PR link and what the owner decides. For `blocked`, give the step, the reason and the session to reopen from the status line.
+When the orchestrator ends, say the stage the ticket ended in. For a stage that waits for the owner, give the PR link and what the owner decides. For `blocked`, give the task, the reason and the session to reopen from the status line.

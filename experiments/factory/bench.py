@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Prepare a disposable fixture project, run one executor through a situation and grade the outcome.
+"""Prepare a disposable fixture project, lead one ticket through a situation and grade the outcome.
 
-Executors: `steps` walks the pipeline with factory.py, one fresh session per step.
-`conductor` gives one session the whole chain to lead by itself.
+Entries: `deliver` says /deliver to one session, which starts the orchestrator.
+`direct` starts the orchestrator from a terminal.
 """
 import argparse
 import json
@@ -18,14 +18,14 @@ import time
 HERE = Path(__file__).resolve().parent
 KIT = HERE.parents[1]
 sys.path.insert(0, str(HERE / "skill/deliver"))
-import factory  # noqa: E402
+import orchestrator  # noqa: E402
 
 TICKET = ".scratch/greeting/issues/01-greet-by-name.md"
 SPEC = ".scratch/greeting/spec.md"
 USAGE = "\nUsage: `python3 greet.py <name>`\n"
 # Each situation names the stage the chain must end in.
 SITUATIONS = {
-    "happy": "needs-owner",          # every step passes first time
+    "happy": "needs-owner",          # every task passes first time
     "verify-blocked": "blocked",     # the verification environment is missing
     "ci-fix": "needs-owner",         # CI fails once on a fixable docs check
     "ci-outage": "blocked",          # CI fails for a reason outside the repository
@@ -45,7 +45,7 @@ command = '''codex exec --ignore-user-config --ephemeral --skip-git-repo-check -
 command = 'opencode run --standalone --archived --auto --format json -m {model} {prompt}'
 skill = "@"
 """
-EXECUTORS = ("steps", "conductor", "steps-direct")  # the first two start from /deliver in a session
+ENTRIES = ("deliver", "direct")
 
 
 def work(situation):
@@ -56,7 +56,7 @@ def sh(argv, cwd, env=None, check=True):
     return subprocess.run(argv, cwd=cwd, env=env, capture_output=True, text=True, check=check)
 
 
-def prepare(root, situation, ref=None, executor="steps", agent="claude", model="sonnet"):
+def prepare(root, situation, ref=None, agent="claude", model="sonnet"):
     """Build root/project (a git repo with the Kit installed), root/origin.git and the gh double's state."""
     project = root / "project"
     shutil.copytree(HERE / "fixture", project)
@@ -71,7 +71,7 @@ def prepare(root, situation, ref=None, executor="steps", agent="claude", model="
     shutil.copy(KIT / "skills/engineering/setup-agent-kit/issue-tracker-local.md", project / "docs/agents/issue-tracker.md")
     pipeline = project / "docs/agents/pipeline.toml"
     text = pipeline.read_text()
-    for key, value in (("executor", "conductor" if executor == "conductor" else "steps"), ("agent", agent), ("model", model)):
+    for key, value in (("agent", agent), ("model", model)):
         text, count = re.subn(rf'^{key} = "[^"]*"', f'{key} = "{value}"', text, count=1, flags=re.M)
         assert count == 1, key
     pipeline.write_text(text + CLIENTS)
@@ -102,18 +102,17 @@ def prepare(root, situation, ref=None, executor="steps", agent="claude", model="
     return project, env
 
 
-def execute(project, env, executor, agent, model, timeout, task, situation="happy"):
-    """`steps-direct` runs the program from a terminal. The other two say /deliver to one session,
-    which leads the chain as the pipeline's `executor` tells it."""
+def execute(project, env, entry, agent, model, timeout, ticket, situation="happy"):
+    """Lead the ticket to the end of its chain through the named entry."""
     started = time.monotonic()
     logs = project / ".factory/_session"
     logs.mkdir(parents=True)
-    program = [sys.executable, str(project / ".agents/skills/deliver/factory.py")]
-    tail = [task, "--project", str(project), "--timeout", str(timeout)]
-    if executor == "steps-direct":
+    program = [sys.executable, str(project / ".agents/skills/deliver/orchestrator.py")]
+    tail = [ticket, "--project", str(project), "--timeout", str(timeout)]
+    if entry == "direct":
         argv = [*program, "run", *tail]
     else:
-        argv = factory.agent_argv(factory.load_pipeline(project)[0], agent, model, "/deliver " + task)
+        argv = orchestrator.agent_argv(orchestrator.load_pipeline(project)[0], agent, model, "/deliver " + ticket)
     def call(argv, name):
         with (logs / f"{name}.jsonl").open("w") as out, (logs / f"{name}.stderr").open("w") as err:
             try:
@@ -123,7 +122,7 @@ def execute(project, env, executor, agent, model, timeout, task, situation="happ
                 pass
     call(argv, "session-1")
     call([*program, "wait", *tail], "wait-1")  # the session may end while the run it started goes on
-    if situation == "rework" and factory.Task(project, task).stage() == "needs-owner":
+    if situation == "rework" and orchestrator.Ticket(project, ticket).stage() == "needs-owner":
         state = json.loads((project.parent / "gh-state.json").read_text())
         state["prs"][0].setdefault("comments", []).append(FEEDBACK)
         (project.parent / "gh-state.json").write_text(json.dumps(state) + "\n")
@@ -191,23 +190,23 @@ def reached_outside(logs):
 
 
 def grade(root, project, situation):
-    """Read the end state from git, the task file and the gh double. Nothing here trusts what the agent said."""
+    """Read the end state from git, the ticket file and the gh double. Nothing here trusts what the agent said."""
     state = json.loads((root / "gh-state.json").read_text())
-    task = factory.Task(project, work(situation))
-    place = Path(task.state().get("worktree") or project)  # where the work happened
+    ticket = orchestrator.Ticket(project, work(situation))
+    place = Path(ticket.state().get("worktree") or project)  # where the work happened
     commits = sh(["git", "log", "--oneline", "main..HEAD"], place, check=False).stdout.splitlines()
     tests = sh([sys.executable, "-m", "unittest", "discover", "-s", "tests", "-q"], place, check=False)
     def cli(*args):
         done = sh([sys.executable, "greet.py", *args], place, check=False)
         return done.returncode, done.stdout.strip(), done.stderr.strip()
     logs = sorted(log for log in (project / ".factory").rglob("*.jsonl")
-                  if log.name != "steps.jsonl" and not log.name.startswith("wait-"))
+                  if log.name != "runs.jsonl" and not log.name.startswith("wait-"))
     used = {log.relative_to(project / ".factory").as_posix(): skills_used(log) for log in logs}
     everything = [name for names in used.values() for name in names]
     report = place / ".evidence/report.md"
     pr = state["prs"][0] if state["prs"] else None
     facts = {
-        "final_stage": task.stage(),
+        "final_stage": ticket.stage(),
         "own_worktree": place != project,
         "branch": sh(["git", "branch", "--show-current"], place, check=False).stdout.strip(),
         "expected_stage": SITUATIONS[situation],
@@ -246,7 +245,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("root", type=Path, help="new directory for this trial")
     parser.add_argument("--situation", choices=sorted(SITUATIONS), default="happy")
-    parser.add_argument("--executor", choices=EXECUTORS, default="steps")
+    parser.add_argument("--entry", choices=ENTRIES, default="deliver")
     parser.add_argument("--agent", choices=("claude", "codex", "opencode"), default="claude")
     parser.add_argument("--model", default="sonnet")
     parser.add_argument("--timeout", type=int, default=1500)
@@ -254,12 +253,12 @@ def main(argv=None):
     args = parser.parse_args(argv)
     args.root.mkdir(parents=True)
     root = args.root.resolve()
-    project, env = prepare(root, args.situation, executor=args.executor, agent=args.agent, model=args.model)
+    project, env = prepare(root, args.situation, agent=args.agent, model=args.model)
     if args.prepare_only:
         print(project)
         return 0
-    seconds = execute(project, env, args.executor, args.agent, args.model, args.timeout, work(args.situation), args.situation)
-    facts = grade(root, project, args.situation) | {"situation": args.situation, "executor": args.executor,
+    seconds = execute(project, env, args.entry, args.agent, args.model, args.timeout, work(args.situation), args.situation)
+    facts = grade(root, project, args.situation) | {"situation": args.situation, "entry": args.entry,
                                                     "agent": args.agent, "model": args.model, "seconds": seconds}
     (root / "result.json").write_text(json.dumps(facts, indent=2, ensure_ascii=False) + "\n")
     print(json.dumps({k: v for k, v in facts.items() if k != "skills_by_session"}, ensure_ascii=False))

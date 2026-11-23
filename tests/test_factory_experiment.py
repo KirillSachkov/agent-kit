@@ -1,4 +1,4 @@
-"""The experimental step runner leads a task through the fixture pipeline with a scripted agent."""
+"""The experimental orchestrator leads a ticket through the fixture pipeline with a scripted agent."""
 import json
 import os
 from pathlib import Path
@@ -12,10 +12,10 @@ KIT = Path(__file__).resolve().parents[1]
 FACTORY = KIT / "experiments/factory"
 sys.path.insert(0, str(FACTORY))
 import bench  # noqa: E402
-from bench import factory  # noqa: E402
+from bench import orchestrator  # noqa: E402
 
 
-class StepRunnerTest(unittest.TestCase):
+class OrchestratorTest(unittest.TestCase):
     def trial(self, situation):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
@@ -32,11 +32,11 @@ class StepRunnerTest(unittest.TestCase):
         env["FACTORY_AGENT"] = f"{sys.executable} {FACTORY / 'fake_agent.py'}"
         self.assertFalse(any(key.startswith("ORCA_") for key in env))
         self.env = env
-        bench.execute(project, env, "steps-direct", "claude", "sonnet", 60, bench.work(situation), situation)
+        bench.execute(project, env, "direct", "claude", "sonnet", 60, bench.work(situation), situation)
         return root, project, bench.grade(root, project, situation)
 
     def program(self, project, *args):
-        return subprocess.run([sys.executable, str(project / ".agents/skills/deliver/factory.py"), *args, "--project", str(project)],
+        return subprocess.run([sys.executable, str(project / ".agents/skills/deliver/orchestrator.py"), *args, "--project", str(project)],
                               env=self.env, capture_output=True, text=True)
 
     def test_every_step_passing_reaches_the_owner_with_an_open_pull_request(self):
@@ -44,13 +44,13 @@ class StepRunnerTest(unittest.TestCase):
         self.assertEqual(facts["final_stage"], "needs-owner")
         self.assertTrue(facts["pass"], facts)
         self.assertEqual((facts["sessions"], facts["ci_runs"], facts["merge_attempts"], facts["outside"]), (4, [True], 0, []))
-        journal = [json.loads(line) for line in (project / ".factory/greeting-01-greet-by-name/steps.jsonl").read_text().splitlines()]
-        self.assertEqual([(row["step"], row["attempt"], row["check_exit"]) for row in journal],
+        journal = [json.loads(line) for line in (project / ".factory/greeting-01-greet-by-name/runs.jsonl").read_text().splitlines()]
+        self.assertEqual([(row["task"], row["attempt"], row["check_exit"]) for row in journal],
                          [("implement", 1, 0), ("verify", 1, 0), ("ship", 1, 0)])
 
     def test_the_work_happens_in_a_worktree_of_its_own_and_the_project_stays_on_its_branch(self):
         root, project, facts = self.trial("happy")
-        self.assertEqual((facts["own_worktree"], facts["branch"]), (True, "task/greeting-01-greet-by-name"))
+        self.assertEqual((facts["own_worktree"], facts["branch"]), (True, "deliver/greeting-01-greet-by-name"))
         self.assertTrue((root / "project-worktrees/greeting-01-greet-by-name/greet.py").is_file())
         self.assertEqual(subprocess.check_output(["git", "-C", str(project), "branch", "--show-current"], text=True).strip(), "main")
         status = self.program(project, "status").stdout
@@ -69,7 +69,7 @@ class StepRunnerTest(unittest.TestCase):
         self.assertEqual(self.program(project, "run", bench.TICKET).returncode, 0)
         facts = bench.grade(root, project, "happy")
         self.assertEqual((facts["final_stage"], facts["pr_opened"]), ("needs-owner", True))
-        journal = [json.loads(line)["step"] for line in (project / ".factory/greeting-01-greet-by-name/steps.jsonl").read_text().splitlines()]
+        journal = [json.loads(line)["task"] for line in (project / ".factory/greeting-01-greet-by-name/runs.jsonl").read_text().splitlines()]
         self.assertEqual(journal, ["implement", "verify", "verify", "ship"])
         logs = sorted(path.name for path in (project / ".factory/greeting-01-greet-by-name").glob("verify-*.jsonl"))
         self.assertEqual(logs, ["verify-1.jsonl", "verify-2.jsonl"])
@@ -83,7 +83,7 @@ class StepRunnerTest(unittest.TestCase):
     def test_the_owners_feedback_on_the_pull_request_takes_the_work_through_the_chain_again(self):
         root, project, facts = self.trial("rework")
         self.assertTrue(facts["pass"], facts)
-        journal = [json.loads(line)["step"] for line in (project / ".factory/greeting-01-greet-by-name/steps.jsonl").read_text().splitlines()]
+        journal = [json.loads(line)["task"] for line in (project / ".factory/greeting-01-greet-by-name/runs.jsonl").read_text().splitlines()]
         self.assertEqual(journal, ["implement", "verify", "ship", "rework", "verify", "ship"])
 
     def test_later_steps_follow_the_branch_the_implementing_skill_moved_the_work_to(self):
@@ -92,7 +92,7 @@ class StepRunnerTest(unittest.TestCase):
         project, env = bench.prepare(root, "happy")
         mover = root / "mover.py"
         mover.write_text("import os, subprocess, sys\n"
-                         "if os.environ['FACTORY_STEP'] == 'implement':\n"
+                         "if os.environ['FACTORY_TASK'] == 'implement':\n"
                          "    subprocess.run(['git', 'switch', '-qc', 'integration/greeting'], check=True)\n"
                          f"raise SystemExit(subprocess.run([sys.executable, {str(FACTORY / 'fake_agent.py')!r}, *sys.argv[1:]]).returncode)\n")
         self.env = env | {"FACTORY_AGENT": f"{sys.executable} {mover}"}
@@ -101,12 +101,15 @@ class StepRunnerTest(unittest.TestCase):
         self.assertEqual((facts["final_stage"], facts["branch"]), ("needs-owner", "integration/greeting"))
         self.assertEqual(json.loads((root / "gh-state.json").read_text())["prs"][0]["head"], "integration/greeting")
 
-    def test_a_run_started_off_the_base_branch_works_in_that_checkout(self):
+    def test_a_ticket_started_off_the_base_branch_is_led_in_that_checkout(self):
         root = Path(self.enterContext(tempfile.TemporaryDirectory())).resolve() / "trial"
         root.mkdir()
-        project, self.env = bench.prepare(root, "happy")
+        project, env = bench.prepare(root, "happy")
+        self.env = env | {"FACTORY_AGENT": f"{sys.executable} {FACTORY / 'fake_agent.py'}"}
         subprocess.run(["git", "-C", str(project), "switch", "-qc", "mine"], check=True)
-        self.assertEqual(self.program(project, "place", bench.TICKET).stdout.strip(), str(project))
+        self.assertEqual(self.program(project, "run", bench.TICKET).returncode, 0)
+        self.assertEqual(orchestrator.Ticket(project, bench.TICKET).state()["worktree"], str(project))
+        self.assertFalse((root / "project-worktrees").exists())
 
     def test_a_detached_run_can_be_watched_and_stopped_and_keeps_its_stage(self):
         root = Path(self.enterContext(tempfile.TemporaryDirectory())).resolve() / "trial"
@@ -128,27 +131,27 @@ class StepRunnerTest(unittest.TestCase):
     def test_a_tracker_reference_keeps_its_stage_in_the_run_state_and_each_client_spells_the_skill_its_way(self):
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary).resolve()
-            task = factory.Task(project, "#42")
-            self.assertEqual((task.name, task.stage()), ("42", None))
+            ticket = orchestrator.Ticket(project, "#42")
+            self.assertEqual((ticket.name, ticket.stage()), ("42", None))
             for feature in ("pay", "auth"):  # ticket numbers restart in every feature
                 (project / f".scratch/{feature}/issues").mkdir(parents=True)
                 (project / f".scratch/{feature}/issues/01-setup.md").write_text("# Setup\n")
-            self.assertEqual([factory.Task(project, f".scratch/{feature}/issues/01-setup.md").name for feature in ("pay", "auth")],
+            self.assertEqual([orchestrator.Ticket(project, f".scratch/{feature}/issues/01-setup.md").name for feature in ("pay", "auth")],
                              ["pay-01-setup", "auth-01-setup"])
-            factory.Task(project, "42").update()
-            with self.assertRaises(factory.FactoryError):
-                factory.Task(project, "#42")
-            task.set_stage("verify")
-            self.assertEqual(factory.Task(project, "#42").stage(), "verify")
+            orchestrator.Ticket(project, "42").update()
+            with self.assertRaises(orchestrator.FactoryError):
+                orchestrator.Ticket(project, "#42")
+            ticket.set_stage("verify")
+            self.assertEqual(orchestrator.Ticket(project, "#42").stage(), "verify")
             self.assertEqual((project / ".factory/.gitignore").read_text(), "*\n")
-            self.assertIsNone(factory.run_step({}, [], task, 5))
+            self.assertIsNone(orchestrator.run_task({}, [], ticket, 5))
         pipeline = {"agents": {"opencode": {"command": "opencode run -m {model} {prompt}", "skill": "@"}}}
         saved = os.environ.pop("FACTORY_AGENT", None)
         self.addCleanup(lambda: saved and os.environ.update(FACTORY_AGENT=saved))
-        self.assertEqual(factory.agent_argv(pipeline, "opencode", "x/y", "/implement 42"), ["opencode", "run", "-m", "x/y", "@implement 42"])
-        self.assertEqual(factory.agent_argv(pipeline, "codex", "m", "/ship")[-1], "$ship")
-        with self.assertRaises(factory.FactoryError):
-            factory.agent_argv({}, "unknown", "m", "hello")
+        self.assertEqual(orchestrator.agent_argv(pipeline, "opencode", "x/y", "/implement 42"), ["opencode", "run", "-m", "x/y", "@implement 42"])
+        self.assertEqual(orchestrator.agent_argv(pipeline, "codex", "m", "/ship")[-1], "$ship")
+        with self.assertRaises(orchestrator.FactoryError):
+            orchestrator.agent_argv({}, "unknown", "m", "hello")
 
 
 if __name__ == "__main__":
