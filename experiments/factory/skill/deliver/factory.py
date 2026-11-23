@@ -26,7 +26,7 @@ except ImportError:
     sys.exit("factory: this program needs Python 3.11 or newer")
 
 STAGE = re.compile(r"^\*\*Stage:\*\* *(\S+) *$", re.M)
-SESSION = re.compile(r'"(?:session_id|thread_id)"\s*:\s*"([^"]+)"')
+SESSION = re.compile(r'"(?:session_id|thread_id|sessionID)"\s*:\s*"([^"]+)"')
 BLOCKED = "blocked"
 # How to start one headless session of a client, and the sign that invokes a skill in it.
 # A pipeline adds or replaces clients in its [agents.<name>] tables.
@@ -196,8 +196,9 @@ def prepare(pipeline, task, work):
 def session(argv, work, env, log, timeout):
     """Run one agent session in its own process group, so a stop ends everything it started."""
     with log.open("w") as out, log.with_suffix(".stderr").open("w") as err:
-        child = subprocess.Popen(argv, cwd=work, env=env, stdin=subprocess.DEVNULL, stdout=out, stderr=err,
-                                 start_new_session=True)
+        # Some clients take their folder from PWD rather than from the process.
+        child = subprocess.Popen(argv, cwd=work, env=env | {"PWD": str(work)}, stdin=subprocess.DEVNULL, stdout=out,
+                                 stderr=err, start_new_session=True)
         try:
             return child.wait(timeout=timeout)
         except subprocess.TimeoutExpired:

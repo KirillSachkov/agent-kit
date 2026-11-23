@@ -40,6 +40,10 @@ command = 'claude -p {prompt} --setting-sources project --model {model} --no-ses
 
 [agents.codex]
 command = '''codex exec --ignore-user-config --ephemeral --skip-git-repo-check --sandbox danger-full-access --disable apps --disable plugins --enable skip_host_skill_discovery -c 'web_search="disabled"' -m {model} --json {prompt}'''
+
+[agents.opencode]
+command = 'opencode run --standalone --archived --auto --format json -m {model} {prompt}'
+skill = "@"
 """
 EXECUTORS = ("steps", "conductor", "steps-direct")  # the first two start from /deliver in a session
 
@@ -113,7 +117,8 @@ def execute(project, env, executor, agent, model, timeout, task, situation="happ
     def call(argv, name):
         with (logs / f"{name}.jsonl").open("w") as out, (logs / f"{name}.stderr").open("w") as err:
             try:
-                subprocess.run(argv, cwd=project, env=env, stdin=subprocess.DEVNULL, stdout=out, stderr=err, timeout=timeout * 4)
+                subprocess.run(argv, cwd=project, env=env | {"PWD": str(project)}, stdin=subprocess.DEVNULL, stdout=out,
+                               stderr=err, timeout=timeout * 4)
             except subprocess.TimeoutExpired:
                 pass
     call(argv, "session-1")
@@ -148,6 +153,14 @@ def skills_used(log):
         item = event.get("item") or {}
         if item.get("type") == "command_execution":  # Codex
             actions.append(str(item.get("command")))
+        part = event.get("part") or {}
+        if event.get("type") == "tool_use":  # OpenCode, which loads a mentioned skill without a visible call
+            given = (part.get("state") or {}).get("input") or {}
+            if part.get("tool") == "skill":
+                used.append(str(given.get("id") or given.get("name")))
+            if part.get("tool") == "subagent" and re.search(r"code.?review|standards axis|spec axis", str(given.get("description")), re.I):
+                used.append("code-review")
+            actions.append(json.dumps(given))
         for action in actions:
             used += re.findall(r"skills/([a-z0-9-]+)/SKILL\.md", action)
             for group in re.findall(r"skills/\{([a-z0-9,-]+)\}/SKILL\.md", action):  # a shell brace list
@@ -156,9 +169,11 @@ def skills_used(log):
 
 
 def cost(log):
-    """Claude reports a running total in each result event; the session's cost is the largest."""
-    return max((event["total_cost_usd"] for event in events(log)
-                if event.get("type") == "result" and isinstance(event.get("total_cost_usd"), (int, float))), default=0.0)
+    """Claude reports a running total in each result event; the session's cost is the largest.
+    OpenCode reports the cost of each step. Codex reports none."""
+    steps = sum((event.get("part") or {}).get("cost") or 0 for event in events(log) if event.get("type") == "step_finish")
+    return steps + max((event["total_cost_usd"] for event in events(log)
+                        if event.get("type") == "result" and isinstance(event.get("total_cost_usd"), (int, float))), default=0.0)
 
 
 def reached_outside(logs):
@@ -232,7 +247,7 @@ def main(argv=None):
     parser.add_argument("root", type=Path, help="new directory for this trial")
     parser.add_argument("--situation", choices=sorted(SITUATIONS), default="happy")
     parser.add_argument("--executor", choices=EXECUTORS, default="steps")
-    parser.add_argument("--agent", choices=("claude", "codex"), default="claude")
+    parser.add_argument("--agent", choices=("claude", "codex", "opencode"), default="claude")
     parser.add_argument("--model", default="sonnet")
     parser.add_argument("--timeout", type=int, default=1500)
     parser.add_argument("--prepare-only", action="store_true")
