@@ -52,44 +52,35 @@ class SetupTest(unittest.TestCase):
         self.git("commit", "-qm", title)
         return self.git("rev-parse", "HEAD")
 
-    def setup(self, *flags, status=0, decide=True):
-        # A project with its own instructions must state its delivery route. Fixtures choose local
-        # on the first run; later runs reuse the recorded decision.
-        if decide and "--decisions" not in flags and not (self.project / ".agents/setup-lock.json").exists():
-            default = self.base / "default-decisions.json"
-            default.write_text(json.dumps({"delivery": "local"}))
-            flags = ("--decisions", default, *flags)
+    def setup(self, *flags, status=0):
         run = subprocess.run([sys.executable, self.provider / "tools/setup.py", "--project", self.project,
                               "--ref", self.ref, *flags], capture_output=True, text=True, env=self.env)
         self.assertEqual(run.returncode, status, run.stdout[-3000:] + run.stderr)
         return run.stdout + run.stderr
 
-    def decisions(self, **choices):
-        path = self.base / "decisions.json"
-        choices.setdefault("delivery", "local")
-        path.write_text(json.dumps(choices))
-        return ["--decisions", path]
-
     def test_fresh_preview_commit_and_noop_use_one_pin(self):
         (self.provider / "templates/project/WORKFLOW.md").write_text("Unselected workflow")
         (self.provider / "skills/engineering/probe/reference.txt").write_text("Unselected skill")
         new = self.release("New release")
-        preview = self.setup("--client", "both", decide=False)
+        preview = self.setup("--client", "both")
         self.assertEqual(list(self.project.iterdir()), [])
         self.assertIn("Observe a fixture", preview)
         self.assertRegex(preview, re.escape(f".agents/skills/probe: agent-kit@{self.ref} / probe, sha256 ")
                          + r"[0-9a-f]{12}, new\n")
         self.assertNotIn("selected/reference.txt", preview)
         self.assertIn("selected/WORKFLOW.md", preview)
-        full = self.setup("--client", "both", "--full", decide=False)
+        full = self.setup("--client", "both", "--full")
         self.assertIn("current/.agents/skills-lock.json", full)
         self.assertIn("selected/reference.txt", full)
         self.assertEqual(list(self.project.iterdir()), [])
-        self.setup("--client", "both", "--apply", decide=False)
-        self.assertEqual(json.loads((self.project / ".agents/setup-lock.json").read_text())["decisions"], {})
+        self.setup("--client", "both", "--apply")
+        lock = json.loads((self.project / ".agents/setup-lock.json").read_text())
+        self.assertEqual(sorted(lock), ["files", "instruction_owner", "ref", "roots", "schema_version"])
+        self.assertEqual(list(lock["files"]), ["WORKFLOW.md"])
         self.assertIn("WORKFLOW.md", (self.project / "AGENTS.md").read_text())
         self.assertIn("Human-invoked skills: none.", (self.project / "AGENTS.md").read_text())
-        self.assertIn("A kind of change\nmissing from the table is a question for the owner", (self.project / "docs/agents/testing.md").read_text())
+        self.assertIn("tell the user to run `/setup-matt-pocock-skills`", (self.project / "AGENTS.md").read_text())
+        self.assertFalse((self.project / "docs").exists())
         self.assertNotIn("Unselected", (self.project / "WORKFLOW.md").read_text())
         self.assertEqual((self.project / ".agents/skills/probe/reference.txt").read_text(), "v1\n")
         self.assertTrue((self.project / ".claude/skills").is_symlink())
@@ -101,113 +92,21 @@ class SetupTest(unittest.TestCase):
         self.assertEqual((self.project / "WORKFLOW.md").read_text(), "Unselected workflow")
         self.assertEqual((self.project / ".agents/skills/probe/reference.txt").read_text(), "Unselected skill")
 
-    def test_existing_policy_equivalent_testing_and_ci(self):
+    def test_existing_instructions_and_client_settings_are_preserved(self):
         (self.project / ".claude").mkdir()
         (self.project / ".claude/settings.json").write_text('{"private": true}')
         rules = "Use [testing](docs/checks.md). Submit a pull request for delivery.\n"
         (self.project / "CLAUDE.md").write_text(rules)
         (self.project / "docs").mkdir()
         (self.project / "docs/checks.md").write_text("Run `make verify` from src using the fixture database.\n")
-        (self.project / "Makefile").write_text("check:\n\t@true\n")
-        workflows = self.project / ".github/workflows"
-        workflows.mkdir(parents=True)
-        (workflows / "test.yaml").write_text("name: Sample CI\n")
-        self.assertIn("State delivery in the decisions JSON", self.setup("--client", "both", status=1, decide=False))
-        self.assertEqual({p.name for p in self.project.iterdir()},
-                         {".claude", "CLAUDE.md", "docs", "Makefile", ".github"})
-        route = self.decisions(delivery="pr")
-        self.assertIn("fixture database", self.setup(*route, "--client", "both", "--full"))
-        preview = self.setup(*route, "--client", "both", "--apply")
-        for found in ("Existing project document: docs/checks.md", "make check", ".github/workflows/test.yaml"):
-            self.assertIn(found, preview)
+        preview = self.setup("--client", "both", "--apply")
         self.assertNotIn("fixture database", preview)
         self.assertTrue((self.project / "CLAUDE.md").read_text().startswith(rules))
-        self.assertIn("docs/checks.md", (self.project / "CLAUDE.md").read_text())
+        self.assertIn("WORKFLOW.md", (self.project / "CLAUDE.md").read_text())
         self.assertIn("CLAUDE.md", (self.project / "AGENTS.md").read_text())
-        self.assertFalse((self.project / "docs/agents/testing.md").exists())
-        self.assertIn("Delivery route: pr", (self.project / "docs/agents/project-settings.md").read_text())
+        self.assertEqual(sorted(p.name for p in (self.project / "docs").iterdir()), ["checks.md"])
         self.assertEqual((self.project / ".claude/settings.json").read_text(), '{"private": true}')
         self.assertIn("No changes.", self.setup())
-
-    def test_existing_documents_are_listed_without_assigning_them_settings(self):
-        (self.project / "AGENTS.md").write_text("Read [domain](docs/domain.md) and [access](docs/mcp.md).\n")
-        (self.project / "docs").mkdir()
-        (self.project / "docs/domain.md").write_text("The ubiquitous language of orders. TDD is discussed here.\n")
-        (self.project / "docs/mcp.md").write_text("Server authorization uses a token. Cleanup the worktree cache.\n")
-        self.setup("--apply")
-        settings = (self.project / "docs/agents/project-settings.md").read_text()
-        self.assertIn("Documents reached from the existing instructions: `AGENTS.md`, `docs/domain.md`, `docs/mcp.md`.", settings)
-        self.assertNotIn("Follow `", settings)
-        self.assertIn("- Language: Use the language of the assignment.", settings)
-        self.assertIn("No changes.", self.setup())
-
-    def test_documents_keep_their_stored_spelling(self):
-        (self.project / "GLOSSARY.md").write_text("Order: a purchase.\n")
-        (self.project / "AGENTS.md").write_text("Read [domain](docs/agents/domain.md).\n")
-        (self.project / "docs/agents").mkdir(parents=True)
-        (self.project / "docs/agents/domain.md").write_text("Read `GLOSSARY.md` for terms.\n")
-        (self.project / "docs/TESTING.md").write_text("Run the suite.\n")
-        preview = self.setup()
-        self.assertIn("Existing project document: GLOSSARY.md", preview)
-        self.assertIn("Existing project document: docs/TESTING.md", preview)
-        for wrong in ("docs/agents/GLOSSARY.md", "docs/testing.md"):
-            self.assertNotIn("Existing project document: " + wrong, preview)
-
-    def test_conflict_resolution_is_bound_to_discovered_difference(self):
-        instructions = "Open a draft PR before implementation.\n"
-        (self.project / "AGENTS.md").write_text(instructions)
-        rejected = self.setup("--apply", status=1)
-        self.assertIn("Open a draft PR", rejected)
-        self.assertIn("after the local evidence", rejected)
-        self.assertEqual([p.name for p in self.project.iterdir()], ["AGENTS.md"])
-        resolution = "Use local Verify before opening a PR for this workflow."
-        args = self.decisions(resolution=resolution, conflict_id=self.conflict_id(rejected))
-        self.setup(*args, "--apply")
-        self.assertIn("No changes.", self.setup(*args))
-        self.assertIn("No changes.", self.setup())
-        text = (self.project / "AGENTS.md").read_text()
-        (self.project / "AGENTS.md").write_text("Repeat verification after every CI fix.\n" + text)
-        self.assertIn("Resolve the displayed process conflict", self.setup("--apply", status=1))
-        updated = self.setup(*args, "--apply", status=1)
-        self.assertNotEqual(self.conflict_id(rejected), self.conflict_id(updated))
-        self.setup(*self.decisions(resolution="Keep the original Verify through CI corrections.",
-                                   conflict_id=self.conflict_id(updated)), "--apply")
-        self.assertIn("No changes.", self.setup())
-
-    def conflict_id(self, report):
-        return re.search(r"conflict_id in the decisions JSON: ([0-9a-f]{64})", report)[1]
-
-    def test_nested_policy_sources_negation_and_explicit_overrides(self):
-        rules = self.project / "AGENTS.md"
-        rules.write_text("Follow the [release guide](policy/release.md).\n")
-        policy = self.project / "policy"
-        policy.mkdir()
-        (policy / "release.md").write_text("For delivery, read `gates/acceptance.md`.\n")
-        gates = policy / "gates"
-        gates.mkdir()
-        contract = gates / "acceptance.md"
-        external = self.base / "private.md"
-        external.write_text("UNRELATED PRIVATE DATA")
-        (gates / "linked.md").symlink_to(external)
-        contract.write_text("Never open a PR. Deliver on main only.\n"
-                            "Read [release](../release.md) and [external](../../../private.md).\n"
-                            "Read [linked](linked.md).\n")
-        preview = self.setup("--full")
-        self.assertNotIn("UNRELATED PRIVATE DATA", preview)
-        self.assertIn("Never open a PR", preview)
-        self.assertIn("Delivery route: local", preview)
-        mixed = self.setup(*self.decisions(delivery="Small fixes land on main; larger changes use a PR."))
-        self.assertIn("Delivery route: Small fixes land on main; larger changes use a PR.", mixed)
-        contract.write_text("Every delivery requires the owner-attention classifier.\n"
-                            "Its statuses are Owner signoff and No owner attention needed.\n")
-        self.setup(*self.decisions(owner_gate="conditions"), "--apply")
-        settings = (self.project / "docs/agents/project-settings.md").read_text()
-        self.assertIn("Run `owner-gate` once before delivery against `policy/gates/acceptance.md`.", settings)
-        self.assertFalse((self.project / "docs/agents/owner-gate.md").exists())
-        self.assertIn("No changes.", self.setup())
-        contract.write_text("Do not use subagents.\n")
-        report = self.setup("--apply", status=1)
-        self.assertIn("parallel independent Standards and Spec reviewers", report)
 
     def test_instruction_owner_through_root_alias(self):
         for canonical, alias in (("AGENTS.md", "CLAUDE.md"), ("CLAUDE.md", "AGENTS.md")):
@@ -216,7 +115,7 @@ class SetupTest(unittest.TestCase):
             (self.project / canonical).write_text("Project-owned rule.\n")
             link = self.project / alias
             link.symlink_to(canonical)
-            args = self.decisions(instruction_owner=alias)
+            args = ("--instruction-owner", alias)
             self.setup(*args, "--client", "both", "--apply")
             self.assertTrue(link.is_symlink())
             self.assertIn("WORKFLOW.md", (self.project / canonical).read_text())
@@ -229,20 +128,58 @@ class SetupTest(unittest.TestCase):
         self.setup("--apply")
         path = self.project / ".agents/skills/probe/reference.txt"
         path.write_text("local skill edit")
-        settings = self.project / "docs/agents/project-settings.md"
-        old = settings.read_bytes()
-        self.setup(*self.decisions(language="French"), "--apply", status=1)
-        self.assertEqual(settings.read_bytes(), old)
+        (self.provider / "templates/project/WORKFLOW.md").write_text("Next workflow\n")
+        self.ref = self.release("Change the workflow")
+        workflow = self.project / "WORKFLOW.md"
+        old = workflow.read_bytes()
+        self.setup("--apply", status=1)
+        self.assertEqual(workflow.read_bytes(), old)
         self.assertEqual(path.read_text(), "local skill edit")
         path.write_text("v1\n")
-        settings.write_text("local policy edit")
+        workflow.write_text("local policy edit")
         self.assertIn("locally changed starter document", self.setup("--apply", status=1))
-        self.assertEqual(settings.read_text(), "local policy edit")
+        self.assertEqual(workflow.read_text(), "local policy edit")
+
+    def test_upgrade_hands_settings_to_the_project_and_retires_starter_files(self):
+        self.setup("--apply")
+        lock = self.project / ".agents/setup-lock.json"
+        state = json.loads(lock.read_text())
+        settings = self.project / "docs/agents/project-settings.md"
+        settings.parent.mkdir(parents=True)
+        settings.write_text("- Delivery route: pr\n")
+        untouched = self.project / "evidence-manifest.json"
+        untouched.write_text("{}\n")
+        edited = self.project / "old-form.md"
+        edited.write_text("edited by the project\n")
+        digest = lambda path: __import__("hashlib").sha256(path.read_bytes()).hexdigest()
+        state["decisions"] = {"delivery": "pr"}
+        state["files"] |= {"docs/agents/project-settings.md": digest(settings),
+                           "evidence-manifest.json": digest(untouched), "old-form.md": "0" * 64}
+        lock.write_text(json.dumps(state, indent=2) + "\n")
+        preview = self.setup("--apply")
+        self.assertIn("Decisions an earlier release recorded now live in docs/agents/project-settings.md", preview)
+        self.assertIn("docs/agents/project-settings.md: now the project's own file", preview)
+        self.assertIn("evidence-manifest.json: no longer part of the starter; removed", preview)
+        self.assertIn("old-form.md: no longer part of the starter; the project edited it, so it stays", preview)
+        self.assertEqual(settings.read_text(), "- Delivery route: pr\n")
+        self.assertFalse(untouched.exists())
+        self.assertTrue(edited.exists())
+        after = json.loads(lock.read_text())
+        self.assertNotIn("decisions", after)
+        self.assertEqual(list(after["files"]), ["WORKFLOW.md"])
+        self.assertIn("No changes.", self.setup())
+
+    def test_another_starter_version_names_the_tool_to_run(self):
+        (self.provider / "templates/project/starter.json").unlink()
+        self.ref = self.release("A pin from before starter versions")
+        report = self.setup(status=1)
+        self.assertIn("is version 1; this tool installs version 3", report)
+        self.assertIn(f"show {self.ref}:tools/setup.py", report)
+        self.assertEqual(list(self.project.iterdir()), [])
 
     def test_existing_client_conflict_invalid_options_and_writer_lock_do_not_write(self):
         (self.project / ".claude/skills").mkdir(parents=True)
         self.assertIn("unmanaged", self.setup("--client", "both", "--apply", status=1))
-        self.assertIn("Unknown decisions", self.setup(*self.decisions(unrecognized=True), "--apply", status=1))
         self.assertFalse((self.project / ".agents").exists())
         agents = self.project / ".agents"
         agents.mkdir()
@@ -252,35 +189,12 @@ class SetupTest(unittest.TestCase):
         self.assertTrue(lock.exists())
         self.assertFalse((self.project / "AGENTS.md").exists())
 
-    def test_project_decisions_and_discovered_commands(self):
-        (self.project / "package.json").write_text(json.dumps({"packageManager": "pnpm@9",
-                                "scripts": {"test:unit": "vitest run", "lint": "eslint src"}}))
-        args = self.decisions(ci="No remote CI.", access="Use the synthetic fixture service.",
-                              delivery="pr", owner_gate="conditions")
-        preview = self.setup(*args, "--apply")
-        for fact in ("pnpm run test:unit", "vitest run", "pnpm run lint"):
-            self.assertIn(fact, preview)
-        testing = (self.project / "docs/agents/testing.md").read_text()
-        self.assertIn("| Kind of change | Where it is checked | Kind of test | Not tested |", testing)
-        self.assertIn("Data and services tests may use: Use the synthetic fixture service.", testing)
-        self.assertNotIn("pnpm", testing)
-        settings = (self.project / "docs/agents/project-settings.md").read_text()
-        for content in ("No remote CI.", "Delivery checks:", "## Read by `ship`"):
-            self.assertIn(content, settings)
-        for retired in ("Start:", "Working context:", "Acceptance:", "Cleanup:", "synthetic fixture service"):
-            self.assertNotIn(retired, settings)
-        self.assertNotIn("Tracker", settings)
-        self.assertTrue((self.project / "docs/agents/owner-gate.md").is_file())
-        self.assertFalse((self.project / ".github").exists())
-        self.assertFalse((self.project / "evidence-manifest.json").exists())
-        self.assertIn("No changes.", self.setup())
-
     def test_two_instruction_roots_delegate_or_require_an_explicit_owner(self):
         wrapper = self.project / "AGENTS.md"
         canonical = self.project / "CLAUDE.md"
         canonical.write_text("Use the project tracker.\n")
         wrapper.write_text("Implement in the assigned worktree.\n")
-        self.assertIn("instruction_owner", self.setup("--apply", status=1))
+        self.assertIn("--instruction-owner", self.setup("--apply", status=1))
         self.assertFalse((self.project / ".agents").exists())
         source = "Read [the canonical instructions](CLAUDE.md).\n"
         wrapper.write_text(source)
@@ -292,16 +206,6 @@ class SetupTest(unittest.TestCase):
         canonical.write_text(altered)
         self.setup("--apply")
         self.assertEqual(canonical.read_text(), altered)
-
-    def test_russian_ci_rules_and_compatible_negations(self):
-        rules = self.project / "AGENTS.md"
-        rules.write_text("Не открывай PR до локального Verify.\nПосле CI не нужен повторный Verify.\n"
-                         "Do not repeat Verify after CI fixes.\n")
-        self.assertNotIn("Project workflow difference", self.setup())
-        rules.write_text("Открывай черновой PR до начала работы.\nПосле исправления CI нужен повторный Verify.\n")
-        preview = self.setup("--apply", status=1)
-        self.assertEqual(preview.count("Project workflow difference:"), 2)
-        self.assertFalse((self.project / ".agents").exists())
 
     def test_known_backup_obstacle_blocks_preview_and_apply(self):
         root = self.project / "AGENTS.md"
@@ -395,73 +299,6 @@ class SetupTest(unittest.TestCase):
         (self.provider / "skills/engineering/probe/reference.txt").write_text("v2\n")
         self.ref = self.release("Change one file")
         self.assertRegex(self.setup(), r"/ probe, sha256 [0-9a-f]{12}, 1 changed file\n")
-
-    def test_upgrade_drops_retired_decisions_and_files_and_leaves_seeded_documents_to_the_project(self):
-        templates = self.provider / "templates/project"
-        defaults = json.loads((templates / "defaults.json").read_text())
-        (templates / "defaults.json").write_text(json.dumps(defaults | {"tracker": "Old default."}))
-        (templates / "evidence-manifest.json").write_text("{}\n")
-        (templates / ".github").mkdir()
-        (templates / ".github/pull_request_template.md").write_text("## Old starter form\n")
-        self.ref = self.release("Earlier release with a tracker setting and a manifest")
-        self.setup(*self.decisions(tracker="Use Linear.", delivery="PR", owner_gate="conditions"), "--apply")
-        strategy = self.project / "docs/agents/testing.md"
-        strategy.write_text(strategy.read_text() + "Orders are tested at the checkout API.\n")
-        conditions = self.project / "docs/agents/owner-gate.md"
-        conditions.write_text(conditions.read_text() + "Owner signoff for pricing.\n")
-        self.assertIn("No changes.", self.setup())
-        (templates / "defaults.json").write_text(json.dumps(defaults))
-        (templates / "evidence-manifest.json").unlink()
-        (templates / ".github/pull_request_template.md").unlink()
-        (self.project / "evidence-manifest.json").write_text('{"kept": "by the project"}\n')
-        self.ref = self.release("Retire them")
-        preview = self.setup("--apply")
-        self.assertIn("no longer applies and is dropped: tracker", preview)
-        self.assertIn("evidence-manifest.json: no longer part of the starter; the project edited it, so it stays", preview)
-        self.assertTrue((self.project / "evidence-manifest.json").is_file())
-        self.assertIn(".github/pull_request_template.md: no longer part of the starter; removed", preview)
-        self.assertFalse((self.project / ".github/pull_request_template.md").exists())
-        self.assertIn("checkout API", strategy.read_text())
-        self.assertIn("pricing", conditions.read_text())
-        lock = json.loads((self.project / ".agents/setup-lock.json").read_text())
-        self.assertEqual(lock["decisions"], {"delivery": "pr", "owner_gate": "conditions"})
-        self.assertEqual(sorted(lock["files"]), ["WORKFLOW.md", "docs/agents/project-settings.md"])
-        self.assertEqual(lock["seeded"], ["docs/agents/owner-gate.md", "docs/agents/testing.md"])
-        self.assertIn("No changes.", self.setup())
-
-    def test_owner_gate_levels_and_the_earlier_boolean_setting(self):
-        self.setup("--apply", decide=False)
-        settings = self.project / "docs/agents/project-settings.md"
-        self.assertIn("Owner gate: Every delivery waits for the owner. The agent never merges.", settings.read_text())
-        self.assertFalse((self.project / "docs/agents/owner-gate.md").exists())
-        self.assertIn("owner_gate must be owner, conditions or none",
-                      self.setup(*self.decisions(owner_gate="sometimes"), status=1))
-        self.setup(*self.decisions(owner_gate="none"), "--apply")
-        self.assertIn("Owner gate: The agent may merge without the owner.", settings.read_text())
-        lock = self.project / ".agents/setup-lock.json"
-        state = json.loads(lock.read_text())
-        state["decisions"] = {"owner_attention": True}
-        lock.write_text(json.dumps(state, indent=2) + "\n")
-        (self.project / "docs/agents/owner-attention.md").write_text("Statuses kept from an earlier release.\n")
-        preview = self.setup("--apply", decide=False)
-        self.assertIn("The earlier classifier setting was on. The owner gate now defaults to owner", preview)
-        self.assertIn("docs/agents/owner-attention.md: conditions page of an earlier release", preview)
-        self.assertEqual(json.loads(lock.read_text())["decisions"], {})
-        self.assertIn("Owner gate: Every delivery waits for the owner.", settings.read_text())
-        self.setup(*self.decisions(owner_gate="conditions"), "--apply")
-        self.assertIn("Run `owner-gate` once before delivery against [owner gate conditions](owner-gate.md).", settings.read_text())
-        self.assertIn("Cases from history", (self.project / "docs/agents/owner-gate.md").read_text())
-
-    def test_another_starter_version_names_the_tool_to_run(self):
-        defaults = self.provider / "templates/project/defaults.json"
-        values = json.loads(defaults.read_text())
-        del values["starter_version"]
-        defaults.write_text(json.dumps(values))
-        self.ref = self.release("A pin from before starter versions")
-        report = self.setup(status=1)
-        self.assertIn("is version 1; this tool installs version 2", report)
-        self.assertIn(f"show {self.ref}:tools/setup.py", report)
-        self.assertEqual(list(self.project.iterdir()), [])
 
     def test_installer_failure_restores_setup_and_prior_backups(self):
         (self.project / "AGENTS.md").write_text("Keep project instructions.\n")

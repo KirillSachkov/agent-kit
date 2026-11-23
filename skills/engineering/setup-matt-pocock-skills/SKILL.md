@@ -1,12 +1,10 @@
 ---
 name: setup-matt-pocock-skills
-description: "Set up the project tracker, triage labels, human language and domain docs, or guide a full Agent Kit installation."
+description: "Configure this repo for the engineering skills: language, issue tracker, triage labels, domain docs, delivery, verification and the owner gate. Run once before first use, and again to change a decision."
 disable-model-invocation: true
 ---
 
 # Setup Matt Pocock's Skills
-
-For full Agent Kit setup, run `python3 tools/setup.py --project PROJECT --ref FULL_SHA` from the selected Kit checkout. Read the target's existing policies, test and CI configuration. Compare the proposed route with those files, settle material differences with the owner, then apply the agreed preview with `--apply`. Repeat the preview to confirm an empty diff. For tracker, language, labels or domain docs alone, use the steps below.
 
 Scaffold missing configuration:
 
@@ -14,6 +12,10 @@ Scaffold missing configuration:
 - **Issue tracker**: where issues live (GitHub by default; local markdown is also supported out of the box)
 - **Triage labels**: the strings used for the five canonical triage roles
 - **Domain docs**: where `GLOSSARY.md` and ADRs live, and the consumer rules for reading them
+- **Delivery**: the route finished work takes, and the checks and CI it must pass
+- **Verification**: when behaviour is verified, who verifies, and where evidence is kept
+- **Owner gate**: whether the owner sees every delivery, some, or none
+- **Testing strategy**: the seams this project tests at
 
 This is a prompt-driven skill, not a deterministic script. Explore, present what you found, confirm with the user, then write.
 
@@ -27,7 +29,9 @@ Look at the current repo to understand its starting state. Read whatever exists;
 - `AGENTS.md` and `CLAUDE.md` at the repo root: does either exist? Is there already an `## Agent skills` section in either?
 - `GLOSSARY.md` and `GLOSSARY-MAP.md` at the repo root, and the legacy `CONTEXT.md` / `CONTEXT-MAP.md`. If a legacy file exists, offer to `git mv` it to its `GLOSSARY` name and rewrite those names in `docs/agents/domain.md`.
 - `docs/adr/` and any `src/*/docs/adr/` directories
-- `docs/agents/`: does this skill's prior output already exist?
+- `docs/agents/`: does this skill's prior output already exist? When `docs/agents/project-settings.md` exists this is a rerun: show the current decisions, then ask only what the user wants to change and any setting below the file lacks.
+- The repo's check commands (`package.json` scripts, `Makefile` targets, a check script) and CI workflows: these become the proposed delivery checks and required CI.
+- Rules in the existing instructions about review, verification, PRs and merging. Section G needs them.
 - `.scratch/`: a sign that a local-markdown issue tracker convention is already in use
 - Is the `triage` skill installed? (a `triage` skill folder alongside this one, or `triage` in your available skills.) This decides whether Section B runs at all.
 - Monorepo signals: a `pnpm-workspace.yaml`, a `workspaces` field in `package.json`, or a populated `packages/*` with its own `src/`. These are present only in a genuinely large multi-package repo; their absence means single-context, which is almost every repo.
@@ -90,12 +94,21 @@ The defaults are the five canonical roles, each label string equal to its name: 
 
 Offer **multi-context** (a root `GLOSSARY-MAP.md` pointing to per-context `GLOSSARY.md` files) only when exploration found monorepo signals. Then confirm which layout they want.
 
+**Section D: Delivery.** Propose `pr` when a remote exists and the project already works through PRs, otherwise `local`. `main` delivers straight to the main checkout. A project with a mixed rule ("small fixes on main, larger changes through a PR") records that rule in its own words. Propose the delivery checks and required CI you found in step 1.
+
+**Section E: Verification.** Recommend: verify when user-visible behaviour changes or the task has key scenarios, by a fresh agent that did not write the change. Evidence storage is one of: PR attachments (recommend on GitHub; attachments are public and permanent), a folder in the repo, external storage the user describes, or text only. When verification is on and the project has no `verify-<app>` skill, say that `/create-verification-skill` generates one.
+
+**Section F: Owner gate.** Recommend `owner`: every delivery waits for the owner and the agent never merges. `conditions` has a fresh agent judge each change against a conditions page and lets a calm status merge. `none` lets the agent merge by itself; record it only on an explicit choice.
+
+**Section G: Existing rules.** When the project's instructions prescribe something these skills do differently (a second review after fixes, verification repeated after every CI fix, a PR opened before any work), quote each rule with its file and ask which stays. Record what the user keeps.
+
 ### 3. Confirm and edit
 
 Show the user a draft of:
 
 - The selected Language block and the `## Agent skills` block to add to whichever of `CLAUDE.md` / `AGENTS.md` is being edited (see step 4 for selection rules)
 - The contents of `docs/agents/issue-tracker.md`, `docs/agents/domain.md`, and `docs/agents/triage-labels.md` (the last only when `triage` is installed)
+- The contents of `docs/agents/project-settings.md`, and of the testing strategy and owner-gate conditions when they are new
 
 Let them edit before writing.
 
@@ -141,6 +154,9 @@ Then write the docs files using the seed templates in this skill folder as a sta
 - [issue-tracker-local.md](./issue-tracker-local.md): local-markdown issue tracker
 - [triage-labels.md](./triage-labels.md): label mapping (only if `triage` is installed)
 - [domain.md](./domain.md): domain doc consumer rules + layout
+- [project-settings.md](./project-settings.md): the decisions from Sections D to G
+- [testing.md](./testing.md): the testing strategy, as `docs/agents/testing.md`. Skip it when the project already has a document that says where and how it tests, and name that document in the settings instead.
+- [owner-gate.md](./owner-gate.md): the conditions page, as `docs/agents/owner-gate.md` (only for the `conditions` gate)
 
 For "other" issue trackers, write `docs/agents/issue-tracker.md` from scratch using the user's description.
 

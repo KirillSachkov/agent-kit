@@ -119,7 +119,7 @@ The change in `wizard`: `SKILL.md` matches the original and only `template.sh` d
 | --- | --- | --- | --- |
 | The Kit block in `AGENTS.md` | `tools/setup.py` | every session | pointer to the rest |
 | `WORKFLOW.md` | `tools/setup.py` | the agent at the verify step | rules connecting skills |
-| `docs/agents/project-settings.md` | `tools/setup.py` from your decisions | `ship`, the verify step, `pr`; the file groups settings by reader | verification, evidence, delivery |
+| `docs/agents/project-settings.md` | `setup-matt-pocock-skills` from your answers | `ship`, the verify step, `pr`, test choice; settings are grouped by reader | verification, evidence, delivery |
 | `docs/agents/testing.md` | `tools/setup.py` seeds it once, then you and the agent | `to-spec`, `tdd` through the root pointer | design, execution |
 | `verify-<app>` | `create-verification-skill` | the agent at the verify step | verification |
 | `docs/agents/owner-gate.md` | `tools/setup.py` seeds it once at the “conditions” level, then only you | `owner-gate` | acceptance |

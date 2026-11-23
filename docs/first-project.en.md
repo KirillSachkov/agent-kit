@@ -4,27 +4,36 @@
 
 Use an empty local Git repository for the first trial. Setup succeeds when a fresh session can explain the first task and the point where the owner decides. Have Git, Python 3.11+ and a Kit checkout available.
 
-## Set up the project
+## Install the skills
 
-From the Kit checkout, choose an existing project directory and an immutable revision:
+From the Kit checkout, name an existing project directory and a selected commit:
 
 ```bash
 project=/absolute/path/to/project
 kit_ref=$(git rev-parse HEAD)
 python3 tools/setup.py --project "$project" --ref "$kit_ref"
-```
-
-Inspect the proposed settings, skills and the project file diff. Skill changes take one line each; `--full` prints their complete diff. Full setup includes all skills released at that revision. The task activates each practice: a question can end with an answer, while a large delivery can use `to-spec`, `to-tickets` and `implement-spec`. Project settings determine whether a behaviour check or an owner decision is required.
-
-In a project with its own instructions, setup asks you to state the delivery route: `local`, `main`, `pr`, or the project's rule in words. It does not infer it. Inspect the listed documents and CI files and reconcile material differences before applying. For example, a project requiring another Verify after CI selects a different workflow. Local checks can cover a project with no external CI.
-
-```bash
 python3 tools/setup.py --project "$project" --ref "$kit_ref" --apply
 python3 tools/skills.py check --project "$project"
-python3 tools/setup.py --project "$project" --ref "$kit_ref"
 ```
 
-The same SHA and decisions produce an empty diff on the second preview. Then invoke `$setup-matt-pocock-skills` once in the project: it configures the tracker, labels and domain docs that `to-spec`, `to-tickets` and `triage` expect. If the project needs behaviour checks, invoke `$create-verification-skill`: it generates the project's `verify-<app>` skill. Run `python3 tools/setup.py --help` for settings. To take just one skill, use [selection with dependencies](distribution.md).
+The first command shows what will change: one line per skill and the diff of the root instructions; `--full` prints the complete diff. The second applies it. The command installs the skills, a pointer block in the root instructions and a short `WORKFLOW.md`. It makes no project decisions. It leaves your instructions and files alone, and repeating it with the same SHA gives an empty diff. Add `--client both` for two clients. When both `AGENTS.md` and `CLAUDE.md` carry their own instructions, name the owner with `--instruction-owner`. To take just one skill, use [selection with dependencies](distribution.md).
+
+## Configure the project
+
+Open a session in the project and invoke `$setup-matt-pocock-skills`. The skill explores the project and runs a short interview, leading each section with an answer you can accept in a word:
+
+| Section | What is decided |
+| --- | --- |
+| Language | the language the agent writes in for people |
+| Tracker | where issues live: GitHub, GitLab, local files or your own |
+| Labels | the names of the issue readiness roles |
+| Domain docs | where `GLOSSARY.md` and ADRs live |
+| Delivery | local, to `main`, through a PR, or your own rule in words; required checks and CI |
+| Verification | when it is needed, who runs it, where evidence is kept |
+| Owner gate | every delivery waits for you, by a conditions page, or none |
+| Existing rules | what stays where the project's rules differ from the skills |
+
+The skill shows a draft before writing. The result lives in `docs/agents/`: settings, tracker, labels, domain docs, testing strategy. Invoke the skill again to change a decision: it shows the current ones and asks only about what changes. When the project needs behaviour checks, invoke `$create-verification-skill` afterwards.
 
 ## Start work in a fresh session
 
@@ -39,18 +48,6 @@ The table uses Codex commands. In Claude Code, start the message with a slash co
 | Implement one assigned issue | `$implement <issue>` | Implements, commits and reviews the work. |
 
 After a plain “I accept the spec”, the agent names the next command, `$to-tickets`, and stops. After ticket publication, start implementation separately. The agent does not start human-invoked skills itself: the skill flags and a line in the project's root instructions say so.
-
-## Existing project decisions
-
-Pass `--decisions /path/to/decisions.json` to preview and apply. For example, a project using PRs with its own testing guide can select:
-
-```json
-{"language": "en", "delivery": "pr", "testing_file": "docs/TESTING.md"}
-```
-
-The testing file must already exist at that project-relative path. Inspect the final diff. By default every delivery waits for you and the agent never merges; only the `owner_gate` setting, set to `conditions` or `none`, lets it merge.
-
-The supported decisions are listed in the [pinned defaults](../templates/project/defaults.json). Set `instruction_owner` when both root files carry independent rules. When preview reports differences, agree their disposition with the project owner. Put that decision in `resolution` and copy the displayed `conflict_id` into the same JSON object. A changed set of differences requires agreement on the new preview and its ID. Setup preserves unmanaged files and reports edits to managed material before writing. For both clients, pass `--client both` on the first preview and apply.
 
 ## What the agent reads
 

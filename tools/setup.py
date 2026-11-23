@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Preview or apply a complete, pinned Agent Kit setup to a project directory."""
+"""Preview or install the pinned Agent Kit skills and root instructions in a project directory.
+
+Project decisions belong to the setup skill, which runs inside the project.
+"""
 import argparse
 from contextlib import contextmanager, redirect_stdout
 from dataclasses import dataclass
@@ -9,12 +12,10 @@ import io
 import json
 import os
 from pathlib import Path
-from urllib.parse import unquote
 import re
 import stat
 import sys
 import tempfile
-import tomllib
 
 import skills
 
@@ -22,13 +23,10 @@ import skills
 KIT = Path(__file__).resolve().parents[1]
 LOCK = ".agents/setup-lock.json"
 MANIFEST = ".agents/skills-manifest.json"
-TESTING = "docs/agents/testing.md"
-# Setup seeds these once; the project then owns and edits them.
-SEEDED = (TESTING, "docs/agents/owner-gate.md")
-GATES = {
-    "owner": "Every delivery waits for the owner. The agent never merges.",
-    "none": "The agent may merge without the owner.",
-}
+# The setup skill writes and maintains these; an earlier starter installed them.
+HANDED_OVER = ("docs/agents/project-settings.md",)
+# The starter's templates and this tool change together; another starter needs its own tool.
+STARTER_VERSION = 3
 BEGIN = "<!-- agent-kit project instructions -->"
 END = "<!-- end agent-kit project instructions -->"
 ERROR = skills.SkillsError
@@ -49,16 +47,6 @@ def read_optional(project, name):
     if not path.is_file():
         raise ERROR(f"Expected a regular file: {name}")
     return path.read_bytes()
-
-
-def spelled_as_stored(project, name):
-    """A case-insensitive filesystem opens docs/TESTING.md as docs/testing.md; keep the stored name only."""
-    current = project
-    for part in Path(name).parts:
-        if not current.is_dir() or part not in os.listdir(current):
-            return False
-        current = current / part
-    return True
 
 
 def pinned_templates(ref):
@@ -114,68 +102,6 @@ def root_parts(data):
     return first, BEGIN + managed + END
 
 
-TEST_GUIDE = re.compile(r"test|verification|quality|checks|тест|проверк|верификаци", re.I)
-# A Markdown link or a named local document (including backtick paths) in agent instructions.
-POINTER = re.compile(r"\[([^]\n]+)\]\((<[^>\n]+>|[^)\s]+)\)|`([^`\n]+)`|"
-                     r"(?<![/:\w.-])(@?[\w./-]+\.(?:md|txt|rst|ya?ml))\b", re.I)
-
-
-def local_pointers(project, source, content):
-    for match in POINTER.finditer(content):
-        label, href, quoted, plain = match.groups()
-        target = unquote((href or quoted or plain).strip("<>").removeprefix("@").split("#")[0])
-        if (not target or target.startswith(("/", "~")) or ":" in target or
-                Path(target).suffix.lower() not in {".md", ".txt", ".rst", ".yaml", ".yml"}):
-            continue
-        for base in ((project / source).parent, project):
-            path = Path(os.path.abspath(base / target))
-            if not path.is_relative_to(project):
-                continue
-            name = path.relative_to(project)
-            if ".git" in name.parts or name.parts[:2] in ((".agents", "skills"), (".claude", "skills")):
-                continue
-            if path.resolve() == path and path.is_file() and spelled_as_stored(project, name):
-                yield str(name), bool(TEST_GUIDE.search(label or target))
-                break
-
-
-def find_sources(project, templates, lock, testing_file):
-    docs = root_documents(project)
-    policy = {}
-    for name, data in docs.items():
-        outside, _ = root_parts(data)
-        if outside.strip():
-            policy[name] = outside
-    known = ("CONTRIBUTING.md", "docs/agents/delivery.md", "docs/agents/worktrees.md",
-             "docs/agents/issue-tracker.md", "docs/agents/requirements.md",
-             "docs/agents/verification.md", "docs/agents/verify.md", ".cursorrules")
-    fallback = ("TESTING.md", "testing.md", "docs/TESTING.md", "docs/testing.md", TESTING)
-    managed = set(lock.get("files", {})) | set(lock.get("seeded", []))
-    if testing_file and ("\n" in testing_file or not read_optional(project, testing_file)):
-        raise ERROR(f"Existing testing instruction unavailable: {testing_file}")
-    sources = [*known, *fallback]
-    if testing_file:
-        sources.append(testing_file)
-    for name in sources:
-        if name not in managed and spelled_as_stored(project, name):
-            data = read_optional(project, name)
-            if data:
-                policy[name] = data.decode()
-    pending = list(policy)
-    candidates = []
-    for source in pending:
-        for name, testing in local_pointers(project, source, policy[source]):
-            if name in managed or name in docs or name in ("AGENTS.md", "CLAUDE.md"):
-                continue
-            if testing and name.lower().endswith((".md", ".rst", ".txt")):
-                candidates.append(name)
-            if name not in policy:
-                policy[name] = read_optional(project, name).decode()
-                pending.append(name)
-    testing = testing_file or next((name for name in (*candidates, *fallback) if name in policy), None)
-    return docs, policy, testing or (TESTING if TESTING in templates else None)
-
-
 def instruction_owner(project, docs, previous, choice):
     # root_documents validated every root symlink. Canonicalize before checking delegation.
     if choice:
@@ -201,87 +127,10 @@ def instruction_owner(project, docs, previous, choice):
         owner = choice or previous
     elif len(docs) > 1:
         raise ERROR("AGENTS.md and CLAUDE.md both contain project instructions. "
-                    "Choose their canonical instruction_owner in the decisions JSON.")
+                    "Choose the owner with --instruction-owner.")
     else:
         owner = next(iter(docs), "AGENTS.md")
     return owner, delegates
-
-
-def project_checks(project):
-    checks = []
-    package = read_optional(project, "package.json")
-    if package:
-        pkg = json.loads(package)
-        manager = str(pkg.get("packageManager", "")).partition("@")[0]
-        if manager not in ("npm", "yarn", "pnpm", "bun"):
-            manager = next((m for lock, m in (("pnpm-lock.yaml", "pnpm"), ("yarn.lock", "yarn"),
-                                             ("bun.lock", "bun")) if (project / lock).is_file()), "npm")
-        for name, command in pkg.get("scripts", {}).items():
-            if re.fullmatch(r"(test|check|lint|typecheck)(:[\w.-]+)?", name):
-                checks.append(f"- `{manager} run {name}` from the project root ({name}, configured as `{command}` in package.json).")
-    makefile = read_optional(project, "Makefile")
-    if makefile:
-        for target in re.findall(r"^(test|check|lint|verify|integration):", makefile.decode(), re.M):
-            checks.append(f"- `make {target}` from the project root ({target} target in Makefile).")
-    if read_optional(project, "scripts/check.py") is not None:
-        checks.append("- `python3 scripts/check.py` from the project root (repository checks).")
-    pyproject = read_optional(project, "pyproject.toml")
-    if pyproject and "pytest" in tomllib.loads(pyproject.decode()).get("tool", {}):
-        checks.append("- `python3 -m pytest` from the project root (configured pytest suite).")
-    for name in ("tests", "test"):
-        if (project / name).is_dir():
-            checks.append(f"- Test sources in `{name}/`. Inspect the affected suite for its behavioral boundary.")
-    for name in ("compose.yaml", "compose.yml", "docker-compose.yaml", "docker-compose.yml"):
-        if read_optional(project, name) is not None:
-            checks.append(f"- Service definitions in `{name}`. Confirm which services the affected checks use.")
-    ci = {}
-    for pattern in (".github/workflows/*.yml", ".github/workflows/*.yaml", ".gitlab-ci.yml",
-                    ".circleci/config.yml", "Jenkinsfile"):
-        for path in sorted(project.glob(pattern)):
-            rel = path.relative_to(project).as_posix()
-            data = read_optional(project, rel)
-            if data is not None:
-                ci[rel] = data.decode()
-    return checks, ci
-
-
-# These obligations conflict with the released workflow. Other project-specific instructions
-# remain authoritative. Print actual source lines so the owner can resolve the divergence.
-CONFLICTS = [
-    (r"\b(verif(?:y|ication)|code.review)\b.{0,70}\b(after|again|repeat|rerun)\b.{0,50}\b(pr|ci|push|merge)\b",
-     "The workflow completes local Verify before the PR and reuses it after CI fixes."),
-    (r"\b(open|create|push|submit)\b.{0,40}\b(pull request|pr|draft)\b.{0,50}\b(before|immediately|first)\b",
-     "The workflow opens a PR after the local evidence is ready."),
-    (r"\b(repeat|rerun|new|fresh)\b.{0,50}\b(review|verif(?:y|ication))\b.{0,60}\b(every|after|each|ci|push|commit)\b",
-     "The workflow runs one review and one required local Verify per delivery."),
-    (r"\b(every|each|later|subsequent|ci)\b.{0,55}\b(commit|push|fix|edit|change)s?\b.{0,45}\b(fresh|repeat|rerun|new|renewed)\b.{0,22}\b(verify|verification|review)\b",
-     "The workflow reuses the original local review and Verify after CI changes."),
-    (r"(?:повтор\w*|заново|нов\w*)\s+(?:агентск\w*\s+)?(?:verify|верификаци\w*|ревью).{0,55}(?:после|при |кажд|CI)|"
-     r"(?:после|кажд\w*)[^.!?]{0,70}(?:повтор\w*|заново|нов\w*)[^.!?]{0,25}(?:verify|верификаци\w*|ревью)",
-     "The workflow reuses the completed local review and Verify after CI fixes."),
-    (r"(?:откры\w*|созда\w*).{0,50}(?:PR|пулл.?реквест|черновик).{0,40}(?:\bдо\b|сразу|перед)|"
-     r"(?:сразу|перед началом).{0,40}(?:откры\w*|созда\w*).{0,40}\bPR\b",
-     "The workflow opens a PR after the local evidence is ready."),
-    (r"\b(no|never|forbid|disable|do not use|must not use|don't use)\b.{0,30}\b(sub[ -]?agents?|reviewers?)\b",
-     "The workflow uses parallel independent Standards and Spec reviewers."),
-]
-
-
-def conflicts(policy):
-    found = []
-    for name, content in policy.items():
-        for line in re.split(r"[\n.!?]", content):
-            if re.search(r"\b(do not|must not|never|avoid|without|no need to|don't)\s+(open|create|submit|repeat|rerun|run|reverify)\b", line, re.I):
-                continue
-            if re.search(r"(?:\bне\s+(?:нуж\w*|требу\w*|выполня\w*|повтор\w*|запуска\w*|откры\w*|созда\w*)|"
-                         r"без повтор\w*|повтор\w*.{0,28}\bнет\b|"
-                         r"(?:repeat|fresh|second|new).{0,40}(?:unnecessary|not required)|no (?:repeat|second|new))", line, re.I):
-                continue
-            for pattern, reason in CONFLICTS:
-                if re.search(pattern, line, re.I):
-                    found.append(f"{name}: {line.strip()}\n  {reason}")
-                    break
-    return found
 
 
 @dataclass
@@ -298,111 +147,37 @@ class SetupPlan:
     changed: list
     skill_lock: dict
     link: tuple | None
-    policy: dict
-    checks: list
-    ci: dict
-    differences: list
-    blocker: str | None
     notes: list
 
     def needs_link(self):
         return self.link and not self.link[1].is_symlink()
 
 
-def project_choices(defaults, previous, overrides):
-    known = defaults.keys() | {"testing_file", "resolution", "instruction_owner"}
-    unknown = set(overrides) - known
-    if unknown:
-        raise ERROR("Unknown decisions for this release: " + ", ".join(sorted(unknown)))
-    # A decision recorded by an earlier release may have left the starter; keep the rest.
-    retired = sorted(set(previous) - known)
-    options = {key: value for key, value in previous.items() if key in known}
-    options |= overrides
-    for key in ("delivery",):
-        if isinstance(options.get(key), str) and options[key].strip().lower() in ("local", "main", "pr"):
-            options[key] = options[key].strip().lower()
-    for key, value in options.items():
-        if key == "owner_gate" and value not in ("owner", "conditions", "none"):
-            raise ERROR("owner_gate must be owner, conditions or none")
-        if not isinstance(value, str) or not value.strip():
-            raise ERROR(f"{key} must be nonempty text")
-    choices = defaults | options
-    if "instruction_owner" in options and options["instruction_owner"] not in ("AGENTS.md", "CLAUDE.md"):
-        raise ERROR("instruction_owner must be AGENTS.md or CLAUDE.md")
-    return options, choices, retired
-
-
-CLASSIFIER = r"\b(?:owner[- ]gate|owner[- ]attention(?: classification| classifier)?|owner classifier)\b"
-LEGACY_CONDITIONS = "docs/agents/owner-attention.md"
-# The starter's templates and this tool change together; another starter needs its own tool.
-STARTER_VERSION = 2
-
-
-def reconcile(policy, ci, options, choices):
-    """Report process conflicts and the decisions an existing project must state itself."""
-    if ci and "ci" not in options:
-        choices["ci"] = "Found " + ", ".join(f"`{path}`" for path in ci) + ". Confirm required jobs and delivered revision with the project before delivery."
-    missing = ["delivery"] if policy and "delivery" not in options else []
-    return conflicts(policy | ci), missing
-
-
-def build_plan(project, ref, client, options):
+def build_plan(project, ref, client, owner_choice):
     templates = pinned_templates(ref)
+    starter = json.loads(templates.pop("starter.json", b"{}")).get("starter_version", 1)
+    if starter != STARTER_VERSION:
+        raise ERROR(f"The starter at {ref} is version {starter}; this tool installs version {STARTER_VERSION}. "
+                    f"Run the tool of that revision: git -C {KIT} show {ref}:tools/setup.py")
+    if "WORKFLOW.md" not in templates:
+        raise ERROR(f"Missing pinned workflow template at {ref}")
     old_state = read_optional(project, LOCK)
     state = json.loads(old_state) if old_state else {}
     if old_state is not None and (state.get("schema_version") != 1 or not isinstance(state.get("files"), dict)):
         raise ERROR(f"Invalid setup lock: {LOCK}")
-    previous = state.get("decisions", {})
-    defaults = json.loads(templates.pop("defaults.json", b"{}"))
-    starter = defaults.pop("starter_version", 1)
-    if starter != STARTER_VERSION:
-        raise ERROR(f"The starter at {ref} is version {starter}; this tool installs version {STARTER_VERSION}. "
-                    f"Run the tool of that revision: git -C {KIT} show {ref}:tools/setup.py")
-    options = dict(options)
-    agreement = options.pop("conflict_id", None)
-    options, choices, retired = project_choices(defaults, previous, options)
-    notes = [f"Decision from an earlier release no longer applies and is dropped: {key}" for key in retired]
-    docs, policy, testing = find_sources(project, templates, state, choices.get("testing_file"))
-    checks, ci = project_checks(project)
-    material, missing = reconcile(policy, ci, options, choices)
-    if defaults and "WORKFLOW.md" not in templates:
-        raise ERROR(f"Missing pinned workflow template at {ref}")
-    signature = sha(encoded(material))
-    recorded = signature == state.get("conflicts") and options.get("resolution") == previous.get("resolution")
-    current_resolution = agreement == signature if agreement is not None else recorded
-    blocker = None
-    if material and not (options.get("resolution") and current_resolution):
-        blocker = ("Resolve the displayed process conflict before --apply. Record the agreed 'resolution' "
-                   f"and this conflict_id in the decisions JSON: {signature}")
-    if missing:
-        blocker = ("This project has its own instructions. State " + ", ".join(missing) + " in the decisions JSON "
-                   "(local, main, pr, or the project's own rule in words) and preview again.")
-    details = dict(choices)
-    details["sources"] = ("Documents reached from the existing instructions: " + ", ".join(f"`{f}`" for f in policy) + "."
-                          if policy else "No prior project policy was discovered.")
-    details["testing_file"] = "<" + testing + ">" if testing and " " in testing else testing or ""
-    details["resolution"] = "Project resolution: " + options["resolution"] if "resolution" in options else ""
-    conditions = [name for name, body in policy.items()
-                  if re.search(CLASSIFIER, name + "\n" + body, re.I)
-                  and re.search(r"\b(status(?:es)?|conditions|decision rules)\b", body, re.I)]
-    if read_optional(project, LEGACY_CONDITIONS) is not None:
-        notes.append(f"{LEGACY_CONDITIONS}: conditions page of an earlier release; move what you keep into "
-                     "docs/agents/owner-gate.md and delete it")
-    if previous.get("owner_attention") is True and "owner_gate" not in options:
-        notes.append("The earlier classifier setting was on. The owner gate now defaults to owner: "
-                     "every delivery waits for you. Choose owner_gate conditions to judge by a conditions page.")
-    condition_refs = ", ".join(f"`{name}`" for name in conditions) or "[owner gate conditions](owner-gate.md)"
-    gate = choices.get("owner_gate", "owner")
-    details["owner_gate"] = GATES.get(gate) or (
-        f"Run `owner-gate` once before delivery against {condition_refs}. A status that needs no owner permits the merge.")
+    notes = []
+    if state.get("decisions"):
+        notes.append("Decisions an earlier release recorded now live in docs/agents/project-settings.md; "
+                     "review them with /setup-matt-pocock-skills")
     edits = []
     managed = dict(state.get("files", {}))
     def add(name, before, after):
         skills.safe_path(project, name)
         if before != after:
             edits.append(Edit(name, before, after))
+    docs = root_documents(project)
     roots = dict(state.get("roots", {}))
-    canonical, delegates = instruction_owner(project, docs, state.get("instruction_owner"), choices.get("instruction_owner"))
+    canonical, delegates = instruction_owner(project, docs, state.get("instruction_owner"), owner_choice)
     catalog_dir = KIT / "skills"
     catalog = skills.read_json(catalog_dir / "catalog.json")
     manifest = skills.select_manifest(project, catalog, catalog_dir, "agent-kit", ref, None, client)
@@ -411,7 +186,7 @@ def build_plan(project, ref, client, options):
     link = skills.client_discovery(project, manifest)
     manual = [entry["skill"] for entry, _, _, files in items
               if re.search(rb"\A---\n(?:.*\n)*?disable-model-invocation:\s*true\s*\n(?:.*\n)*?---", files["SKILL.md"][0])]
-    details["human_invoked"] = ", ".join(f"`{name}`" for name in manual) or "none"
+    details = {"human_invoked": ", ".join(f"`{name}`" for name in manual) or "none"}
     root_template = render(templates.pop("AGENTS.md"), details).decode().rstrip()
     requested_roots = {canonical, "AGENTS.md"}
     if "claude" in manifest.get("clients", []) or "CLAUDE.md" in docs:
@@ -432,22 +207,9 @@ def build_plan(project, ref, client, options):
             after = (outside + separator + block + "\n").encode()
         add(name, before, after)
         roots[name] = sha(block.encode())
-    seeded = set(state.get("seeded", []))
     for name, raw in sorted(templates.items()):
-        if name == TESTING and name != testing:
-            continue
-        if defaults and name.endswith("/owner-gate.md") and (choices.get("owner_gate") != "conditions" or conditions):
-            continue
         before = read_optional(project, name)
         after = render(raw, details)
-        if name in SEEDED:
-            # Written once and remembered, so later project edits are neither overwritten nor
-            # mistaken for instructions the project had before setup.
-            if managed.pop(name, None) or before is None:
-                seeded.add(name)
-            if before is None:
-                add(name, before, after)
-            continue
         if name not in managed and before is not None:
             raise ERROR(f"Unmanaged project document already exists: {name}")
         if name in managed and (before is None or sha(before) != managed[name]):
@@ -456,17 +218,19 @@ def build_plan(project, ref, client, options):
         managed[name] = sha(after)
     for name in sorted(set(managed) - set(templates)):
         current = read_optional(project, name)
-        if current is not None and sha(current) == managed[name]:
+        if name in HANDED_OVER:
+            if current is not None:
+                notes.append(f"{name}: now the project's own file; /setup-matt-pocock-skills maintains it")
+        elif current is not None and sha(current) == managed[name]:
             edits.append(Edit(name, current, None))
             notes.append(f"{name}: no longer part of the starter; removed, as the project never edited it")
         elif current is not None:
             notes.append(f"{name}: no longer part of the starter; the project edited it, so it stays")
         del managed[name]
     add(MANIFEST, read_optional(project, MANIFEST), encoded(manifest))
-    state = dict(schema_version=1, ref=ref, decisions=options, roots=roots,
-                 instruction_owner=canonical, files=managed, seeded=sorted(seeded), conflicts=signature)
+    state = dict(schema_version=1, ref=ref, roots=roots, instruction_owner=canonical, files=managed)
     add(LOCK, old_state, encoded(state))
-    return SetupPlan(edits, items, changed, skill_lock, link, policy, checks, ci, material, blocker, notes)
+    return SetupPlan(edits, items, changed, skill_lock, link, notes)
 
 
 @contextmanager
@@ -516,15 +280,6 @@ def write_documents(project, edits):
 
 
 def describe(result, project, ref, *, full):
-    for name, content in result.policy.items():
-        print(f"Existing project instructions ({name}):\n{content.strip()}" if full
-              else f"Existing project document: {name}")
-    for fact in result.checks:
-        print(fact)
-    if result.ci:
-        print("CI configurations found: " + ", ".join(result.ci))
-    for message in result.differences:
-        print("Project workflow difference: " + message)
     for note in result.notes:
         print(note)
     print("Selected skills and activation conditions:")
@@ -559,8 +314,6 @@ def describe(result, project, ref, *, full):
         print("WOULD LINK .claude/skills -> ../.agents/skills")
     if not result.edits and not result.changed and not result.needs_link():
         print("No changes.")
-    if result.blocker:
-        print(result.blocker)
 
 
 def main(argv=None):
@@ -568,7 +321,8 @@ def main(argv=None):
     parser.add_argument("--project", required=True, type=Path, help="existing project directory (may be empty)")
     parser.add_argument("--ref", required=True, help="full locally available Agent Kit commit SHA")
     parser.add_argument("--client", choices=("codex", "claude", "both"), help="project skill discovery clients")
-    parser.add_argument("--decisions", type=Path, help="JSON object of project choices overriding release defaults")
+    parser.add_argument("--instruction-owner", choices=("AGENTS.md", "CLAUDE.md"),
+                        help="the root file that owns shared instructions when both carry their own")
     parser.add_argument("--apply", action="store_true", help="write the complete setup after preflight")
     parser.add_argument("--full", action="store_true", help="print every skill file difference, not one line per skill")
     args = parser.parse_args(argv)
@@ -579,11 +333,8 @@ def main(argv=None):
         guard = skills.safe_path(project, ".agents/skills-sync.lock")
         if guard.exists():
             raise ERROR("Another installation holds skills-sync.lock; reconcile its owner before retrying")
-        options = skills.read_json(args.decisions) if args.decisions else {}
-        result = build_plan(project, args.ref, args.client, options)
+        result = build_plan(project, args.ref, args.client, args.instruction_owner)
         describe(result, project, args.ref, full=args.full)
-        if result.blocker:
-            return 1
         if not args.apply:
             return 0
         agents = skills.safe_path(project, ".agents")
@@ -595,7 +346,7 @@ def main(argv=None):
             except FileExistsError:
                 pass
             with skills.installation_guard(project):
-                latest = build_plan(project, args.ref, args.client, options)
+                latest = build_plan(project, args.ref, args.client, args.instruction_owner)
                 if latest != result:
                     raise ERROR("Project changed during setup; preview the updated plan")
                 if latest.edits or latest.changed or latest.needs_link():

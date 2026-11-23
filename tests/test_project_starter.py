@@ -51,7 +51,7 @@ class ProjectStarterTest(unittest.TestCase):
             self.run_command([sys.executable, str(KIT / "tools/skills.py"), "check",
                               "--project", str(project)], KIT)
             self.assertIn("No changes.", self.run_command(setup, KIT))
-            self.assertIn("docs/agents/testing.md", (project / "AGENTS.md").read_text())
+            self.assertIn("docs/agents/project-settings.md", (project / "AGENTS.md").read_text())
             self.assertEqual(
                 (project / ".claude/skills").resolve(), (project / ".agents/skills").resolve(),
             )
