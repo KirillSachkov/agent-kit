@@ -60,6 +60,10 @@ class ProjectStarterTest(unittest.TestCase):
                 self.git(KIT, "show", f"{ref}:skills/engineering/create-verification-skill/SKILL.md") + "\n",
             )
             self.assertFalse((project / "evidence-manifest.json").exists())
+            root = (project / "AGENTS.md").read_text()
+            for name in ("to-spec", "to-tickets", "implement", "implement-spec"):
+                self.assertRegex(root, r"Human-invoked skills: [^.]*`" + name + "`")
+            self.assertNotRegex(root, r"Human-invoked skills: [^.]*`(code-review|tdd|ship)`")
 
             for skill in ("grill-me", "to-spec", "to-tickets", "implement", "implement-spec",
                           "create-verification-skill"):

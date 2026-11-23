@@ -88,6 +88,7 @@ class SetupTest(unittest.TestCase):
         self.setup("--client", "both", "--apply", decide=False)
         self.assertEqual(json.loads((self.project / ".agents/setup-lock.json").read_text())["decisions"], {})
         self.assertIn("WORKFLOW.md", (self.project / "AGENTS.md").read_text())
+        self.assertIn("Human-invoked skills: none.", (self.project / "AGENTS.md").read_text())
         self.assertIn("A kind of change\nmissing from the table is a question for the owner", (self.project / "docs/agents/testing.md").read_text())
         self.assertNotIn("Unselected", (self.project / "WORKFLOW.md").read_text())
         self.assertEqual((self.project / ".agents/skills/probe/reference.txt").read_text(), "v1\n")

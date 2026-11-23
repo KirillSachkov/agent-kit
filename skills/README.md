@@ -46,7 +46,3 @@ One editable source folder per skill. The [parts map](../docs/parts.en.md) shows
 - Review and deliver: `code-review`, `create-verification-skill`, `pr`, `ship`, `owner-attention`, `retro`.
 
 Read the selected SKILL.md before recommending or running its procedure. Invocation metadata and project policy determine when it can run.
-
-## In development
-
-Project-wide selection and setup of test types, static analysis and CI is in development. Today's setup records the project's existing checks. A separate proposal tracks [generating project Verify instructions](https://github.com/KirillSachkov/agent-kit/issues/6).

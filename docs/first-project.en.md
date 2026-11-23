@@ -14,7 +14,7 @@ kit_ref=$(git rev-parse HEAD)
 python3 tools/setup.py --project "$project" --ref "$kit_ref"
 ```
 
-Inspect the proposed settings, skills and the project file diff. Skill changes take one line each; `--full` prints their complete diff. Full setup includes all skills released at that revision. The task activates each practice: a question can end with an answer, while a large delivery can use `to-spec`, `to-tickets` and `implement-spec`. Project policy determines when to apply TDD, local Verify or an owner decision.
+Inspect the proposed settings, skills and the project file diff. Skill changes take one line each; `--full` prints their complete diff. Full setup includes all skills released at that revision. The task activates each practice: a question can end with an answer, while a large delivery can use `to-spec`, `to-tickets` and `implement-spec`. Project settings determine whether a behaviour check or an owner decision is required.
 
 In a project with its own instructions, setup asks you to state the delivery route: `local`, `main`, `pr`, or the project's rule in words. It does not infer it. Inspect the listed documents and CI files and reconcile material differences before applying. For example, a project requiring another Verify after CI selects a different workflow. Local checks can cover a project with no external CI.
 
@@ -35,7 +35,7 @@ The table uses Codex commands. In Claude Code, start the message with a slash co
 | Understand one issue | “Why does #42 lose the discount?” | Reproduction and explanation. |
 | Prepare a spec | `$grill-me` to discuss the idea, then `$to-spec` to save the decision | A link to the saved spec. |
 | Accept and split the spec | “I accept the spec. `$to-tickets <spec>`” | Proposed tickets with their dependencies. Approve the breakdown to save them. |
-| Execute the agreed graph | `$implement-spec <spec>` | The project's delivery endpoint. Add “stop before review” for just the tested change. |
+| Execute the agreed graph | `$implement-spec <spec>` | Implements the tickets on one branch and reviews it once. |
 | Implement one assigned issue | `$implement <issue>` | Implements, commits and reviews the work. |
 
 After a plain “I accept the spec”, the agent names the next command, `$to-tickets`, and stops. After ticket publication, start implementation separately. The agent does not start human-invoked skills itself: the skill flags and a line in the project's root instructions say so.
@@ -55,7 +55,7 @@ The supported decisions are listed in the [pinned defaults](../templates/project
 ## What the agent reads
 
 - Root instructions identify start authority, checkout, delivery mode and owner decisions. The short [workflow](../templates/project/WORKFLOW.md) holds the rules that connect skills, and the [parts map](parts.en.md) shows what each skill is for.
-- The spec describes the expected outcome. The project's `testing.md` or existing equivalent holds the testing strategy: the seam and kind of test for each kind of change. `to-spec` and `tdd` read it. The agent takes run commands from the project itself. A separate skill for choosing and configuring test types, static analysis and CI is **in development**.
+- The spec describes the expected outcome. The project's `testing.md` or existing equivalent holds the testing strategy: the seam and kind of test for each kind of change. `to-spec` and `tdd` read it. The agent takes run commands from the project itself.
 - One PR or local delivery gets one `code-review` call. Parallel Standards and Spec reviews feed one correction pass, affected tests and, if required, one pass of the project's `verify-<app>` skill. A product failure or unavailable environment leaves a required criterion open.
 - When local Verify passed on A and CI needs a fix on B, retain the observation on A, later edits, affected tests and CI on B. An enabled classifier runs once to identify the owner decision. The agent confirms the actual revision after authorized delivery.
 

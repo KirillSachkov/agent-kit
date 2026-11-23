@@ -11,6 +11,8 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "tools"))
+import upstream  # noqa: E402
 
 
 def git(*args):
@@ -63,35 +65,37 @@ def frontmatter_errors(text):
     return errors
 
 
-def human_invoked(skill_md, openai_yaml):
-    """Read the two client flags; a skill is human-invoked in both clients or in neither."""
+def claude_human_invoked(skill_md):
     frontmatter = skill_md.split("---", 2)[1] if skill_md.startswith("---") else ""
-    claude = bool(re.search(r"^disable-model-invocation:\s*true\s*$", frontmatter, re.M))
-    codex = bool(re.search(r"^\s*allow_implicit_invocation:\s*false\s*$", openai_yaml, re.M))
-    return claude, codex
+    return bool(re.search(r"^disable-model-invocation:\s*true\s*$", frontmatter, re.M))
+
+
+def codex_human_invoked(openai_yaml):
+    return bool(re.search(r"^policy:[ \t]*\n(?:[ \t]+.*\n)*?[ \t]+allow_implicit_invocation:\s*false\s*$",
+                          openai_yaml, re.M))
 
 
 def invocation_errors(name, skill_md, openai_yaml, upstream_skill_md=None):
-    claude, codex = human_invoked(skill_md, openai_yaml)
+    """A skill is human-invoked in both clients or in neither, and as its upstream original is."""
     errors = []
-    if claude != codex:
+    if claude_human_invoked(skill_md) != codex_human_invoked(openai_yaml):
         errors.append(f"{name}: invocation flags disagree between Claude Code and Codex")
-    if upstream_skill_md is not None and claude != human_invoked(upstream_skill_md, "")[0]:
+    if upstream_skill_md is not None and claude_human_invoked(skill_md) != claude_human_invoked(upstream_skill_md):
         errors.append(f"{name}: invocation differs from the pristine upstream skill")
     return errors
 
 
 def upstream_skill_files():
-    """Map local skill names to the pristine SKILL.md text of Matt's baseline."""
-    base = ROOT / "provenance/upstream/mattpocock"
-    renames = dict(line.split(": ", 1) for line in (base / "RENAMES").read_text().splitlines()
-                   if line and not line.startswith("#"))
+    """Map local skill names to the pristine SKILL.md text of the Matt and pstack baselines."""
+    base = ROOT / "provenance/upstream"
+    renames = upstream.local_names(ROOT)
     result = {}
-    with tarfile.open(base / "skills.tar.gz") as archive:
-        for member in archive.getmembers():
-            parts = Path(member.name).parts
-            if member.isfile() and len(parts) >= 3 and parts[-1] == "SKILL.md":
-                result[renames.get(parts[-2], parts[-2])] = archive.extractfile(member).read().decode()
+    for archive_path in (base / "mattpocock/skills.tar.gz", base / "pstack/create-verification-skill.tar.gz"):
+        with tarfile.open(archive_path) as archive:
+            for member in archive.getmembers():
+                parts = Path(member.name).parts
+                if member.isfile() and len(parts) >= 3 and parts[-1] == "SKILL.md":
+                    result[renames.get(parts[-2], parts[-2])] = archive.extractfile(member).read().decode()
     return result
 
 

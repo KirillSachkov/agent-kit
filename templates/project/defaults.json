@@ -1,7 +1,7 @@
 {
   "language": "Use the language of the assignment.",
   "start": "Start implementation when the owner invokes `implement` or `implement-spec` for the task.",
-  "worktree": "Use the assigned idle checkout. Preserve other writers and record the review base.",
+  "worktree": "Use the checkout you were started in. Preserve other writers.",
   "access": "Use local synthetic data. Confirm required external services, credentials and access with the project.",
   "delivery": "local",
   "verify": "Run the project's verify skill once before opening a PR when an acceptance criterion requires an observed scenario.",

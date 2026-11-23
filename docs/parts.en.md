@@ -116,7 +116,7 @@ The change in `wizard`: `SKILL.md` matches the original and only `template.sh` d
 | File | Written by | Read by | Part |
 | --- | --- | --- | --- |
 | The Kit block in `AGENTS.md` | `tools/setup.py` | every session | pointer to the rest |
-| `WORKFLOW.md` | `tools/setup.py` | the agent after review, at the verify step and at delivery | rules connecting skills |
+| `WORKFLOW.md` | `tools/setup.py` | the agent at the verify step | rules connecting skills |
 | `docs/agents/project-settings.md` | `tools/setup.py` from your decisions | the agent at start, `ship`, `owner-attention` | execution, verification, delivery |
 | `docs/agents/testing.md` | `tools/setup.py` seeds it once, then you and the agent | `to-spec`, `tdd` through the root pointer | design, execution |
 | `verify-<app>` | `create-verification-skill` | the agent at the verify step | verification |
@@ -130,7 +130,7 @@ The change in `wizard`: `SKILL.md` matches the original and only `template.sh` d
 
 ## Who can start a skill
 
-The “Who starts it” column repeats the skills' own flags. A skill marked “you” is closed to the agent by two flags: `disable-model-invocation: true` for Claude Code and `allow_implicit_invocation: false` for Codex. `scripts/check.py` verifies that the two flags agree and that the set of Matt's human-invoked skills matches his original. A line in the project's root instructions forbids the agent to bypass the flag by reading the skill file.
+The “Who starts it” column repeats the skills' own flags. A skill marked “you” is closed to the agent by two flags: `disable-model-invocation: true` for Claude Code and `allow_implicit_invocation: false` for Codex. `scripts/check.py` verifies that the two flags agree and that every borrowed skill is marked as its original is. The project's root instructions list the human-invoked skills by name and forbid the agent to bypass the flag by reading the skill file.
 
 ## Still undecided
 

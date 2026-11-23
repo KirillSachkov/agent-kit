@@ -43,11 +43,11 @@ class InvocationTest(unittest.TestCase):
         self.assertIn("disagree", check.invocation_errors("probe", self.OPEN, self.CLOSED_POLICY)[0])
         self.assertIn("pristine", check.invocation_errors("probe", self.OPEN, "", self.MANUAL)[0])
 
-    def test_baseline_names_every_borrowed_skill(self):
-        pristine = check.upstream_skill_files()
-        self.assertIn("ask", pristine)
-        self.assertNotIn("ask-matt", pristine)
-        self.assertIn("disable-model-invocation: true", pristine["implement"])
+    def test_codex_flag_counts_only_under_policy(self):
+        elsewhere = "interface:\n  allow_implicit_invocation: false\npolicy:\n  allow_implicit_invocation: true\n"
+        self.assertIn("disagree", check.invocation_errors("probe", self.MANUAL, elsewhere)[0])
+        nested = "interface:\n  display_name: Probe\npolicy:\n  other: 1\n  allow_implicit_invocation: false\n"
+        self.assertEqual(check.invocation_errors("probe", self.MANUAL, nested), [])
 
 
 if __name__ == "__main__":

@@ -33,17 +33,16 @@ workflow, never inside a borrowed skill.
 Borrowed skills keep Matt's “call the Skill tool” wording. The starter's root
 instructions tell a client without that tool to read the named `SKILL.md`.
 
-`implement`, `implement-spec`, `grill-me`, `to-spec`, `to-tickets` and
-`create-verification-skill` keep their human-only invocation metadata, and
-`scripts/check.py` holds the borrowed set to Matt's original. The starter's root
+Human-invoked skills keep their invocation metadata as Matt and pstack set it, and
+`scripts/check.py` holds every borrowed skill to its original. The starter's root
 instructions tell the agent to name such a command and stop, never to read the skill
 file and follow it.
 
 ## Review, verification and delivery
 
 `implement` and `implement-spec` call `code-review` once on the finished work.
-`implement` commits first, so the review has a diff to read. Its two reviewers read the same diff in parallel. The workflow has the author resolve
-the findings in one pass and rerun the affected tests.
+`implement` commits first, so the review has a diff to read, and commits the fixes.
+Its two reviewers read the same diff in parallel.
 
 `create-verification-skill` generates a project-local `verify-<app>` skill that
 launches the app and drives it as a user. When the project requires verification,
