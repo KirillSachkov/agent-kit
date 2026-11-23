@@ -6,6 +6,7 @@ import json
 import re
 import subprocess
 import sys
+import tarfile
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
@@ -62,6 +63,38 @@ def frontmatter_errors(text):
     return errors
 
 
+def human_invoked(skill_md, openai_yaml):
+    """Read the two client flags; a skill is human-invoked in both clients or in neither."""
+    frontmatter = skill_md.split("---", 2)[1] if skill_md.startswith("---") else ""
+    claude = bool(re.search(r"^disable-model-invocation:\s*true\s*$", frontmatter, re.M))
+    codex = bool(re.search(r"^\s*allow_implicit_invocation:\s*false\s*$", openai_yaml, re.M))
+    return claude, codex
+
+
+def invocation_errors(name, skill_md, openai_yaml, upstream_skill_md=None):
+    claude, codex = human_invoked(skill_md, openai_yaml)
+    errors = []
+    if claude != codex:
+        errors.append(f"{name}: invocation flags disagree between Claude Code and Codex")
+    if upstream_skill_md is not None and claude != human_invoked(upstream_skill_md, "")[0]:
+        errors.append(f"{name}: invocation differs from the pristine upstream skill")
+    return errors
+
+
+def upstream_skill_files():
+    """Map local skill names to the pristine SKILL.md text of Matt's baseline."""
+    base = ROOT / "provenance/upstream/mattpocock"
+    renames = dict(line.split(": ", 1) for line in (base / "RENAMES").read_text().splitlines()
+                   if line and not line.startswith("#"))
+    result = {}
+    with tarfile.open(base / "skills.tar.gz") as archive:
+        for member in archive.getmembers():
+            parts = Path(member.name).parts
+            if member.isfile() and len(parts) >= 3 and parts[-1] == "SKILL.md":
+                result[renames.get(parts[-2], parts[-2])] = archive.extractfile(member).read().decode()
+    return result
+
+
 def check_structure():
     errors = []
     catalog = json.loads((ROOT / "skills/catalog.json").read_text())
@@ -72,6 +105,7 @@ def check_structure():
     if set(catalog["providers"]) != {"agent-kit"}:
         errors.append("public catalog must have one provider")
     found = set()
+    pristine = upstream_skill_files()
     for item in items:
         source = ROOT / "skills" / item["source"]
         if source.is_symlink() or not source.resolve().is_relative_to((ROOT / "skills").resolve()):
@@ -85,6 +119,9 @@ def check_structure():
         text = skill.read_text()
         metadata = text.split("---", 2)
         errors.extend(f"{skill.relative_to(ROOT)}: {error}" for error in frontmatter_errors(text))
+        policy = source / "agents/openai.yaml"
+        errors.extend(invocation_errors(item["skill"], text, policy.read_text() if policy.is_file() else "",
+                                        pristine.get(item["skill"])))
         if len(metadata) != 3 or not re.search(r"^name:\s*" + re.escape(item["skill"]) + r"\s*$", metadata[1], re.M):
             errors.append(f"invalid skill frontmatter: {skill}")
         internal = len(metadata) == 3 and "internal: true" in metadata[1]

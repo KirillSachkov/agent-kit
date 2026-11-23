@@ -30,5 +30,25 @@ class FrontmatterTest(unittest.TestCase):
         self.assertEqual(check.frontmatter_errors("Body only\n"), ["no frontmatter block"])
 
 
+class InvocationTest(unittest.TestCase):
+    MANUAL = "---\nname: probe\ndescription: Probe.\ndisable-model-invocation: true\n---\n"
+    OPEN = "---\nname: probe\ndescription: Probe.\n---\n"
+    CLOSED_POLICY = "policy:\n  allow_implicit_invocation: false\n"
+
+    def test_flags_must_agree_and_match_the_pristine_skill(self):
+        self.assertEqual(check.invocation_errors("probe", self.MANUAL, self.CLOSED_POLICY, self.MANUAL), [])
+        self.assertEqual(check.invocation_errors("probe", self.OPEN, "interface:\n  display_name: Probe\n", self.OPEN), [])
+        self.assertEqual(check.invocation_errors("probe", self.OPEN, "", None), [])
+        self.assertIn("disagree", check.invocation_errors("probe", self.MANUAL, "policy:\n  allow_implicit_invocation: true\n")[0])
+        self.assertIn("disagree", check.invocation_errors("probe", self.OPEN, self.CLOSED_POLICY)[0])
+        self.assertIn("pristine", check.invocation_errors("probe", self.OPEN, "", self.MANUAL)[0])
+
+    def test_baseline_names_every_borrowed_skill(self):
+        pristine = check.upstream_skill_files()
+        self.assertIn("ask", pristine)
+        self.assertNotIn("ask-matt", pristine)
+        self.assertIn("disable-model-invocation: true", pristine["implement"])
+
+
 if __name__ == "__main__":
     unittest.main()

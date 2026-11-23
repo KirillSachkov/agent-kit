@@ -49,11 +49,11 @@ The edit in `to-tickets`: after publishing it shows the ready tickets and stops.
 
 | Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
 | --- | --- | --- | --- | --- | --- | --- |
-| `implement` | you | Implement one task and commit it | the task or ticket | code, tests, a commit | `tdd`, `code-review` | Matt |
+| `implement` | you | Implement one task, commit it and review it | the task or ticket | code, tests, commits | `tdd`, `code-review` | Matt, one edit |
 | `implement-spec` | you | Implement a whole spec along its ticket graph on one branch | spec, tickets | a branch, commits, a draft PR | `tdd`, `code-review`, subagents | Matt |
 | `tdd` | agent | The red-green loop at pre-agreed seams | `GLOSSARY.md`, testing strategy | tests and code | `codebase-design` | Matt |
 
-A plain assignment in chat (“Implement #42”) counts as invoking `implement` when the project's start rule allows it. The project workflow says so, not the skill.
+The edit in `implement`: the work is committed before review, and the review reads the changes since the starting commit. The original has the opposite order, which hands `code-review` an empty diff ([Matt's bug #511](https://github.com/mattpocock/skills/issues/511)).
 
 ### 4. Review
 
@@ -116,7 +116,7 @@ The change in `wizard`: `SKILL.md` matches the original and only `template.sh` d
 | File | Written by | Read by | Part |
 | --- | --- | --- | --- |
 | The Kit block in `AGENTS.md` | `tools/setup.py` | every session | pointer to the rest |
-| `WORKFLOW.md` | `tools/setup.py` | the agent choosing its next step | workflow assembly |
+| `WORKFLOW.md` | `tools/setup.py` | the agent after review, at the verify step and at delivery | rules connecting skills |
 | `docs/agents/project-settings.md` | `tools/setup.py` from your decisions | the agent at start, `ship`, `owner-attention` | execution, verification, delivery |
 | `docs/agents/testing.md` | `tools/setup.py` seeds it once, then you and the agent | `to-spec`, `tdd` through the root pointer | design, execution |
 | `verify-<app>` | `create-verification-skill` | the agent at the verify step | verification |
@@ -128,9 +128,13 @@ The change in `wizard`: `SKILL.md` matches the original and only `template.sh` d
 
 `testing.md` holds only the testing strategy: for each kind of change the seam and kind of test, what stays untested, and the data and services tests may use. Run commands stay in `package.json` or the `Makefile`. Required delivery checks and CI are recorded in the project settings.
 
+## Who can start a skill
+
+The “Who starts it” column repeats the skills' own flags. A skill marked “you” is closed to the agent by two flags: `disable-model-invocation: true` for Claude Code and `allow_implicit_invocation: false` for Codex. `scripts/check.py` verifies that the two flags agree and that the set of Matt's human-invoked skills matches his original. A line in the project's root instructions forbids the agent to bypass the flag by reading the skill file.
+
 ## Still undecided
 
-- How the workflow is assembled. Today the `WORKFLOW.md` text connects the parts. Other options are compared on the test bench.
+- How the workflow is assembled. Today `WORKFLOW.md` is deliberately minimal: it holds only rules no skill can carry. The earlier full route is kept as a [candidate](../experiments/workflow-candidates/full-route.md), and options are compared on the test bench.
 - One project setup skill in place of the `tools/setup.py` and `setup-matt-pocock-skills` pair ([#9](https://github.com/KirillSachkov/agent-kit/issues/9)).
 - Reworking `ask` into a navigator of practices ([#8](https://github.com/KirillSachkov/agent-kit/issues/8)).
 - Starting sessions from tracker events.

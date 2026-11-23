@@ -1,9 +1,8 @@
 {
   "language": "Use the language of the assignment.",
-  "start": "Start implementation on an explicit assignment to implement a task or a ticketed spec. A named implementation skill or an unambiguous request in chat qualifies.",
+  "start": "Start implementation when the owner invokes `implement` or `implement-spec` for the task.",
   "worktree": "Use the assigned idle checkout. Preserve other writers and record the review base.",
   "access": "Use local synthetic data. Confirm required external services, credentials and access with the project.",
-  "tdd": "Use for changes with an observable failing test at an established boundary.",
   "delivery": "local",
   "verify": "Run the project's verify skill once before opening a PR when an acceptance criterion requires an observed scenario.",
   "verifier": "The implementer may verify unless the task requires an independent verifier.",
@@ -13,6 +12,5 @@
   "publication": "Obtain specific authority from the owner before pushing, merging, deploying or publishing.",
   "cleanup": "Retire only assigned resources after authorized delivery and checking for unpublished work.",
   "ci": "No external CI is required for the local baseline.",
-  "delivery_checks": "Run all required local checks and record results at the delivery revision.",
-  "testing": "No testing strategy is agreed yet. Before the first test, agree with the owner which seams this project tests at and record them here."
+  "delivery_checks": "Run all required local checks and record results at the delivery revision."
 }

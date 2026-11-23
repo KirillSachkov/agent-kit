@@ -88,7 +88,7 @@ class SetupTest(unittest.TestCase):
         self.setup("--client", "both", "--apply", decide=False)
         self.assertEqual(json.loads((self.project / ".agents/setup-lock.json").read_text())["decisions"], {})
         self.assertIn("WORKFLOW.md", (self.project / "AGENTS.md").read_text())
-        self.assertIn("No testing strategy is agreed yet", (self.project / "docs/agents/testing.md").read_text())
+        self.assertIn("A kind of change\nmissing from the table is a question for the owner", (self.project / "docs/agents/testing.md").read_text())
         self.assertNotIn("Unselected", (self.project / "WORKFLOW.md").read_text())
         self.assertEqual((self.project / ".agents/skills/probe/reference.txt").read_text(), "v1\n")
         self.assertTrue((self.project / ".claude/skills").is_symlink())
@@ -257,13 +257,13 @@ class SetupTest(unittest.TestCase):
         (self.project / "package.json").write_text(json.dumps({"packageManager": "pnpm@9",
                                 "scripts": {"test:unit": "vitest run", "lint": "eslint src"}}))
         args = self.decisions(ci="No remote CI.", access="Use the synthetic fixture service.",
-                              testing="Order rules are tested at the checkout API.",
                               delivery="pr", owner_attention=True)
         preview = self.setup(*args, "--apply")
         for fact in ("pnpm run test:unit", "vitest run", "pnpm run lint"):
             self.assertIn(fact, preview)
         testing = (self.project / "docs/agents/testing.md").read_text()
-        self.assertIn("Order rules are tested at the checkout API.", testing)
+        self.assertIn("| Kind of change | Where it is checked | Kind of test | Not tested |", testing)
+        self.assertIn("Data and services tests may use: Use the synthetic fixture service.", testing)
         self.assertNotIn("pnpm", testing)
         settings = (self.project / "docs/agents/project-settings.md").read_text()
         for content in ("synthetic fixture service", "No remote CI.", "Delivery checks:"):

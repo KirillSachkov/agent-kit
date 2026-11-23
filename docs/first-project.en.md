@@ -36,9 +36,9 @@ The table uses Codex commands. In Claude Code, start the message with a slash co
 | Prepare a spec | `$grill-me` to discuss the idea, then `$to-spec` to save the decision | A link to the saved spec. |
 | Accept and split the spec | “I accept the spec. `$to-tickets <spec>`” | Proposed tickets with their dependencies. Approve the breakdown to save them. |
 | Execute the agreed graph | `$implement-spec <spec>` | The project's delivery endpoint. Add “stop before review” for just the tested change. |
-| Implement one assigned issue | “Implement #42” or `$implement <issue>` | The assigned endpoint. A standalone issue can go straight to implementation. |
+| Implement one assigned issue | `$implement <issue>` | Implements, commits and reviews the work. |
 
-After a plain “I accept the spec”, the next command is `$to-tickets`. After ticket publication, start implementation separately. To require a named start for implementation too, set `start` in the setup decisions to “Only begin when the owner explicitly invokes implement or implement-spec for the assigned work.”
+After a plain “I accept the spec”, the agent names the next command, `$to-tickets`, and stops. After ticket publication, start implementation separately. The agent does not start human-invoked skills itself: the skill flags and a line in the project's root instructions say so.
 
 ## Existing project decisions
 
@@ -54,7 +54,7 @@ The supported decisions are listed in the [pinned defaults](../templates/project
 
 ## What the agent reads
 
-- Root instructions identify start authority, checkout, delivery mode and owner decisions. The [two workflow maps](../templates/project/WORKFLOW.md) show the branches, and the [parts map](parts.en.md) shows what each skill is for.
+- Root instructions identify start authority, checkout, delivery mode and owner decisions. The short [workflow](../templates/project/WORKFLOW.md) holds the rules that connect skills, and the [parts map](parts.en.md) shows what each skill is for.
 - The spec describes the expected outcome. The project's `testing.md` or existing equivalent holds the testing strategy: the seam and kind of test for each kind of change. `to-spec` and `tdd` read it. The agent takes run commands from the project itself. A separate skill for choosing and configuring test types, static analysis and CI is **in development**.
 - One PR or local delivery gets one `code-review` call. Parallel Standards and Spec reviews feed one correction pass, affected tests and, if required, one pass of the project's `verify-<app>` skill. A product failure or unavailable environment leaves a required criterion open.
 - When local Verify passed on A and CI needs a fix on B, retain the observation on A, later edits, affected tests and CI on B. An enabled classifier runs once to identify the owner decision. The agent confirms the actual revision after authorized delivery.

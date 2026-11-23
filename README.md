@@ -14,7 +14,7 @@ python3 tools/setup.py --project /path/to/project --ref "$kit_ref"
 python3 tools/setup.py --project /path/to/project --ref "$kit_ref" --apply
 ```
 
-После установки новая сессия может прочитать инструкции проекта и объяснить, как взять первую задачу и где нужно решение владельца. Требуются Git и Python 3.11+. [Первый проект](docs/first-project.ru.md) · [Две схемы рабочего цикла](templates/project/WORKFLOW.md)
+После установки новая сессия может прочитать инструкции проекта и объяснить, как взять первую задачу и где нужно решение владельца. Требуются Git и Python 3.11+. [Первый проект](docs/first-project.ru.md) · [Карта частей](docs/parts.ru.md)
 
 ## Выбрать отдельный скилл
 

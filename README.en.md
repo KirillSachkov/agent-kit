@@ -14,7 +14,7 @@ python3 tools/setup.py --project /path/to/project --ref "$kit_ref"
 python3 tools/setup.py --project /path/to/project --ref "$kit_ref" --apply
 ```
 
-After setup, a fresh agent can read the project instructions and explain how to take the first task through the owner's decision. Requires Git and Python 3.11+. [Start a project](docs/first-project.en.md) · [Workflow diagrams](templates/project/WORKFLOW.md)
+After setup, a fresh agent can read the project instructions and explain how to take the first task through the owner's decision. Requires Git and Python 3.11+. [Start a project](docs/first-project.en.md) · [Parts map](docs/parts.en.md)
 
 ## Select one skill
 

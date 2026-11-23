@@ -34,14 +34,15 @@ Borrowed skills keep Matt's “call the Skill tool” wording. The starter's roo
 instructions tell a client without that tool to read the named `SKILL.md`.
 
 `implement`, `implement-spec`, `grill-me`, `to-spec`, `to-tickets` and
-`create-verification-skill` keep their human-only invocation metadata. The starter
-workflow hands an accepted spec back for ticketing, and lets a plain assignment count
-as invoking `implement` when the project's start rule allows it.
+`create-verification-skill` keep their human-only invocation metadata, and
+`scripts/check.py` holds the borrowed set to Matt's original. The starter's root
+instructions tell the agent to name such a command and stop, never to read the skill
+file and follow it.
 
 ## Review, verification and delivery
 
-`implement` and `implement-spec` call `code-review` once on the finished work. Its
-two reviewers read the same diff in parallel. The workflow has the author resolve
+`implement` and `implement-spec` call `code-review` once on the finished work.
+`implement` commits first, so the review has a diff to read. Its two reviewers read the same diff in parallel. The workflow has the author resolve
 the findings in one pass and rerun the affected tests.
 
 `create-verification-skill` generates a project-local `verify-<app>` skill that

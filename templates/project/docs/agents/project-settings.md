@@ -12,7 +12,6 @@ settles a difference. Use defaults for questions the project leaves open.
 - Start: @@start@@
 - Working context: @@worktree@@
 - Access and test data: @@access@@
-- TDD: @@tdd@@
 
 ## Delivering a change
 
