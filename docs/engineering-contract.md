@@ -15,15 +15,15 @@ The target project's `AGENTS.md` and its applicable pointers own:
 - human acceptance, delivery mode, current CI, merge, deployment and cleanup gates.
 
 Resolve those rules from the target root and relevant descendants. Inline rules are
-valid; consumers do not need to recreate the donor's `docs/agents` folder. A missing
+valid; the `setup-agent-kit` interview records them in `docs/agents/project-settings.md`. A missing
 required decision remains unresolved, but an absent optional filename is not a reason
 to invent another approval, worktree or setup task.
 
 ## Parts and assembly
 
 The Kit is a set of parts that each work alone; the [parts map](parts.en.md) lists
-every skill and project file with its part. Matt Pocock's skills are the unedited
-base. The Kit adds its own skills only where he has none: `ship`, `owner-gate`
+every skill and project file with its part. Matt Pocock's skills are the base, and the
+parts map names every edit to them. The Kit adds its own skills only where he has none: `ship`, `owner-gate`
 and the pstack `create-verification-skill`. The [starter workflow](../templates/project/WORKFLOW.md)
 connects the parts a project enables. A rule about how parts connect lives in that
 workflow, never inside a borrowed skill.

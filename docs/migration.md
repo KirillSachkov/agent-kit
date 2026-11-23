@@ -19,7 +19,7 @@ These branches preserve drafts and evidence; they do not promote experiments int
 
 ## Layout changes
 
-The 28 Agent Harness runtime folders moved to `skills/engineering`. Its project instructions and human guides remain in `examples/agent-harness`; the example uses the canonical library through discovery links. Upstream comparison moved to the library maintenance tools and a frozen baseline under provenance.
+The 28 Agent Harness runtime folders moved to `skills/engineering`. Its project instructions and human guides stayed in `examples/agent-harness` until that example was removed on 2026-11-23; they remain in the preserved history. Upstream comparison moved to the library maintenance tools and a frozen baseline under provenance.
 
 The four Agent Clarity folders moved to `skills/communication`; `explain` retains `metadata.internal: true`. Communication checker/build tests stayed under `maintenance/communication` until that folder was removed on 2026-11-22, after the communication skills retired. Whole folders include examples, assets and native metadata.
 

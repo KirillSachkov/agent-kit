@@ -1,1 +1,0 @@
-After CI passes on the final revision, classify the delivery once. Have pr record the result and evidence. Merge only if both classification and project permission allow it. Otherwise leave the owner question in the PR and stop.

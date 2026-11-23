@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Check repository structure. This does not evaluate agent behavior or translation meaning."""
+"""Check the library's structure: skill metadata, the pristine upstream copies and local links.
+
+This does not evaluate agent behavior or translation meaning.
+"""
 from __future__ import annotations
 
 import hashlib
@@ -35,7 +38,7 @@ def anchors(text: str) -> set[str]:
     return result
 
 
-KIT_ROOT = Path(__file__).resolve().parents[3]
+KIT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(KIT_ROOT / "tools"))
 from upstream import check_pristine, identity
 
@@ -43,7 +46,6 @@ from upstream import check_pristine, identity
 def check(root: Path) -> tuple[list[str], dict[str, int]]:
     root = root.resolve()
     errors, counts = [], {"skills": 0, "local_links": 0}
-    example = root / "examples/agent-harness"
     skills = root / "skills/engineering"
     for directory in sorted(skills.iterdir()):
         file = directory / "SKILL.md"
@@ -71,7 +73,8 @@ def check(root: Path) -> tuple[list[str], dict[str, int]]:
 
     errors += check_pristine(root)
 
-    documents = [*example.rglob("*.md"), *skills.rglob("*.md")]
+    documents = [*skills.rglob("*.md"), *(root / "docs").rglob("*.md"),
+                 *(root / "experiments").rglob("*.md"), *root.glob("*.md")]  # templates link into the target project
     for file in sorted(documents):
         for raw in re.findall(r"(?<!!)\[[^\]\n]*\]\(([^)\n]+)\)", prose(file.read_text())):
             url = urlsplit(raw.strip().split(' "')[0].strip("<>"))
@@ -86,17 +89,10 @@ def check(root: Path) -> tuple[list[str], dict[str, int]]:
             elif url.fragment and target.suffix == ".md" and unquote(url.fragment) not in anchors(target.read_text()):
                 errors.append(f"{file.relative_to(root)}: missing anchor {raw}")
 
-    for file in example.rglob("CLAUDE.md"):
-        errors.append(f"{file.relative_to(example)}: use native AGENTS.md instead of CLAUDE.md")
-    pointer = example / ".claude/skills"
-    if not pointer.is_symlink() or pointer.resolve() != (example / ".agents/skills").resolve():
-        errors.append(".claude/skills: incorrect client pointer")
-    if not re.search(r"^Human language: (en|ru)\.$", (example / "AGENTS.md").read_text(), re.M):
-        errors.append("AGENTS.md: choose an explicit en or ru human language")
-    for file in [*example.rglob("*.en.md"), *skills.rglob("*.en.md")]:
+    for file in skills.rglob("*.en.md"):
         if not file.with_name(file.name.replace(".en.md", ".ru.md")).is_file():
             errors.append(f"{file.relative_to(root)}: missing Russian peer")
-    for file in [*example.rglob("*.ru.md"), *skills.rglob("*.ru.md")]:
+    for file in skills.rglob("*.ru.md"):
         if not file.with_name(file.name.replace(".ru.md", ".en.md")).is_file():
             errors.append(f"{file.relative_to(root)}: missing English peer")
     return errors, counts

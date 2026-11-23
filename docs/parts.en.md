@@ -2,7 +2,7 @@
 
 [Русский](parts.ru.md)
 
-The Kit has eight parts. Each part works alone: it has its own skills, input and result. A project enables the parts it wants in its settings, and the [workflow](../templates/project/WORKFLOW.md) connects the enabled ones. Matt Pocock's skills are the base, unedited. The Kit adds its own skills only where Matt has none.
+The Kit has eight parts. Each part works alone: it has its own skills, input and result. A project enables the parts it wants in its settings, and the [workflow](../templates/project/WORKFLOW.md) connects the enabled ones. Matt Pocock's skills are the base; the tables below name every edit to them. The Kit adds its own skills only where Matt has none.
 
 “You” under “Who starts it” means invoking by name: `/name` in Claude Code, `$name` in Codex. “Agent” means either the agent or you can invoke it.
 
@@ -27,7 +27,7 @@ The Kit has eight parts. Each part works alone: it has its own skills, input and
 
 | Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
 | --- | --- | --- | --- | --- | --- | --- |
-| `ask` | you | Suggest which skill and what size of work fits | root instructions, the SKILL.md of the skill in question | nothing | none | Matt, reworked |
+| `ask` | you | Suggest which skill and what size of work fits | root instructions, the SKILL.md of the skill in question | nothing | none | Matt, rewritten as a short map |
 | `triage` | you | Sort incoming issues and PRs into readiness roles | tracker, labels, `.out-of-scope/` | labels, comments, `.out-of-scope/` | `grilling`, `domain-modeling` | Matt, setup skill name |
 | `diagnosing-bugs` | agent | Find the cause on a reproducible case, then fix it with a regression test | `GLOSSARY.md`, ADRs | code and a test | none | Matt |
 
@@ -105,7 +105,7 @@ The edit in `improve-codebase-architecture`: the report language comes from the 
 
 | Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
 | --- | --- | --- | --- | --- | --- | --- |
-| `setup-agent-kit` | you | One project setup by interview: language, tracker, labels, domain docs, delivery, verification, owner gate, existing rules | the remote, root instructions, check commands and CI, `docs/agents/` | everything in `docs/agents/`, a block in the root instructions | none | Matt, extended with Kit sections |
+| `setup-agent-kit` | you | One project setup by interview: language, tracker, labels, domain docs, delivery and workplace, verification, owner gate, testing strategy, existing rules | the remote, root instructions, check commands and CI, `docs/agents/` | everything in `docs/agents/`, a block in the root instructions | none | Matt, extended with Kit sections |
 | `handoff` | you | Hand work to another session | the conversation | a file in the temp directory | none | Matt |
 | `wait-what` | you | Ask for a plainer restatement | `GLOSSARY.md` | nothing | none | Matt |
 | `wizard` | agent | A script for steps only a human can take | `.env`, config, CI workflows | a bash script, and through it `.env` and secrets | none | Matt, template changed |
@@ -157,9 +157,8 @@ The “Who starts it” column repeats the skills' own flags. A skill marked “
 ## Still undecided
 
 - How the workflow is assembled. Today `WORKFLOW.md` is deliberately minimal: it holds only rules no skill can carry. The earlier full route is kept as a [candidate](../experiments/workflow-candidates/full-route.md), and options are compared on the test bench.
-- Event-driven runs and the way skills are connected into a workflow: see the test bench issue ([#11](https://github.com/KirillSachkov/agent-kit/issues/11)).
-- Reworking `ask` into a navigator of practices ([#8](https://github.com/KirillSachkov/agent-kit/issues/8)).
-- Starting sessions from tracker events.
+- Moving `deliver` and the orchestrator from the [experiment](../experiments/factory/README.md) into the Kit: after a trial on a real project.
+- Starting the orchestrator from tracker events or a schedule.
 
 ## Candidates from pstack
 

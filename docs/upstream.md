@@ -79,8 +79,6 @@ the library's upstream baseline changes.
 Retain [Matt's notice](../provenance/engineering/LICENSE.mattpocock),
 [HumanLayer's notice](../provenance/engineering/LICENSE.humanlayer),
 [PR credits](../skills/engineering/pr/CREDITS.md), the root MIT license and NOTICE.
-The [original guide](../examples/agent-harness/docs/upstream.en.md) remains historical
-maintenance context for the example; the current library CLI follows this workflow.
 
 ## The pstack baseline
 

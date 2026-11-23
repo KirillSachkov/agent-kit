@@ -291,12 +291,14 @@ def check_copy(change) -> list[str]:
     """Check a safe public fixture without copying caches, Git objects or local state."""
     with tempfile.TemporaryDirectory() as temporary:
         copy = Path(temporary) / "repo"
-        for folder in ("examples/agent-harness", "skills/engineering", "templates/project", "provenance/engineering", "provenance/upstream", "tools"):
+        for folder in ("skills/engineering", "templates/project", "provenance/engineering", "provenance/upstream", "tools"):
             shutil.copytree(ROOT / folder, copy / folder, symlinks=True, ignore=shutil.ignore_patterns("__pycache__"))
         notice = ROOT / "NOTICE" if (ROOT / "NOTICE").is_file() else ROOT / "provenance/engineering/NOTICE"
         shutil.copyfile(notice, copy / "NOTICE")
+        (copy / "scripts").mkdir()
+        shutil.copyfile(ROOT / "scripts/check_library.py", copy / "scripts/check_library.py")
         change(copy)
-        spec = importlib.util.spec_from_file_location("example_harness_check", copy / "examples/agent-harness/scripts/check.py")
+        spec = importlib.util.spec_from_file_location("library_check", copy / "scripts/check_library.py")
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         return module.check(copy)[0]

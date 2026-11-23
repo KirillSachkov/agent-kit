@@ -28,9 +28,10 @@ Open a session in the project and invoke `$setup-agent-kit`. The skill explores 
 | Tracker | where issues live: GitHub, GitLab, local files or your own |
 | Labels | the names of the issue readiness roles |
 | Domain docs | where `GLOSSARY.md` and ADRs live |
-| Delivery | local, to `main`, through a PR, or your own rule in words; required checks and CI |
+| Delivery | local, to `main`, through a PR, or your own rule in words; required checks and CI; whether implementation happens in a worktree |
 | Verification | when it is needed, who runs it, where evidence is kept |
 | Owner gate | every delivery waits for you, by a conditions page, or none |
+| Testing strategy | where each kind of change is tested, when the project has no such document yet |
 | Existing rules | what stays where the project's rules differ from the skills |
 
 The skill shows a draft before writing. The result lives in `docs/agents/`: settings, tracker, labels, domain docs, testing strategy. Invoke the skill again to change a decision: it shows the current ones and asks only about what changes and about settings new in this Kit version. When the project needs behaviour checks, invoke `$create-verification-skill` afterwards.
@@ -53,7 +54,7 @@ After a plain “I accept the spec”, the agent names the next command, `$to-ti
 
 - Root instructions point at the project settings and say where implementation may start. The short [workflow](../templates/project/WORKFLOW.md) holds the rules that connect skills, and the [parts map](parts.en.md) shows what each skill is for.
 - The spec describes the expected outcome. The project's `testing.md` or existing equivalent holds the testing strategy: the seam and kind of test for each kind of change. `to-spec` and `tdd` read it. The agent takes run commands from the project itself.
-- One PR or local delivery gets one `code-review` call. Parallel Standards and Spec reviews feed one correction pass, affected tests and, if required, one pass of the project's `verify-<app>` skill. A `FAIL` or `BLOCKED` verdict keeps delivery open.
+- `implement` reviews each ticket it builds and `implement-spec` reviews the whole spec once. Parallel Standards and Spec reviews feed one correction pass, affected tests and, if required, one pass of the project's `verify-<app>` skill. A `FAIL` or `BLOCKED` verdict keeps delivery open.
 - `ship` opens the PR, gets the required checks green and confirms the merge really happened. It merges only when the project lets it. Verification evidence is stored the way the project settings say: as PR attachments (the default on GitHub), in a repository folder, in external storage, or as text only.
 - The review reads the coding standards, not the implementer. Setup does not create `CODING_STANDARDS.md`: when a review misses a mistake, invoke `$retro`, and it proposes either an automated check or a rule for that file.
 

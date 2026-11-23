@@ -188,7 +188,7 @@ def main():
         return 1
     commands = [
         [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py"],
-        [sys.executable, "examples/agent-harness/scripts/check.py"],
+        [sys.executable, "scripts/check_library.py"],
     ]
     for command in commands:
         print("CHECK " + " ".join(command[1:]), flush=True)
