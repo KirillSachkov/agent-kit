@@ -2,7 +2,7 @@
 
 [Русский](models.ru.md)
 
-The Kit does not choose models. This page shows where each client takes the model from, so a project can give, say, review to one model and implementation to another. Checked on 2026-11-23 against the clients' documentation and Codex CLI 0.171 and OpenCode 2.4 on one machine; the Codex rows come from its documentation only.
+The Kit does not choose models and installs no subagent definitions into a project. This page shows where each client takes the model from, so a project can give, say, review to one model and implementation to another. Checked on 2026-11-23 against the clients' documentation. The session rows were also checked on Codex CLI 0.171 and OpenCode 2.4; the subagent rows come from documentation only.
 
 ## Two levels
 
