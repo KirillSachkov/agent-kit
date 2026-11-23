@@ -47,7 +47,7 @@ python3 tools/skills.py adopt --project /path/to/project
 
 Adoption compares the complete folder and executable modes with its pinned source before adding management metadata and notices. A changed, added or missing file stops the selected batch. A matching name or SKILL.md alone is insufficient. Keep intentional project adaptations owned by the project until their complete diff and policy implications are reconciled.
 
-Updates require a new explicit SHA selection. The setup tool and the starter templates change together: to set up an earlier pin whose starter version differs, run the tool from that revision, as the error message shows. Installed local edits stop installation; there is no force-overwrite option. The previous copy and lock are retained in `.agents/skills-backups/`. Restore them together in the authorized idle checkout after preserving later edits. Removing a manifest selection does not delete an installed folder.
+Updates require a new explicit SHA selection. The setup tool and the starter templates change together: to set up an earlier pin whose starter version differs, run the tool from that revision, as the error message shows. The tool installs skills and root instructions only; project decisions belong to the setup skill. Installed local edits stop installation; there is no force-overwrite option. The previous copy and lock are retained in `.agents/skills-backups/`. Restore them together in the authorized idle checkout after preserving later edits. Removing a manifest selection does not delete an installed folder.
 
 ## Sources and scope
 

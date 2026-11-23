@@ -103,7 +103,7 @@ The edit in `improve-codebase-architecture`: the report language comes from the 
 
 | Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
 | --- | --- | --- | --- | --- | --- | --- |
-| `setup-matt-pocock-skills` | you | Configure the tracker, labels, language and domain docs | the remote, root instructions, `docs/agents/` | `docs/agents/issue-tracker.md`, `triage-labels.md`, `domain.md`, a block in the root instructions | none | Matt, extended |
+| `setup-matt-pocock-skills` | you | One project setup by interview: language, tracker, labels, domain docs, delivery, verification, owner gate, existing rules | the remote, root instructions, check commands and CI, `docs/agents/` | everything in `docs/agents/`, a block in the root instructions | none | Matt, extended with Kit sections |
 | `handoff` | you | Hand work to another session | the conversation | a file in the temp directory | none | Matt |
 | `wait-what` | you | Ask for a plainer restatement | `GLOSSARY.md` | nothing | none | Matt |
 | `wizard` | agent | A script for steps only a human can take | `.env`, config, CI workflows | a bash script, and through it `.env` and secrets | none | Matt, template changed |
@@ -120,9 +120,9 @@ The change in `wizard`: `SKILL.md` matches the original and only `template.sh` d
 | The Kit block in `AGENTS.md` | `tools/setup.py` | every session | pointer to the rest |
 | `WORKFLOW.md` | `tools/setup.py` | the agent at the verify step | rules connecting skills |
 | `docs/agents/project-settings.md` | `setup-matt-pocock-skills` from your answers | `ship`, the verify step, `pr`, test choice; settings are grouped by reader | verification, evidence, delivery |
-| `docs/agents/testing.md` | `tools/setup.py` seeds it once, then you and the agent | `to-spec`, `tdd` through the root pointer | design, execution |
+| `docs/agents/testing.md` | `setup-matt-pocock-skills` creates it, then you and the agent | `to-spec`, `tdd` through the root pointer | design, execution |
 | `verify-<app>` | `create-verification-skill` | the agent at the verify step | verification |
-| `docs/agents/owner-gate.md` | `tools/setup.py` seeds it once at the “conditions” level, then only you | `owner-gate` | acceptance |
+| `docs/agents/owner-gate.md` | `setup-matt-pocock-skills` creates it at the “conditions” level, then only you | `owner-gate` | acceptance |
 | `.github/pull_request_template.md` | the project, when it has its own | `pr` | evidence |
 | `docs/agents/issue-tracker.md`, `triage-labels.md`, `domain.md` | `setup-matt-pocock-skills` | `to-spec`, `to-tickets`, `triage`, `implement-spec`, `code-review` | intake, design, execution |
 | `GLOSSARY.md`, `docs/adr/` | `domain-modeling` | most of Matt's skills | design |
@@ -155,7 +155,7 @@ The “Who starts it” column repeats the skills' own flags. A skill marked “
 ## Still undecided
 
 - How the workflow is assembled. Today `WORKFLOW.md` is deliberately minimal: it holds only rules no skill can carry. The earlier full route is kept as a [candidate](../experiments/workflow-candidates/full-route.md), and options are compared on the test bench.
-- One project setup skill in place of the `tools/setup.py` and `setup-matt-pocock-skills` pair ([#9](https://github.com/KirillSachkov/agent-kit/issues/9)).
+- The name of the single setup skill. It is still `setup-matt-pocock-skills`, because six of Matt's originals send the user to it by that name ([#9](https://github.com/KirillSachkov/agent-kit/issues/9)).
 - Reworking `ask` into a navigator of practices ([#8](https://github.com/KirillSachkov/agent-kit/issues/8)).
 - Starting sessions from tracker events.
 

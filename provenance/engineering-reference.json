@@ -619,7 +619,8 @@
       "create-verification-skill gains a Report section: a verdict, the checked commit and one line per scenario, written beside the evidence.",
       "Starter defaults: verify when user-visible behaviour changes, by a fresh agent; evidence attaches to the PR with gh --attach.",
       "Rename owner-attention to owner-gate and rewrite it as a standalone judgement returning a status, a reason and the owner's questions. The starter setting becomes owner_gate with three levels: owner (default), conditions, none; an earlier enabled classifier falls back to owner with a note.",
-      "The starter carries a version; the setup tool installs only its own starter version and names the tool to run for another pin."
+      "The starter carries a version; the setup tool installs only its own starter version and names the tool to run for another pin.",
+      "One setup: tools/setup.py installs skills, the root pointer block and the workflow and makes no project decisions. setup-matt-pocock-skills gains Kit sections for delivery, verification, the owner gate and existing rules, and writes docs/agents/project-settings.md, the testing strategy and the owner-gate conditions from templates in its folder. The starter's defaults.json, settings and testing templates are removed."
     ],
     "matt_baseline_unchanged": true,
     "removed_at_review_base": {
