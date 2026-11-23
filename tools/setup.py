@@ -284,7 +284,7 @@ def conflicts(policy):
 class Edit:
     name: str
     before: bytes | None
-    after: bytes
+    after: bytes | None  # None removes the file
 
 
 @dataclass
@@ -439,9 +439,13 @@ def build_plan(project, ref, client, options):
         add(name, before, after)
         managed[name] = sha(after)
     for name in sorted(set(managed) - set(templates)):
+        current = read_optional(project, name)
+        if current is not None and sha(current) == managed[name]:
+            edits.append(Edit(name, current, None))
+            notes.append(f"{name}: no longer part of the starter; removed, as the project never edited it")
+        elif current is not None:
+            notes.append(f"{name}: no longer part of the starter; the project edited it, so it stays")
         del managed[name]
-        if read_optional(project, name) is not None:
-            notes.append(f"{name}: no longer part of the starter; left in place for the project to keep or remove")
     add(MANIFEST, read_optional(project, MANIFEST), encoded(manifest))
     state = dict(schema_version=1, ref=ref, decisions=options, roots=roots,
                  instruction_owner=canonical, files=managed, seeded=sorted(seeded), conflicts=signature)
@@ -461,10 +465,11 @@ def write_documents(project, edits):
                 if read_optional(project, edit.name) != edit.before:
                     raise ERROR(f"Project document changed during setup: {edit.name}")
                 staged = stage / f"{i}.new"
-                staged.write_bytes(edit.after)
+                if edit.after is not None:
+                    staged.write_bytes(edit.after)
                 if edit.before is not None:
-                    mode = stat.S_IMODE(target.stat().st_mode)
-                    staged.chmod(mode)
+                    if edit.after is not None:
+                        staged.chmod(stat.S_IMODE(target.stat().st_mode))
                     backup = stage / f"{i}.old"
                     os.link(target, backup)
             for i, edit in enumerate(edits):
@@ -478,7 +483,10 @@ def write_documents(project, edits):
                     directory.mkdir()
                     created_dirs.append(directory)
                 applied.append((target, stage / f"{i}.old"))
-                os.replace(stage / f"{i}.new", target)
+                if edit.after is None:
+                    target.unlink()
+                else:
+                    os.replace(stage / f"{i}.new", target)
             yield
         except BaseException:
             for target, backup in reversed(applied):
@@ -508,7 +516,7 @@ def describe(result, project, ref, *, full):
         print(f"  {entry['skill']}: " + skills.skill_description(files["SKILL.md"][0]))
     for edit in result.edits:
         print("".join(difflib.unified_diff((edit.before or b"").decode().splitlines(True),
-                                          edit.after.decode().splitlines(True),
+                                          (edit.after or b"").decode().splitlines(True),
                                           fromfile="current/" + edit.name, tofile="selected/" + edit.name)), end="")
     for entry, _, _, _ in result.items:
         if entry["ref"] != ref:

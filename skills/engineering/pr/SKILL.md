@@ -42,7 +42,7 @@ Closes #<issue>
 
 ## Sections
 
-The owner reads everything outside **Details** and nothing inside it. Keep the owner's text under 70 words, headings aside: it should read in a minute. Omit a section that has nothing to say. Keep file names and commit hashes inside Details.
+The owner reads everything outside **Details** and nothing inside it. Keep the owner's text under 70 words, headings aside: it should read in a minute. Omit a section that has nothing to say. Keep commit hashes and check logs inside Details.
 
 Skip all preambles and keep prose brief. Use the user's domain language from `GLOSSARY.md`.
 

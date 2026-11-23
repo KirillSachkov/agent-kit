@@ -45,10 +45,10 @@ file and follow it.
 Its two reviewers read the same diff in parallel.
 
 `create-verification-skill` generates a project-local `verify-<app>` skill that
-launches the app and drives it as a user. When the project requires verification,
-the workflow runs that skill once on the corrected revision before a PR, checks
-every acceptance criterion and records the action, observation and revision. A
-product failure or an unavailable environment keeps delivery open.
+launches the app, drives it as a user, captures evidence and writes a short report
+with a verdict beside it. The project settings say when verification is needed and
+who runs it; the workflow places it once before delivery. `pr` is the only writer of
+the PR body: it takes the report and attaches the evidence the way the project says.
 
 `ship` takes committed work to a merged PR or a local delivery: it opens the PR,
 gets the required checks green and confirms that the merge really happened. It reads

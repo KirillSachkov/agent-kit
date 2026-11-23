@@ -13,6 +13,6 @@ The project's delivery route, required checks and merge authority should have be
 
 3. Merge only when the project lets you; otherwise stop and say what the owner decides. After a merge, confirm on the host that the PR is merged at the head you checked: a queued merge is not a merge.
 
-4. On a local route, merge the branch into its target and confirm the target points at the commit you checked.
+4. On a local route, run the project's required checks. Merge the branch into its target only when the project lets you, and confirm the target points at the commit you checked.
 
 5. Close the task the way the issue tracker closes work.

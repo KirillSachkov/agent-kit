@@ -4,7 +4,7 @@
   "worktree": "Use the checkout you were started in. Preserve other writers.",
   "access": "Use local synthetic data. Confirm required external services, credentials and access with the project.",
   "delivery": "local",
-  "verify": "Verify when user-visible behaviour changes or the task has key scenarios. Otherwise the PR says in one line why not.",
+  "verify": "Verify when user-visible behaviour changes or the task has key scenarios. Otherwise the delivery says in one line why not.",
   "verifier": "A fresh agent that did not write the change.",
   "evidence": "Attach evidence files to the PR (`gh --attach` on GitHub), test data only. Without a PR keep them where the project's verify skill names.",
   "owner_attention": false,

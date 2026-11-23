@@ -68,9 +68,9 @@ The edit in `implement`: the work is committed before review, and the review rea
 | Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
 | --- | --- | --- | --- | --- | --- | --- |
 | `create-verification-skill` | you | Create the project's verification skill once | project code, ways to run it | `verify-<app>` in the project | none | pstack, three edits |
-| `verify-<app>` | agent | Launch the app, walk a scenario as a user, take screenshots and recordings | its own sections: launch, doctor, drive, evidence, report, cleanup | evidence files and a `report.md` with the verdict | none | generated in the project |
+| `verify-<app>` | agent | Launch the app, walk a scenario as a user and capture evidence | its own sections: launch, doctor, drive, evidence, report, cleanup | evidence files and a `report.md` with the verdict | none | generated in the project |
 
-The edits in `create-verification-skill`: the feature-map and maintenance steps are removed and a Report section with a verdict and one line per scenario is added. There is no generic verification skill. The project settings say when verification is needed and who runs it: by default when user-visible behaviour changes, by a fresh agent, once before the PR is marked ready.
+The edits in `create-verification-skill`: the feature-map and maintenance steps are removed and a Report section with a verdict (`PASS`, `PASS+NOTES`, `FAIL`, `BLOCKED`) and one line per scenario is added. There is no generic verification skill. The project settings say when verification is needed and who runs it: by default when user-visible behaviour changes, by a fresh agent, once before delivery.
 
 ### 6. Evidence
 

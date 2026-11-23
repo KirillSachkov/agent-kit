@@ -89,6 +89,6 @@ in `provenance/upstream/pstack/create-verification-skill.tar.gz`; `SOURCE` besid
 records the repository, revision and archive hash, which `scripts/check.py` verifies.
 `tools/upstream.py` covers Matt's skills only. To compare, unpack the archive into a
 temporary directory and `diff -r` its `skills/create-verification-skill` against ours.
-Our copy drops the feature-map and maintenance steps and adds `agents/openai.yaml`
-and `LICENSE.pstack`. To adopt a newer revision, read its changes, repack the
-archive from that revision, update `SOURCE`, reapply the two removals and review.
+Our copy drops the feature-map and maintenance steps, adds a Report section to the
+generated skill, and adds `agents/openai.yaml` and `LICENSE.pstack`. To adopt a newer revision, read its changes, repack the
+archive from that revision, update `SOURCE`, reapply these three edits and review.

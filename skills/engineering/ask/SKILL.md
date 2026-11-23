@@ -33,9 +33,9 @@ Work that fits one session needs only a short conversation and a short issue; th
      - **`/implement-spec`** for the whole spec in one run. It reads the tickets as a **task graph**, runs implementer subagents across the ready **frontier** in parallel, and lands everything on one **integration branch**. Reach for it when you'd rather orchestrate the build than drive each ticket yourself.
    - **No** → **`/implement`** right here, in the same context window.
 
-   Use **`/tdd`** when the project calls for test-first implementation. **`/code-review`** reviews each delivery once across two axes (Standards and Spec). Tickets submitted together share that review. After corrections and affected tests, complete any required local Verify before **`/ship`** follows the project's PR or main-checkout delivery and acceptance rules.
+   Use **`/tdd`** when the project calls for test-first implementation. **`/code-review`** reviews each delivery once across two axes (Standards and Spec). Tickets submitted together share that review. When the project calls for verification, its `verify-<app>` skill runs once before **`/ship`** takes the committed work to a merged PR or a local delivery.
 
-   When the work goes up as a pull request, **`/pr`** shapes the body: the smallest visual that shows the change, before/after evidence that it works, and a one-way or two-way door call. It's model-invoked, so the agent reaches for it whenever it writes a PR.
+   When the work goes up as a pull request, **`/pr`** shapes the body so the owner reads it in a minute: what is needed from them, the smallest visual that shows the change, a line of evidence per scenario, and a one-way or two-way door call. It's model-invoked, so the agent reaches for it whenever it writes a PR.
 
 4. **`/retro`** closes the loop. After a build, and especially one that went sideways, it looks back over the session and suggests changes to the agent's **environment**, not the code: navigation pointers, automated checks, the coding standards `/code-review` enforces, steering files, tooling. Mechanical mistakes become deterministic checks; judgement calls become coding standards. The next build then starts from a better environment.
 
