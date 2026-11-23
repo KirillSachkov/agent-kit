@@ -29,7 +29,7 @@ Look at the current repo to understand its starting state. Read whatever exists;
 - `AGENTS.md` and `CLAUDE.md` at the repo root: does either exist? Is there already an `## Agent skills` section in either?
 - `GLOSSARY.md` and `GLOSSARY-MAP.md` at the repo root, and the legacy `CONTEXT.md` / `CONTEXT-MAP.md`. If a legacy file exists, offer to `git mv` it to its `GLOSSARY` name and rewrite those names in `docs/agents/domain.md`.
 - `docs/adr/` and any `src/*/docs/adr/` directories
-- `docs/agents/`: does this skill's prior output already exist? When `docs/agents/project-settings.md` exists this is a rerun: show the current decisions, then ask only what the user wants to change and any setting below the file lacks.
+- `docs/agents/`: does this skill's prior output already exist? When `docs/agents/project-settings.md` exists this is a rerun: show the current decisions, ask only what the user wants to change and whatever the [settings template](./project-settings.md) has that the file lacks, then rewrite the file in the template's shape.
 - The repo's check commands (`package.json` scripts, `Makefile` targets, a check script) and CI workflows: these become the proposed delivery checks and required CI.
 - Rules in the existing instructions about review, verification, PRs and merging. Section G needs them.
 - `.scratch/`: a sign that a local-markdown issue tracker convention is already in use
@@ -98,7 +98,9 @@ Offer **multi-context** (a root `GLOSSARY-MAP.md` pointing to per-context `GLOSS
 
 **Section E: Verification.** Recommend: verify when user-visible behaviour changes or the task has key scenarios, by a fresh agent that did not write the change. Evidence storage is one of: PR attachments (recommend on GitHub; attachments are public and permanent), a folder in the repo, external storage the user describes, or text only. When verification is on and the project has no `verify-<app>` skill, say that `/create-verification-skill` generates one.
 
-**Section F: Owner gate.** Recommend `owner`: every delivery waits for the owner and the agent never merges. `conditions` has a fresh agent judge each change against a conditions page and lets a calm status merge. `none` lets the agent merge by itself; record it only on an explicit choice.
+**Section F: Owner gate.** Recommend `owner`: every delivery waits for the owner and the agent never merges. `conditions` has a fresh agent judge each change against a conditions page; a status that needs no owner permits the merge. `none` lets the agent merge by itself; record it only on an explicit choice.
+
+**Section H: Testing strategy.** Skip this when the project already has a document that says where and how it tests. Otherwise propose one row per kind of test the repo already has (where it is checked, the kind of test) and ask which data and services tests may use. An empty table is a valid start: it grows from the owner's answers.
 
 **Section G: Existing rules.** When the project's instructions prescribe something these skills do differently (a second review after fixes, verification repeated after every CI fix, a PR opened before any work), quote each rule with its file and ask which stays. Record what the user keeps.
 
@@ -162,4 +164,4 @@ For "other" issue trackers, write `docs/agents/issue-tracker.md` from scratch us
 
 ### 5. Done
 
-Tell the user the setup is complete and which engineering skills will now read from these files. Mention they can edit `docs/agents/*.md` directly later; re-running this skill is only necessary if they want to switch issue trackers or restart from scratch.
+Tell the user the setup is complete and which engineering skills will now read from these files. Mention they can edit `docs/agents/*.md` directly later, or re-run this skill to change a decision.

@@ -33,7 +33,7 @@ Open a session in the project and invoke `$setup-matt-pocock-skills`. The skill 
 | Owner gate | every delivery waits for you, by a conditions page, or none |
 | Existing rules | what stays where the project's rules differ from the skills |
 
-The skill shows a draft before writing. The result lives in `docs/agents/`: settings, tracker, labels, domain docs, testing strategy. Invoke the skill again to change a decision: it shows the current ones and asks only about what changes. When the project needs behaviour checks, invoke `$create-verification-skill` afterwards.
+The skill shows a draft before writing. The result lives in `docs/agents/`: settings, tracker, labels, domain docs, testing strategy. Invoke the skill again to change a decision: it shows the current ones and asks only about what changes and about settings new in this Kit version. When the project needs behaviour checks, invoke `$create-verification-skill` afterwards.
 
 ## Start work in a fresh session
 
@@ -51,10 +51,10 @@ After a plain “I accept the spec”, the agent names the next command, `$to-ti
 
 ## What the agent reads
 
-- Root instructions identify start authority, checkout, delivery mode and owner decisions. The short [workflow](../templates/project/WORKFLOW.md) holds the rules that connect skills, and the [parts map](parts.en.md) shows what each skill is for.
+- Root instructions point at the project settings and list the skills only you start. The short [workflow](../templates/project/WORKFLOW.md) holds the rules that connect skills, and the [parts map](parts.en.md) shows what each skill is for.
 - The spec describes the expected outcome. The project's `testing.md` or existing equivalent holds the testing strategy: the seam and kind of test for each kind of change. `to-spec` and `tdd` read it. The agent takes run commands from the project itself.
 - One PR or local delivery gets one `code-review` call. Parallel Standards and Spec reviews feed one correction pass, affected tests and, if required, one pass of the project's `verify-<app>` skill. A `FAIL` or `BLOCKED` verdict keeps delivery open.
-- `ship` opens the PR, gets the required checks green and confirms the merge really happened. It merges only when the project lets it. Verification evidence is stored the way the `evidence` setting says: as PR attachments (the default on GitHub), in a repository folder, in external storage, or as text only.
+- `ship` opens the PR, gets the required checks green and confirms the merge really happened. It merges only when the project lets it. Verification evidence is stored the way the project settings say: as PR attachments (the default on GitHub), in a repository folder, in external storage, or as text only.
 - The review reads the coding standards, not the implementer. Setup does not create `CODING_STANDARDS.md`: when a review misses a mistake, invoke `$retro`, and it proposes either an automated check or a rule for that file.
 
 Open a fresh project session and ask: “The command should explain why an input file is missing. Which files tell you which tests to write, how to check that behavior and when you need me?” The first trial is complete when the agent can point to the answers and repeating setup gives an empty diff.

@@ -109,4 +109,4 @@ Off the main flow entirely.
 
 ## Precondition
 
-**`/setup-matt-pocock-skills`**: use when the project lacks the tracker, role mappings or document ownership needed for the chosen flow. Read existing root instructions and their pointers first; a configured project does not require setup or a particular document layout. Ask only for unresolved choices. Custom issue trackers also work.
+**`/setup-matt-pocock-skills`**: configures the project in one interview: language, issue tracker, triage labels, domain docs, delivery, verification and the owner gate. Run it before first use, and again to change a decision. Custom issue trackers also work.

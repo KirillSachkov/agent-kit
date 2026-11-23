@@ -53,8 +53,8 @@ the PR body: it takes the report and attaches the evidence the way the project s
 `ship` takes committed work to a merged PR or a local delivery: it opens the PR,
 gets the required checks green and confirms that the merge really happened. It reads
 the route, checks and merge authority from the project. [owner-gate](../skills/engineering/owner-gate/SKILL.md)
-judges whether the owner is needed before delivery. The project's `owner_gate`
-setting chooses the level: always the owner (the default), by a conditions page, or
+judges whether the owner is needed before delivery. The “Owner gate” line in the project
+settings chooses the level: always the owner (the default), by a conditions page, or
 never.
 
 ## Maintenance

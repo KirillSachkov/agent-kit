@@ -624,7 +624,10 @@
     ],
     "matt_baseline_unchanged": true,
     "removed_at_review_base": {
-      "templates/project/.github/pull_request_template.md": "blob 3a6e65926c7277cd244946ac617e36a0a97a608c"
+      "templates/project/.github/pull_request_template.md": "blob 3a6e65926c7277cd244946ac617e36a0a97a608c",
+      "templates/project/defaults.json": "blob 7e030c43501876c856f4c2f1524955ccce74487a at 91dea39",
+      "templates/project/docs/agents/project-settings.md": "blob d354be1e970bdfa710ba3101e6221d5ccb5dd975 at 91dea39",
+      "templates/project/docs/agents/testing.md": "blob 23f84ea16fe2c7b154e378cd959a62f94b449b6e at 91dea39"
     },
     "moved": [
       {
@@ -634,7 +637,7 @@
       },
       {
         "from": "templates/project/docs/agents/owner-attention.md",
-        "to": "templates/project/docs/agents/owner-gate.md",
+        "to": "skills/engineering/setup-matt-pocock-skills/owner-gate.md",
         "blob_at_review_base": "a288de488ba9dd819c5f7d7209b6b8aa08a5547f"
       }
     ]

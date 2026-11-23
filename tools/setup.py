@@ -168,7 +168,7 @@ def build_plan(project, ref, client, owner_choice):
     notes = []
     if state.get("decisions"):
         notes.append("Decisions an earlier release recorded now live in docs/agents/project-settings.md; "
-                     "review them with /setup-matt-pocock-skills")
+                     "run the setup-matt-pocock-skills skill to bring that file to its current form")
     edits = []
     managed = dict(state.get("files", {}))
     def add(name, before, after):
@@ -220,7 +220,7 @@ def build_plan(project, ref, client, owner_choice):
         current = read_optional(project, name)
         if name in HANDED_OVER:
             if current is not None:
-                notes.append(f"{name}: now the project's own file; /setup-matt-pocock-skills maintains it")
+                notes.append(f"{name}: now the project's own file; the setup-matt-pocock-skills skill maintains it")
         elif current is not None and sha(current) == managed[name]:
             edits.append(Edit(name, current, None))
             notes.append(f"{name}: no longer part of the starter; removed, as the project never edited it")
@@ -299,7 +299,7 @@ def describe(result, project, ref, *, full):
                       else f"{count} changed file{'s' if count > 1 else ''}")
             print(f"{entry['destination']}: {entry['provider']}@{entry['ref']} / {entry['skill']}, "
                   f"sha256 {skills.digest(wanted)[:12]}, {change}")
-        print("Pass --full for existing document contents and complete skill file differences.")
+        print("Pass --full for the complete skill file differences.")
     elif result.changed:
         skills.preview(result.changed)
         lock = result.skill_lock

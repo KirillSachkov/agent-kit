@@ -20,6 +20,6 @@
 
 - Testing strategy: <docs/agents/testing.md, or the project's own document>
 
-## Rules kept from the project
+## Read by every skill: rules kept from the project
 
 <each existing rule the owner kept where these skills do otherwise, with its file. Omit when there are none.>

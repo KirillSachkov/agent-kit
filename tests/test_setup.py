@@ -1,4 +1,5 @@
 """Exercise full setup through its public entry point, using a local versioned provider."""
+import hashlib
 import json
 import os
 import re
@@ -79,7 +80,7 @@ class SetupTest(unittest.TestCase):
         self.assertEqual(list(lock["files"]), ["WORKFLOW.md"])
         self.assertIn("WORKFLOW.md", (self.project / "AGENTS.md").read_text())
         self.assertIn("Human-invoked skills: none.", (self.project / "AGENTS.md").read_text())
-        self.assertIn("tell the user to run `/setup-matt-pocock-skills`", (self.project / "AGENTS.md").read_text())
+        self.assertIn("tell the user to run the `setup-matt-pocock-skills` skill", (self.project / "AGENTS.md").read_text())
         self.assertFalse((self.project / "docs").exists())
         self.assertNotIn("Unselected", (self.project / "WORKFLOW.md").read_text())
         self.assertEqual((self.project / ".agents/skills/probe/reference.txt").read_text(), "v1\n")
@@ -151,7 +152,8 @@ class SetupTest(unittest.TestCase):
         untouched.write_text("{}\n")
         edited = self.project / "old-form.md"
         edited.write_text("edited by the project\n")
-        digest = lambda path: __import__("hashlib").sha256(path.read_bytes()).hexdigest()
+        def digest(path):
+            return hashlib.sha256(path.read_bytes()).hexdigest()
         state["decisions"] = {"delivery": "pr"}
         state["files"] |= {"docs/agents/project-settings.md": digest(settings),
                            "evidence-manifest.json": digest(untouched), "old-form.md": "0" * 64}
