@@ -613,7 +613,8 @@
       "implement commits before calling code-review and reviews the changes since its starting commit; the pristine order yields an empty diff (mattpocock/skills issue 511).",
       "The starter workflow keeps only rules no skill can carry; the previous full route moves to experiments/workflow-candidates/full-route.md.",
       "Human-invoked skills are protected by a root instruction line and a check that both client flags agree and match Matt's set.",
-      "The starter drops its tdd setting; the testing strategy is a table of seams that grows from the owner's answers."
+      "The starter drops its tdd setting; the testing strategy is a table of seams that grows from the owner's answers.",
+      "Rewrite ship as a minimal standalone skill: open the PR, get required checks green, confirm the merge, close the task. It no longer reads an implementation handoff or calls owner-attention."
     ],
     "matt_baseline_unchanged": true
   }

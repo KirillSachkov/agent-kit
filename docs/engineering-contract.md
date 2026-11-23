@@ -50,15 +50,11 @@ the workflow runs that skill once on the corrected revision before a PR, checks
 every acceptance criterion and records the action, observation and revision. A
 product failure or an unavailable environment keeps delivery open.
 
-`ship` takes the review reports, fixes, test results and verification record from
-the author. It reuses them in acceptance and, for a PR, its description. CI
-corrections receive affected tests and required CI on the new head. The
-verification record stays attached to its original revision.
-
-After technical checks, `ship` invokes the optional [owner-attention](../skills/engineering/owner-attention/SKILL.md)
-skill once if configured. Project rules govern owner decisions and delivery
-authority. Confirm the actual delivered revision before completing the task and
-cleaning owned resources.
+`ship` takes committed work to a merged PR or a local delivery: it opens the PR,
+gets the required checks green and confirms that the merge really happened. It reads
+the route, checks and merge authority from the project. [owner-attention](../skills/engineering/owner-attention/SKILL.md)
+classifies whether the owner must look before delivery; nothing calls it
+automatically yet.
 
 ## Maintenance
 

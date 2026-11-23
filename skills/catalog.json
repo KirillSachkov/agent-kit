@@ -254,13 +254,7 @@
       "dependencies": [
         {
           "skill": "pr",
-          "reason": "Shape the pull-request body.",
-          "feature": "pr"
-        },
-        {
-          "skill": "owner-attention",
-          "reason": "Classify whether the finished change needs an owner decision.",
-          "feature": "owner-attention"
+          "reason": "Write the pull-request body."
         }
       ]
     },

@@ -84,8 +84,8 @@ The edit in `pr`: the project's PR template takes priority. `verify-<app>` produ
 
 | Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
 | --- | --- | --- | --- | --- | --- | --- |
-| `ship` | agent | Take reviewed work to a local delivery or a PR, wait for CI, read back the outcome | delivery settings, review reports, the verification record | the PR, a tracker record | `pr`, `owner-attention` | Kit |
-| `owner-attention` | agent | Decide whether the owner must look before delivery | project conditions, the delivery packet | status, reason, action | none | Kit |
+| `ship` | agent | Take committed work to a merged PR or a local delivery: open the PR, get checks green, confirm the merge | the route, required checks and merge authority from the project settings | the PR, the merge, the closed task | `pr` | Kit |
+| `owner-attention` | agent | Decide whether the owner must look before delivery. Nothing calls it automatically yet | project conditions, the delivery facts | status, reason, action | none | Kit |
 
 ### 8. Improvement
 
