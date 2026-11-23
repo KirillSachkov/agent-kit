@@ -48,7 +48,7 @@ Pass `--decisions /path/to/decisions.json` to preview and apply. For example, a 
 {"language": "en", "delivery": "pr", "testing_file": "docs/TESTING.md"}
 ```
 
-The testing file must already exist at that project-relative path. Inspect the final diff and any access, start or acceptance decisions that setup reports. Project authority controls merge and publication.
+The testing file must already exist at that project-relative path. Inspect the final diff. By default every delivery waits for you and the agent never merges; only the `owner_gate` setting, set to `conditions` or `none`, lets it merge.
 
 The supported decisions are listed in the [pinned defaults](../templates/project/defaults.json). Set `instruction_owner` when both root files carry independent rules. When preview reports differences, agree their disposition with the project owner. Put that decision in `resolution` and copy the displayed `conflict_id` into the same JSON object. A changed set of differences requires agreement on the new preview and its ID. Setup preserves unmanaged files and reports edits to managed material before writing. For both clients, pass `--client both` on the first preview and apply.
 
@@ -60,4 +60,4 @@ The supported decisions are listed in the [pinned defaults](../templates/project
 - `ship` opens the PR, gets the required checks green and confirms the merge really happened. It merges only when the project lets it. Verification evidence is stored the way the `evidence` setting says: as PR attachments (the default on GitHub), in a repository folder, in external storage, or as text only.
 - The review reads the coding standards, not the implementer. Setup does not create `CODING_STANDARDS.md`: when a review misses a mistake, invoke `$retro`, and it proposes either an automated check or a rule for that file.
 
-Open a fresh project session and ask: “The command should explain why an input file is missing. Which files tell you when to start, how to check that behavior and when you need me?” The first trial is complete when the agent can point to the answers and repeating setup gives an empty diff.
+Open a fresh project session and ask: “The command should explain why an input file is missing. Which files tell you which tests to write, how to check that behavior and when you need me?” The first trial is complete when the agent can point to the answers and repeating setup gives an empty diff.

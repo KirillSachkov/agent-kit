@@ -618,7 +618,8 @@
       "pr joins Matt's visuals and merge danger with the Inside Platform form: the owner's action first, one line and one attachment per scenario, a 70-word owner text and collapsed details for agents. The starter's PR template is removed.",
       "create-verification-skill gains a Report section: a verdict, the checked commit and one line per scenario, written beside the evidence.",
       "Starter defaults: verify when user-visible behaviour changes, by a fresh agent; evidence attaches to the PR with gh --attach.",
-      "Rename owner-attention to owner-gate and rewrite it as a standalone judgement returning a status, a reason and the owner's questions. The starter setting becomes owner_gate with three levels: owner (default), conditions, none; the earlier boolean true maps to conditions."
+      "Rename owner-attention to owner-gate and rewrite it as a standalone judgement returning a status, a reason and the owner's questions. The starter setting becomes owner_gate with three levels: owner (default), conditions, none; an earlier enabled classifier falls back to owner with a note.",
+      "The starter carries a version; the setup tool installs only its own starter version and names the tool to run for another pin."
     ],
     "matt_baseline_unchanged": true,
     "removed_at_review_base": {
@@ -627,11 +628,13 @@
     "moved": [
       {
         "from": "skills/engineering/owner-attention",
-        "to": "skills/engineering/owner-gate"
+        "to": "skills/engineering/owner-gate",
+        "tree_at_review_base": "1609d65f4d42402d734f3f74816569a04c7205d6"
       },
       {
         "from": "templates/project/docs/agents/owner-attention.md",
-        "to": "templates/project/docs/agents/owner-gate.md"
+        "to": "templates/project/docs/agents/owner-gate.md",
+        "blob_at_review_base": "a288de488ba9dd819c5f7d7209b6b8aa08a5547f"
       }
     ]
   }

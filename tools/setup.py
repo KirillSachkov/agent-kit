@@ -317,8 +317,6 @@ def project_choices(defaults, previous, overrides):
     # A decision recorded by an earlier release may have left the starter; keep the rest.
     retired = sorted(set(previous) - known)
     options = {key: value for key, value in previous.items() if key in known}
-    if previous.get("owner_attention") is True and "owner_gate" in known:
-        options["owner_gate"] = "conditions"  # the setting's earlier boolean form
     options |= overrides
     for key in ("delivery",):
         if isinstance(options.get(key), str) and options[key].strip().lower() in ("local", "main", "pr"):
@@ -336,6 +334,8 @@ def project_choices(defaults, previous, overrides):
 
 CLASSIFIER = r"\b(?:owner[- ]gate|owner[- ]attention(?: classification| classifier)?|owner classifier)\b"
 LEGACY_CONDITIONS = "docs/agents/owner-attention.md"
+# The starter's templates and this tool change together; another starter needs its own tool.
+STARTER_VERSION = 2
 
 
 def reconcile(policy, ci, options, choices):
@@ -354,6 +354,10 @@ def build_plan(project, ref, client, options):
         raise ERROR(f"Invalid setup lock: {LOCK}")
     previous = state.get("decisions", {})
     defaults = json.loads(templates.pop("defaults.json", b"{}"))
+    starter = defaults.pop("starter_version", 1)
+    if starter != STARTER_VERSION:
+        raise ERROR(f"The starter at {ref} is version {starter}; this tool installs version {STARTER_VERSION}. "
+                    f"Run the tool of that revision: git -C {KIT} show {ref}:tools/setup.py")
     options = dict(options)
     agreement = options.pop("conflict_id", None)
     options, choices, retired = project_choices(defaults, previous, options)
@@ -377,14 +381,16 @@ def build_plan(project, ref, client, options):
     details["sources"] = ("Documents reached from the existing instructions: " + ", ".join(f"`{f}`" for f in policy) + "."
                           if policy else "No prior project policy was discovered.")
     details["testing_file"] = "<" + testing + ">" if testing and " " in testing else testing or ""
-    # Templates of earlier pins still render this inventory.
-    details["checks"] = "\n".join(checks) or "No local test command or test directory was discovered."
     details["resolution"] = "Project resolution: " + options["resolution"] if "resolution" in options else ""
     conditions = [name for name, body in policy.items()
                   if re.search(CLASSIFIER, name + "\n" + body, re.I)
                   and re.search(r"\b(status(?:es)?|conditions|decision rules)\b", body, re.I)]
-    if read_optional(project, LEGACY_CONDITIONS) is not None and LEGACY_CONDITIONS not in conditions:
-        conditions.append(LEGACY_CONDITIONS)  # seeded by an earlier release, now the project's own
+    if read_optional(project, LEGACY_CONDITIONS) is not None:
+        notes.append(f"{LEGACY_CONDITIONS}: conditions page of an earlier release; move what you keep into "
+                     "docs/agents/owner-gate.md and delete it")
+    if previous.get("owner_attention") is True and "owner_gate" not in options:
+        notes.append("The earlier classifier setting was on. The owner gate now defaults to owner: "
+                     "every delivery waits for you. Choose owner_gate conditions to judge by a conditions page.")
     condition_refs = ", ".join(f"`{name}`" for name in conditions) or "[owner gate conditions](owner-gate.md)"
     gate = choices.get("owner_gate", "owner")
     details["owner_gate"] = GATES.get(gate) or (

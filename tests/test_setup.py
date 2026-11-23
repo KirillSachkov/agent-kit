@@ -403,13 +403,9 @@ class SetupTest(unittest.TestCase):
         (templates / "evidence-manifest.json").write_text("{}\n")
         (templates / ".github").mkdir()
         (templates / ".github/pull_request_template.md").write_text("## Old starter form\n")
-        current_strategy = (templates / "docs/agents/testing.md").read_text()
-        (templates / "docs/agents/testing.md").write_text("# Testing\n\n@@checks@@\n\n- Tracker: @@tracker@@\n")
         self.ref = self.release("Earlier release with a tracker setting and a manifest")
         self.setup(*self.decisions(tracker="Use Linear.", delivery="PR", owner_gate="conditions"), "--apply")
         strategy = self.project / "docs/agents/testing.md"
-        self.assertIn("No local test command", strategy.read_text())
-        self.assertIn("Tracker: Use Linear.", strategy.read_text())
         strategy.write_text(strategy.read_text() + "Orders are tested at the checkout API.\n")
         conditions = self.project / "docs/agents/owner-gate.md"
         conditions.write_text(conditions.read_text() + "Owner signoff for pricing.\n")
@@ -418,7 +414,6 @@ class SetupTest(unittest.TestCase):
         (templates / "evidence-manifest.json").unlink()
         (templates / ".github/pull_request_template.md").unlink()
         (self.project / "evidence-manifest.json").write_text('{"kept": "by the project"}\n')
-        (templates / "docs/agents/testing.md").write_text(current_strategy)
         self.ref = self.release("Retire them")
         preview = self.setup("--apply")
         self.assertIn("no longer applies and is dropped: tracker", preview)
@@ -447,13 +442,26 @@ class SetupTest(unittest.TestCase):
         state = json.loads(lock.read_text())
         state["decisions"] = {"owner_attention": True}
         lock.write_text(json.dumps(state, indent=2) + "\n")
-        legacy = self.project / "docs/agents/owner-attention.md"
-        legacy.write_text("Owner attention statuses kept by the project.\n")
-        self.setup("--apply", decide=False)
-        self.assertEqual(json.loads(lock.read_text())["decisions"], {"owner_gate": "conditions"})
-        self.assertIn("Run `owner-gate` once before delivery against `docs/agents/owner-attention.md`.", settings.read_text())
-        self.assertFalse((self.project / "docs/agents/owner-gate.md").exists())
-        self.assertIn("No changes.", self.setup(decide=False))
+        (self.project / "docs/agents/owner-attention.md").write_text("Statuses kept from an earlier release.\n")
+        preview = self.setup("--apply", decide=False)
+        self.assertIn("The earlier classifier setting was on. The owner gate now defaults to owner", preview)
+        self.assertIn("docs/agents/owner-attention.md: conditions page of an earlier release", preview)
+        self.assertEqual(json.loads(lock.read_text())["decisions"], {})
+        self.assertIn("Owner gate: Every delivery waits for the owner.", settings.read_text())
+        self.setup(*self.decisions(owner_gate="conditions"), "--apply")
+        self.assertIn("Run `owner-gate` once before delivery against [owner gate conditions](owner-gate.md).", settings.read_text())
+        self.assertIn("Cases from history", (self.project / "docs/agents/owner-gate.md").read_text())
+
+    def test_another_starter_version_names_the_tool_to_run(self):
+        defaults = self.provider / "templates/project/defaults.json"
+        values = json.loads(defaults.read_text())
+        del values["starter_version"]
+        defaults.write_text(json.dumps(values))
+        self.ref = self.release("A pin from before starter versions")
+        report = self.setup(status=1)
+        self.assertIn("is version 1; this tool installs version 2", report)
+        self.assertIn(f"show {self.ref}:tools/setup.py", report)
+        self.assertEqual(list(self.project.iterdir()), [])
 
     def test_installer_failure_restores_setup_and_prior_backups(self):
         (self.project / "AGENTS.md").write_text("Keep project instructions.\n")

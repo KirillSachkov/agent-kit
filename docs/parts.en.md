@@ -146,7 +146,7 @@ The reviewer reads the standards, not the implementer: the implementer's context
 
 Setup does not create `CODING_STANDARDS.md`. It grows through `retro`: a review missed a mistake, and `retro` proposes a check or a rule.
 
-The Kit block inside `AGENTS.md` and `WORKFLOW.md` take only what neither a skill nor a check can carry. Today that is three rules in the root block (the testing strategy, loading a named skill, human-invoked skills) and one in `WORKFLOW.md` (behaviour verification).
+The Kit block inside `AGENTS.md` and `WORKFLOW.md` take only what neither a skill nor a check can carry. Today that is four rules in the root block (a question ends with its answer, the testing strategy, loading a named skill, human-invoked skills) and one in `WORKFLOW.md` (behaviour verification).
 
 ## Who can start a skill
 
