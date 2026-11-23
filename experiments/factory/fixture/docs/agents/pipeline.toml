@@ -1,12 +1,16 @@
 # The chain between "tickets agreed" and "PR waits for the owner".
 # A step starts from the stage in `when`, runs one fresh agent session with `run`,
 # and moves the task to `then` when `check` exits 0. Exit 3 from a check means a retry cannot help.
+executor = "steps"          # who leads the chain under /deliver: "steps" or "conductor"
+agent = "claude"            # the client and model the step sessions use
+model = "sonnet"
 branch = "task/{name}"
 
 [[step]]
 name = "implement"
 when = "ready"
-run = "{invoke}implement {task}"
+run = "/implement {task}"
+run_spec = "/implement-spec {task}"
 check = """test -n "$(git log main..HEAD --oneline)" \
   && test -z "$(git status --porcelain -- . ':!.scratch')" \
   && python3 -m unittest discover -s tests -q"""

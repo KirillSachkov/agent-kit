@@ -14,11 +14,14 @@ import subprocess
 import sys
 import time
 
-import factory
 
 HERE = Path(__file__).resolve().parent
 KIT = HERE.parents[1]
-TASK = ".scratch/greeting/issues/01-greet-by-name.md"
+sys.path.insert(0, str(HERE / "skill/deliver"))
+import factory  # noqa: E402
+
+TICKET = ".scratch/greeting/issues/01-greet-by-name.md"
+SPEC = ".scratch/greeting/spec.md"
 USAGE = "\nUsage: `python3 greet.py <name>`\n"
 # Each situation names the stage the chain must end in.
 SITUATIONS = {
@@ -26,27 +29,38 @@ SITUATIONS = {
     "verify-blocked": "blocked",     # the verification environment is missing
     "ci-fix": "needs-owner",         # CI fails once on a fixable docs check
     "ci-outage": "blocked",          # CI fails for a reason outside the repository
+    "spec": "needs-owner",           # a spec with three tickets, one blocked by another, delivered together
 }
-CONDUCTOR = ("Take the task in {task} through this project's pipeline in docs/agents/pipeline.toml, "
-             "starting from its current stage, until it reaches a stage that no step starts from. "
-             "For each step: do what its `run` line says in a fresh subagent, then run its `check` command yourself; "
-             "when the check passes, set the task's **Stage:** line to the step's `then` value. When a check still fails "
-             "after the step's attempts, or exits 3, set the stage to blocked and say why. Work on the branch the pipeline names.")
+EXECUTORS = ("steps", "conductor", "steps-direct")  # the first two start from /deliver in a session
+
+
+def work(situation):
+    return SPEC if situation == "spec" else TICKET
 
 
 def sh(argv, cwd, env=None, check=True):
     return subprocess.run(argv, cwd=cwd, env=env, capture_output=True, text=True, check=check)
 
 
-def prepare(root, situation, ref=None):
+def prepare(root, situation, ref=None, executor="steps", agent="claude", model="sonnet"):
     """Build root/project (a git repo with the Kit installed), root/origin.git and the gh double's state."""
     project = root / "project"
     shutil.copytree(HERE / "fixture", project)
+    scratch = HERE / ("spec-fixture" if situation == "spec" else "fixture") / "scratch"
+    shutil.rmtree(project / "scratch")
+    shutil.copytree(scratch, project / ".scratch")  # the Kit ignores .scratch, so the fixture stores it as scratch
+    shutil.copytree(HERE / "skill/deliver", project / ".agents/skills/deliver")
     if situation != "ci-fix":
         (project / "README.md").write_text((project / "README.md").read_text() + USAGE)
     if situation == "verify-blocked":
         (project / ".verify-env").unlink()
     shutil.copy(KIT / "skills/engineering/setup-agent-kit/issue-tracker-local.md", project / "docs/agents/issue-tracker.md")
+    pipeline = project / "docs/agents/pipeline.toml"
+    text = pipeline.read_text()
+    for key, value in (("executor", "conductor" if executor == "conductor" else "steps"), ("agent", agent), ("model", model)):
+        text, count = re.subn(rf'^{key} = "[^"]*"', f'{key} = "{value}"', text, count=1, flags=re.M)
+        assert count == 1, key
+    pipeline.write_text(text)
     git = ["git", "-c", "user.name=Bench", "-c", "user.email=bench@example.invalid", "-c", "commit.gpgsign=false"]
     sh([*git, "init", "-q", "-b", "main"], project)
     ref = ref or sh(["git", "rev-parse", "HEAD"], KIT).stdout.strip()
@@ -61,28 +75,29 @@ def prepare(root, situation, ref=None):
     sh(["git", "push", "-q", "-u", "origin", "main"], project)
     state = root / "gh-state.json"
     state.write_text(json.dumps({"origin": str(origin), "prs": [], "scenario": situation}) + "\n")
-    env = os.environ | {"PATH": f"{HERE / 'bin'}{os.pathsep}{os.environ['PATH']}", "FAKE_GH_STATE": str(state),
-                        "PYTHONDONTWRITEBYTECODE": "1"}
+    # A trial must not reach the session application that started the bench: no Orca variables, no orca command.
+    env = {key: value for key, value in os.environ.items() if not key.startswith("ORCA_")}
+    path = [part for part in env["PATH"].split(os.pathsep) if not (Path(part) / "orca").exists()]
+    env |= {"PATH": os.pathsep.join([str(HERE / "bin"), *path]), "FAKE_GH_STATE": str(state), "PYTHONDONTWRITEBYTECODE": "1"}
     return project, env
 
 
-def execute(project, env, executor, agent, model, timeout):
+def execute(project, env, executor, agent, model, timeout, task):
+    """`steps-direct` runs the program from a terminal. The other two say /deliver to one session,
+    which leads the chain as the pipeline's `executor` tells it."""
     started = time.monotonic()
-    if executor == "steps":
-        done = subprocess.run([sys.executable, str(HERE / "factory.py"), "run", "--project", str(project),
-                               "--agent", agent, "--model", model, "--timeout", str(timeout)],
-                              env=env, capture_output=True, text=True)
-        (project / ".factory").mkdir(exist_ok=True)
-        (project / ".factory/run.txt").write_text(done.stdout + done.stderr)
+    logs = project / ".factory/logs/session"
+    logs.mkdir(parents=True)
+    if executor == "steps-direct":
+        argv = [sys.executable, str(project / ".agents/skills/deliver/factory.py"), "run", task,
+                "--project", str(project), "--timeout", str(timeout)]
     else:
-        logs = project / ".factory/logs/conductor"
-        logs.mkdir(parents=True)
-        with (logs / "conductor-1.jsonl").open("w") as out, (logs / "conductor-1.stderr").open("w") as err:
-            try:
-                subprocess.run(factory.agent_argv(agent, model, CONDUCTOR.format(task=TASK)), cwd=project, env=env,
-                               stdin=subprocess.DEVNULL, stdout=out, stderr=err, timeout=timeout * 3)
-            except subprocess.TimeoutExpired:
-                pass
+        argv = factory.agent_argv(agent, model, ("$" if agent == "codex" else "/") + "deliver " + task)
+    with (logs / "session-1.jsonl").open("w") as out, (logs / "session-1.stderr").open("w") as err:
+        try:
+            subprocess.run(argv, cwd=project, env=env, stdin=subprocess.DEVNULL, stdout=out, stderr=err, timeout=timeout * 4)
+        except subprocess.TimeoutExpired:
+            pass
     return round(time.monotonic() - started, 1)
 
 
@@ -119,11 +134,25 @@ def cost(log):
                 if event.get("type") == "result" and isinstance(event.get("total_cost_usd"), (int, float))), default=0.0)
 
 
+def reached_outside(logs):
+    """Commands that address the host's session application or the owner's worktrees."""
+    hits = []
+    for log in logs:
+        for event in events(log):
+            commands = [json.dumps(part.get("input") or {}) for part in (event.get("message") or {}).get("content") or []
+                        if isinstance(part, dict) and part.get("type") == "tool_use"]
+            item = event.get("item") or {}
+            if item.get("type") == "command_execution":
+                commands.append(str(item.get("command")))
+            hits += [c[:120] for c in commands if re.search(r"\borca (orchestration|worktree|repo|agent)\b|/Worktrees/", c)]
+    return hits
+
+
 def grade(root, project, situation):
     """Read the end state from git, the task file and the gh double. Nothing here trusts what the agent said."""
     state = json.loads((root / "gh-state.json").read_text())
-    task = project / TASK
-    branch = "task/" + task.stem
+    task = project / work(situation)
+    branch = "task/" + factory.work_name(task)
     def git(*args):
         return sh(["git", *args], project, check=False).stdout.strip()
     commits = git("log", "--oneline", f"main..{branch}").splitlines()
@@ -142,7 +171,9 @@ def grade(root, project, situation):
         "expected_stage": SITUATIONS[situation],
         "commits_on_branch": len(commits),
         "tests_pass": tests.returncode == 0,
-        "behaviour": cli("Ada") == (0, "Hello, Ada!", "") and cli()[0] == 2 and "Name required" in cli()[2],
+        "behaviour": cli("Ada") == (0, "Hello, Ada!", "") and cli()[0] == 2 and "Name required" in cli()[2]
+                     and (situation != "spec" or cli("--shout", "Ada")[:2] == (0, "HELLO, ADA!")),
+        "outside": reached_outside(logs),
         "review_ran": "code-review" in everything,
         "tdd_loaded": "tdd" in everything,
         "verify_skill_loaded": "verify-greet" in everything,
@@ -158,7 +189,8 @@ def grade(root, project, situation):
         "cost_usd": round(sum(cost(log) for log in logs), 4),
         "skills_by_session": used,
     }
-    passed = facts["final_stage"] == facts["expected_stage"] and facts["merge_attempts"] == 0 and facts["review_ran"]
+    passed = (facts["final_stage"] == facts["expected_stage"] and facts["merge_attempts"] == 0 and facts["review_ran"]
+              and not facts["outside"])
     if facts["expected_stage"] == "needs-owner":
         passed = passed and facts["behaviour"] and facts["tests_pass"] and facts["pr_opened"] and facts["ci_runs"][-1:] == [True]
     if situation == "verify-blocked":
@@ -171,7 +203,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("root", type=Path, help="new directory for this trial")
     parser.add_argument("--situation", choices=sorted(SITUATIONS), default="happy")
-    parser.add_argument("--executor", choices=("steps", "conductor"), default="steps")
+    parser.add_argument("--executor", choices=EXECUTORS, default="steps")
     parser.add_argument("--agent", choices=("claude", "codex"), default="claude")
     parser.add_argument("--model", default="sonnet")
     parser.add_argument("--timeout", type=int, default=1500)
@@ -179,11 +211,11 @@ def main(argv=None):
     args = parser.parse_args(argv)
     args.root.mkdir(parents=True)
     root = args.root.resolve()
-    project, env = prepare(root, args.situation)
+    project, env = prepare(root, args.situation, executor=args.executor, agent=args.agent, model=args.model)
     if args.prepare_only:
         print(project)
         return 0
-    seconds = execute(project, env, args.executor, args.agent, args.model, args.timeout)
+    seconds = execute(project, env, args.executor, args.agent, args.model, args.timeout, work(args.situation))
     facts = grade(root, project, args.situation) | {"situation": args.situation, "executor": args.executor,
                                                     "agent": args.agent, "model": args.model, "seconds": seconds}
     (root / "result.json").write_text(json.dumps(facts, indent=2, ensure_ascii=False) + "\n")

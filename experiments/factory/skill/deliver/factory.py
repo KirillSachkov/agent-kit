@@ -37,7 +37,7 @@ def load_pipeline(project):
             raise FactoryError(f"Step {step.get('name', '?')} lacks: {', '.join(missing)}")
     if len(names) != len(set(names)) or len({step["when"] for step in steps}) != len(steps):
         raise FactoryError("Step names and their starting stages must be unique")
-    return data.get("branch", "task/{name}"), steps
+    return data, steps
 
 
 def stage(task):
@@ -83,19 +83,26 @@ def on_branch(project, branch):
         raise FactoryError(f"Cannot switch to {branch}: {switched.stderr.strip()}")
 
 
+def work_name(task):
+    """A ticket is named by its file; a spec by its feature folder."""
+    return task.parent.name if task.name == "spec.md" else task.stem
+
+
 def run_step(project, task, steps, agent, model, timeout, branch="task/{name}"):
     """Run the step the task's stage calls for. Return the new stage, or None when no step applies."""
     current = stage(task)
     step = next((item for item in steps if item["when"] == current), None)
     if step is None:
         return None
-    name = task.stem
+    name = work_name(task)
     on_branch(project, branch.format(name=name))
     env = os.environ | {"FACTORY_TASK": str(task.relative_to(project)), "FACTORY_TASK_NAME": name,
                         "FACTORY_STEP": step["name"]}
     chosen = step.get("agent", agent)
-    prompt = step["run"].format(task=task.relative_to(project), name=name,
-                                invoke="$" if chosen == "codex" else "/")
+    instruction = step.get("run_spec", step["run"]) if task.name == "spec.md" else step["run"]
+    prompt = instruction.format(task=task.relative_to(project), name=name)
+    if chosen == "codex" and prompt.startswith("/"):
+        prompt = "$" + prompt[1:]  # the same skill command in Codex's spelling
     logs = project / ".factory/logs" / name
     logs.mkdir(parents=True, exist_ok=True)
     attempts = int(step.get("attempts", 1))
@@ -127,22 +134,26 @@ def run_step(project, task, steps, agent, model, timeout, branch="task/{name}"):
 
 
 def tasks_in(project, pattern):
-    return sorted(path for path in project.glob(pattern) if path.is_file() and stage(path))
+    found = set(project.glob(pattern)) | set(project.glob(".scratch/*/issues/*.md"))
+    return sorted(path for path in found if path.is_file() and stage(path))
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("command", choices=("status", "step", "run"))
-    parser.add_argument("task", nargs="?", help="task file, relative to the project (step only)")
+    parser.add_argument("task", nargs="?", help="ticket or spec file, relative to the project; run takes every staged task without it")
     parser.add_argument("--project", type=Path, default=Path.cwd())
-    parser.add_argument("--tasks", default=".scratch/*/issues/*.md", help="glob of local task files")
-    parser.add_argument("--agent", default="claude", choices=("claude", "codex"))
-    parser.add_argument("--model", default="sonnet")
+    parser.add_argument("--tasks", default=".scratch/*/*.md", help="glob of local task files that may carry a stage")
+    parser.add_argument("--agent", choices=("claude", "codex"), help="default: the pipeline's agent, else claude")
+    parser.add_argument("--model", help="default: the pipeline's model, else sonnet")
     parser.add_argument("--timeout", type=int, default=1800, help="seconds for one agent session")
     args = parser.parse_args(argv)
     try:
         project = args.project.resolve()
-        branch, steps = load_pipeline(project)
+        pipeline, steps = load_pipeline(project)
+        branch = pipeline.get("branch", "task/{name}")
+        args.agent = args.agent or pipeline.get("agent", "claude")
+        args.model = args.model or pipeline.get("model", "sonnet")
         if args.command == "status":
             for task in tasks_in(project, args.tasks):
                 print(f"{stage(task)}\t{task.relative_to(project)}")
@@ -153,9 +164,10 @@ def main(argv=None):
             result = run_step(project, project / args.task, steps, args.agent, args.model, args.timeout, branch)
             print(result or "no step applies")
             return 0
+        chosen = [project / args.task] if args.task else None
         while True:  # run: every task advances until it reaches a stage no step starts from
             moved = False
-            for task in tasks_in(project, args.tasks):
+            for task in chosen or tasks_in(project, args.tasks):
                 result = run_step(project, task, steps, args.agent, args.model, args.timeout, branch)
                 if result:
                     print(f"{task.relative_to(project)}: {result}", flush=True)
