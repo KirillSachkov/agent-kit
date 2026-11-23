@@ -1,0 +1,4 @@
+#!/bin/sh
+# A trial must not reach the session application of the machine that runs the bench.
+echo "orca is not available in this trial" >&2
+exit 127
