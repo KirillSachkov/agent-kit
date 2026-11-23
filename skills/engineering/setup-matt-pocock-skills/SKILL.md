@@ -31,7 +31,7 @@ Look at the current repo to understand its starting state. Read whatever exists;
 - `docs/adr/` and any `src/*/docs/adr/` directories
 - `docs/agents/`: does this skill's prior output already exist? When `docs/agents/project-settings.md` exists this is a rerun: show the current decisions, ask only what the user wants to change and whatever the [settings template](./project-settings.md) has that the file lacks, then rewrite the file in the template's shape.
 - The repo's check commands (`package.json` scripts, `Makefile` targets, a check script) and CI workflows: these become the proposed delivery checks and required CI.
-- Rules in the existing instructions about review, verification, PRs and merging. Section G needs them.
+- Rules in the existing instructions about review, verification, PRs and merging. Section H needs them.
 - `.scratch/`: a sign that a local-markdown issue tracker convention is already in use
 - Is the `triage` skill installed? (a `triage` skill folder alongside this one, or `triage` in your available skills.) This decides whether Section B runs at all.
 - Monorepo signals: a `pnpm-workspace.yaml`, a `workspaces` field in `package.json`, or a populated `packages/*` with its own `src/`. These are present only in a genuinely large multi-package repo; their absence means single-context, which is almost every repo.
@@ -100,9 +100,9 @@ Offer **multi-context** (a root `GLOSSARY-MAP.md` pointing to per-context `GLOSS
 
 **Section F: Owner gate.** Recommend `owner`: every delivery waits for the owner and the agent never merges. `conditions` has a fresh agent judge each change against a conditions page; a status that needs no owner permits the merge. `none` lets the agent merge by itself; record it only on an explicit choice.
 
-**Section H: Testing strategy.** Skip this when the project already has a document that says where and how it tests. Otherwise propose one row per kind of test the repo already has (where it is checked, the kind of test) and ask which data and services tests may use. An empty table is a valid start: it grows from the owner's answers.
+**Section G: Testing strategy.** Skip this when the project already has a document that says where and how it tests. Otherwise propose one row per kind of test the repo already has (where it is checked, the kind of test) and ask which data and services tests may use. An empty table is a valid start: it grows from the owner's answers.
 
-**Section G: Existing rules.** When the project's instructions prescribe something these skills do differently (a second review after fixes, verification repeated after every CI fix, a PR opened before any work), quote each rule with its file and ask which stays. Record what the user keeps.
+**Section H: Existing rules.** When the project's instructions prescribe something these skills do differently (a second review after fixes, verification repeated after every CI fix, a PR opened before any work), quote each rule with its file and ask which stays. Record what the user keeps.
 
 ### 3. Confirm and edit
 
@@ -156,7 +156,7 @@ Then write the docs files using the seed templates in this skill folder as a sta
 - [issue-tracker-local.md](./issue-tracker-local.md): local-markdown issue tracker
 - [triage-labels.md](./triage-labels.md): label mapping (only if `triage` is installed)
 - [domain.md](./domain.md): domain doc consumer rules + layout
-- [project-settings.md](./project-settings.md): the decisions from Sections D to G
+- [project-settings.md](./project-settings.md): the decisions from Sections D to H
 - [testing.md](./testing.md): the testing strategy, as `docs/agents/testing.md`. Skip it when the project already has a document that says where and how it tests, and name that document in the settings instead.
 - [owner-gate.md](./owner-gate.md): the conditions page, as `docs/agents/owner-gate.md` (only for the `conditions` gate)
 
