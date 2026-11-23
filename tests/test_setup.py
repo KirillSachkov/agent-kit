@@ -32,6 +32,7 @@ class SetupTest(unittest.TestCase):
         for name in ("setup.py", "skills.py"):
             shutil.copy(KIT / "tools" / name, self.provider / "tools" / name)
         shutil.copytree(KIT / "templates", self.provider / "templates")
+        (self.provider / "templates/project/WORKFLOW.md").write_text("Fixture starter file\n")  # the kit ships none today
         skill = self.provider / "skills/engineering/probe"
         skill.mkdir(parents=True)
         (skill / "SKILL.md").write_text("---\nname: probe\ndescription: Observe a fixture.\n---\nProbe contents\n")
@@ -78,7 +79,7 @@ class SetupTest(unittest.TestCase):
         lock = json.loads((self.project / ".agents/setup-lock.json").read_text())
         self.assertEqual(sorted(lock), ["files", "instruction_owner", "ref", "roots", "schema_version"])
         self.assertEqual(list(lock["files"]), ["WORKFLOW.md"])
-        self.assertIn("WORKFLOW.md", (self.project / "AGENTS.md").read_text())
+        self.assertIn("docs/agents/project-settings.md", (self.project / "AGENTS.md").read_text())
         self.assertNotIn("Human-invoked", (self.project / "AGENTS.md").read_text())
         self.assertIn("tell the user to run the `setup-agent-kit` skill", (self.project / "AGENTS.md").read_text())
         self.assertFalse((self.project / "docs").exists())
@@ -103,7 +104,7 @@ class SetupTest(unittest.TestCase):
         preview = self.setup("--client", "both", "--apply")
         self.assertNotIn("fixture database", preview)
         self.assertTrue((self.project / "CLAUDE.md").read_text().startswith(rules))
-        self.assertIn("WORKFLOW.md", (self.project / "CLAUDE.md").read_text())
+        self.assertIn("docs/agents/project-settings.md", (self.project / "CLAUDE.md").read_text())
         self.assertIn("CLAUDE.md", (self.project / "AGENTS.md").read_text())
         self.assertEqual(sorted(p.name for p in (self.project / "docs").iterdir()), ["checks.md"])
         self.assertEqual((self.project / ".claude/settings.json").read_text(), '{"private": true}')
@@ -119,7 +120,7 @@ class SetupTest(unittest.TestCase):
             args = ("--instruction-owner", alias)
             self.setup(*args, "--client", "both", "--apply")
             self.assertTrue(link.is_symlink())
-            self.assertIn("WORKFLOW.md", (self.project / canonical).read_text())
+            self.assertIn("docs/agents/project-settings.md", (self.project / canonical).read_text())
             lock = json.loads((self.project / ".agents/setup-lock.json").read_text())
             self.assertEqual(lock["instruction_owner"], canonical)
             self.assertIn("No changes.", self.setup(*args, "--apply"))
@@ -175,7 +176,7 @@ class SetupTest(unittest.TestCase):
         (self.provider / "templates/project/starter.json").unlink()
         self.ref = self.release("A pin from before starter versions")
         report = self.setup(status=1)
-        self.assertIn("is version 1; this tool installs version 3", report)
+        self.assertIn("is version 1; this tool installs version 4", report)
         self.assertIn(f"show {self.ref}:tools/setup.py", report)
         self.assertEqual(list(self.project.iterdir()), [])
 
@@ -202,7 +203,7 @@ class SetupTest(unittest.TestCase):
         wrapper.write_text(source)
         self.setup("--apply")
         self.assertEqual(wrapper.read_text(), source)
-        self.assertIn("WORKFLOW.md", canonical.read_text())
+        self.assertIn("docs/agents/project-settings.md", canonical.read_text())
         self.assertIn("No changes.", self.setup())
         altered = canonical.read_text() + "\nLocal addition after the Kit section.\n"
         canonical.write_text(altered)

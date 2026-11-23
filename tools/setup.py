@@ -26,7 +26,7 @@ MANIFEST = ".agents/skills-manifest.json"
 # The setup skill writes and maintains these; an earlier starter installed them.
 HANDED_OVER = ("docs/agents/project-settings.md",)
 # The starter's templates and this tool change together; another starter needs its own tool.
-STARTER_VERSION = 3
+STARTER_VERSION = 4
 BEGIN = "<!-- agent-kit project instructions -->"
 END = "<!-- end agent-kit project instructions -->"
 ERROR = skills.SkillsError
@@ -159,8 +159,6 @@ def build_plan(project, ref, client, owner_choice):
     if starter != STARTER_VERSION:
         raise ERROR(f"The starter at {ref} is version {starter}; this tool installs version {STARTER_VERSION}. "
                     f"Run the tool of that revision: git -C {KIT} show {ref}:tools/setup.py")
-    if "WORKFLOW.md" not in templates:
-        raise ERROR(f"Missing pinned workflow template at {ref}")
     old_state = read_optional(project, LOCK)
     state = json.loads(old_state) if old_state else {}
     if old_state is not None and (state.get("schema_version") != 1 or not isinstance(state.get("files"), dict)):
@@ -195,7 +193,7 @@ def build_plan(project, ref, client, owner_choice):
         outside, old_block = root_parts(before or b"")
         if roots.get(name) != (sha(old_block.encode()) if old_block else None):
             raise ERROR(f"Reconcile edited Agent Kit instruction block in {name}")
-        snippet = root_template if name == canonical else f"Read [{canonical}]({canonical}) for the project workflow and settings."
+        snippet = root_template if name == canonical else f"Read [{canonical}]({canonical}) for the project instructions."
         block = f"{BEGIN}\n{snippet}\n{END}"
         if old_block:
             after = before.decode().replace(old_block, block).encode()

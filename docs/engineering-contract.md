@@ -24,9 +24,9 @@ to invent another approval, worktree or setup task.
 The Kit is a set of parts that each work alone; the [parts map](parts.en.md) lists
 every skill and project file with its part. Matt Pocock's skills are the base, and the
 parts map names every edit to them. The Kit adds its own skills only where he has none: `ship`, `owner-gate`
-and the pstack `create-verification-skill`. The [starter workflow](../templates/project/WORKFLOW.md)
-connects the parts a project enables. A rule about how parts connect lives in that
-workflow, never inside a borrowed skill.
+and the pstack `create-verification-skill`. A rule about how parts connect lives in a
+skill the Kit owns, never inside a borrowed one: `ship` holds the rule that behaviour is
+verified before delivery.
 
 ## Native clients
 

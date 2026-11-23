@@ -7,6 +7,8 @@ Deliver the committed work on the current branch.
 
 The project's delivery route, required checks and merge authority should have been provided to you. If not, ask the user.
 
+When the project settings call for verification and no verification report covers the current commit, have the verifier they name run the project's `verify-<app>` skill first. Deliver only on `PASS` or `PASS+NOTES`: a `FAIL` or `BLOCKED` verdict stops here, and so does a project with no verify skill, where the owner runs `create-verification-skill`.
+
 1. Push the branch and open a PR. Call the Skill tool with "pr" to write its body. On a local route, skip to step 4.
 
 2. Wait for the required checks on the PR head. When a check fails because of the change, fix it, run the affected tests, push and wait again. A flake earns one rerun; diagnose a second failure from its log. Report a blocker you cannot fix.

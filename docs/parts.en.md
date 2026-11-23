@@ -2,7 +2,7 @@
 
 [Русский](parts.ru.md)
 
-The Kit has eight parts. Each part works alone: it has its own skills, input and result. A project enables the parts it wants in its settings, and the [workflow](../templates/project/WORKFLOW.md) connects the enabled ones. Matt Pocock's skills are the base; the tables below name every edit to them. The Kit adds its own skills only where Matt has none.
+The Kit has eight parts. Each part works alone: it has its own skills, input and result. A project enables the parts it wants in its settings. Matt Pocock's skills are the base; the tables below name every edit to them. The Kit adds its own skills only where Matt has none.
 
 “You” under “Who starts it” means invoking by name: `/name` in Claude Code, `$name` in Codex. “Agent” means either the agent or you can invoke it.
 
@@ -86,7 +86,7 @@ The `pr` format joins two sources. From Matt: the visuals of the change and the 
 
 | Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
 | --- | --- | --- | --- | --- | --- | --- |
-| `ship` | agent | Take committed work to a merged PR or a local delivery: open the PR, get checks green, confirm the merge | the route, required checks and merge authority from the project settings | the PR, the merge, the closed task | `pr` | Kit |
+| `ship` | agent | Take committed work to a merged PR or a local delivery: make sure behaviour is verified when the settings call for it, open the PR, get checks green, confirm the merge | the route, required checks and merge authority from the project settings | the PR, the merge, the closed task | `pr` | Kit |
 | `owner-gate` | agent | Decide whether the owner is needed before delivery: a status, a reason and the questions for them | the task, the diff, the verification report, the project's conditions page | nothing, only its answer | none | Kit, after Inside Platform |
 
 Acceptance has three levels, set by the “Owner gate” line in the project settings. `owner`: every delivery waits for the owner and the agent never merges; this is the default and the skill does not run. `conditions`: a fresh agent judges the change once against the conditions page and returns a status; a status that needs no owner permits the merge. `none`: the agent merges by itself. The conditions page has a “Cases from history” section where the owner adds examples of a status that turned out wrong.
@@ -120,7 +120,6 @@ The change in `wizard`: `SKILL.md` matches the original and only `template.sh` d
 | File | Written by | Read by | Part |
 | --- | --- | --- | --- |
 | The Kit block in `AGENTS.md` | `tools/setup.py` | every session | pointer to the rest |
-| `WORKFLOW.md` | `tools/setup.py` | the agent at the verify step | rules connecting skills |
 | `docs/agents/project-settings.md` | `setup-agent-kit` from your answers | `ship`, the verify step, `pr`, test choice; settings are grouped by reader | verification, evidence, delivery |
 | `docs/agents/testing.md` | `setup-agent-kit` creates it, then you and the agent | `to-spec`, `tdd` through the root pointer | design, execution |
 | `verify-<app>` | `create-verification-skill` | the agent at the verify step | verification |
@@ -148,7 +147,7 @@ The reviewer reads the standards, not the implementer: the implementer's context
 
 Setup does not create `CODING_STANDARDS.md`. It grows through `retro`: a review missed a mistake, and `retro` proposes a check or a rule.
 
-The Kit block inside `AGENTS.md` and `WORKFLOW.md` take only what neither a skill nor a check can carry. Today the root block says where the settings are and what to do without them, that a question ends with its answer, how to take test seams, how to load a named skill and where implementation may start. `WORKFLOW.md` has one rule: behaviour verification.
+The Kit block inside `AGENTS.md` takes only what neither a skill nor a check can carry. Today the root block says where the settings are and what to do without them, that a question ends with its answer, how to take test seams, how to load a named skill and where implementation may start. `ship` itself carries the rule that behaviour is verified before delivery; the Kit installs no separate workflow file.
 
 ## Who can start a skill
 
@@ -156,7 +155,6 @@ The “Who starts it” column repeats the skills' own flags. A skill marked “
 
 ## Still undecided
 
-- How the workflow is assembled. Today `WORKFLOW.md` is deliberately minimal: it holds only rules no skill can carry. The earlier full route is kept as a [candidate](../experiments/workflow-candidates/full-route.md), and options are compared on the test bench.
 - Moving `deliver` and the orchestrator from the [experiment](../experiments/factory/README.md) into the Kit: after a trial on a real project.
 - Starting the orchestrator from tracker events or a schedule.
 

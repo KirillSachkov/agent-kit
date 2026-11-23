@@ -16,7 +16,7 @@ python3 tools/setup.py --project "$project" --ref "$kit_ref" --apply
 python3 tools/skills.py check --project "$project"
 ```
 
-The first command shows what will change: one line per skill and the diff of the root instructions; `--full` prints the complete diff. The second applies it. The command installs the skills, a pointer block in the root instructions and a short `WORKFLOW.md`. It makes no project decisions. It leaves your instructions and files alone, and repeating it with the same SHA gives an empty diff. Add `--client both` for two clients. When both `AGENTS.md` and `CLAUDE.md` carry their own instructions, name the owner with `--instruction-owner`. To take just one skill, use [selection with dependencies](distribution.md).
+The first command shows what will change: one line per skill and the diff of the root instructions; `--full` prints the complete diff. The second applies it. The command installs the skills and a pointer block in the root instructions. It makes no project decisions. It leaves your instructions and files alone, and repeating it with the same SHA gives an empty diff. Add `--client both` for two clients. When both `AGENTS.md` and `CLAUDE.md` carry their own instructions, name the owner with `--instruction-owner`. To take just one skill, use [selection with dependencies](distribution.md).
 
 ## Configure the project
 
@@ -52,7 +52,7 @@ After a plain “I accept the spec”, the agent names the next command, `$to-ti
 
 ## What the agent reads
 
-- Root instructions point at the project settings and say where implementation may start. The short [workflow](../templates/project/WORKFLOW.md) holds the rules that connect skills, and the [parts map](parts.en.md) shows what each skill is for.
+- Root instructions point at the project settings and say where implementation may start. The [parts map](parts.en.md) shows what each skill is for.
 - The spec describes the expected outcome. The project's `testing.md` or existing equivalent holds the testing strategy: the seam and kind of test for each kind of change. `to-spec` and `tdd` read it. The agent takes run commands from the project itself.
 - `implement` reviews each ticket it builds and `implement-spec` reviews the whole spec once. Parallel Standards and Spec reviews feed one correction pass, affected tests and, if required, one pass of the project's `verify-<app>` skill. A `FAIL` or `BLOCKED` verdict keeps delivery open.
 - `ship` opens the PR, gets the required checks green and confirms the merge really happened. It merges only when the project lets it. Verification evidence is stored the way the project settings say: as PR attachments (the default on GitHub), in a repository folder, in external storage, or as text only.
