@@ -21,7 +21,7 @@ if step == "implement":
 elif step == "verify":
     Path(".evidence").mkdir(exist_ok=True)
     verdict = "PASS" if Path(".verify-env").exists() else "BLOCKED"
-    Path(".evidence/report.md").write_text(f"Verdict: {verdict}\nCommit: test\n")
+    Path(".evidence/report.md").write_text(f"Verdict: {verdict}\nCommit: {run('git', 'rev-parse', '--short', 'HEAD').stdout.strip()}\n")
     print('{"item":{"type":"command_execution","command":"cat .agents/skills/verify-greet/SKILL.md"}}')
 elif step == "ship":
     run("git", "push", "-q", "-u", "origin", "HEAD")

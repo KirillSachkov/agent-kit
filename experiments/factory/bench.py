@@ -92,7 +92,8 @@ def prepare(root, situation, ref=None, executor="steps", agent="claude", model="
     # Codex runs commands in a login shell, which rebuilds PATH from the profile: keep the gh double first there too.
     profile = root / "zsh"
     profile.mkdir()
-    (profile / ".zprofile").write_text(f'export PATH="{HERE / "bin"}:$PATH"\n')
+    # The same shell would also find the system's older python3 first; keep this interpreter ahead of it.
+    (profile / ".zprofile").write_text(f'export PATH="{HERE / "bin"}:{Path(sys.executable).parent}:$PATH"\n')
     env["ZDOTDIR"] = str(profile)
     return project, env
 
@@ -149,6 +150,8 @@ def skills_used(log):
             actions.append(str(item.get("command")))
         for action in actions:
             used += re.findall(r"skills/([a-z0-9-]+)/SKILL\.md", action)
+            for group in re.findall(r"skills/\{([a-z0-9,-]+)\}/SKILL\.md", action):  # a shell brace list
+                used += group.split(",")
     return list(dict.fromkeys(used))
 
 

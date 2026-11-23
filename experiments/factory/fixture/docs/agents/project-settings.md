@@ -1,5 +1,9 @@
 # Project settings
 
+## Read before implementing
+
+- Workplace: worktree: implementation never starts on the base branch of the main checkout
+
 ## Read by `ship`
 
 - Delivery route: pr

@@ -44,17 +44,17 @@ class StepRunnerTest(unittest.TestCase):
         self.assertEqual(facts["final_stage"], "needs-owner")
         self.assertTrue(facts["pass"], facts)
         self.assertEqual((facts["sessions"], facts["ci_runs"], facts["merge_attempts"], facts["outside"]), (4, [True], 0, []))
-        journal = [json.loads(line) for line in (project / ".factory/01-greet-by-name/steps.jsonl").read_text().splitlines()]
+        journal = [json.loads(line) for line in (project / ".factory/greeting-01-greet-by-name/steps.jsonl").read_text().splitlines()]
         self.assertEqual([(row["step"], row["attempt"], row["check_exit"]) for row in journal],
                          [("implement", 1, 0), ("verify", 1, 0), ("ship", 1, 0)])
 
     def test_the_work_happens_in_a_worktree_of_its_own_and_the_project_stays_on_its_branch(self):
         root, project, facts = self.trial("happy")
-        self.assertEqual((facts["own_worktree"], facts["branch"]), (True, "task/01-greet-by-name"))
-        self.assertTrue((root / "project-worktrees/01-greet-by-name/greet.py").is_file())
+        self.assertEqual((facts["own_worktree"], facts["branch"]), (True, "task/greeting-01-greet-by-name"))
+        self.assertTrue((root / "project-worktrees/greeting-01-greet-by-name/greet.py").is_file())
         self.assertEqual(subprocess.check_output(["git", "-C", str(project), "branch", "--show-current"], text=True).strip(), "main")
         status = self.program(project, "status").stdout
-        self.assertIn("01-greet-by-name\tneeds-owner\tnot running\tlast: ship attempt 1 passed", status)
+        self.assertIn("greeting-01-greet-by-name\tneeds-owner\tnot running\tlast: ship attempt 1 passed", status)
 
     def test_a_blocked_verification_stops_the_chain_before_delivery_without_a_retry(self):
         root, project, facts = self.trial("verify-blocked")
@@ -65,12 +65,14 @@ class StepRunnerTest(unittest.TestCase):
 
     def test_a_blocked_task_continues_from_the_step_that_blocked_it(self):
         root, project, facts = self.trial("verify-blocked")
-        (root / "project-worktrees/01-greet-by-name/.verify-env").write_text("ready\n")
+        (root / "project-worktrees/greeting-01-greet-by-name/.verify-env").write_text("ready\n")
         self.assertEqual(self.program(project, "run", bench.TICKET).returncode, 0)
         facts = bench.grade(root, project, "happy")
         self.assertEqual((facts["final_stage"], facts["pr_opened"]), ("needs-owner", True))
-        journal = [json.loads(line)["step"] for line in (project / ".factory/01-greet-by-name/steps.jsonl").read_text().splitlines()]
+        journal = [json.loads(line)["step"] for line in (project / ".factory/greeting-01-greet-by-name/steps.jsonl").read_text().splitlines()]
         self.assertEqual(journal, ["implement", "verify", "verify", "ship"])
+        logs = sorted(path.name for path in (project / ".factory/greeting-01-greet-by-name").glob("verify-*.jsonl"))
+        self.assertEqual(logs, ["verify-1.jsonl", "verify-2.jsonl"])
 
     def test_a_fixable_ci_failure_is_fixed_and_an_outage_blocks_after_the_allowed_attempts(self):
         root, project, facts = self.trial("ci-fix")
@@ -81,7 +83,7 @@ class StepRunnerTest(unittest.TestCase):
     def test_the_owners_feedback_on_the_pull_request_takes_the_work_through_the_chain_again(self):
         root, project, facts = self.trial("rework")
         self.assertTrue(facts["pass"], facts)
-        journal = [json.loads(line)["step"] for line in (project / ".factory/01-greet-by-name/steps.jsonl").read_text().splitlines()]
+        journal = [json.loads(line)["step"] for line in (project / ".factory/greeting-01-greet-by-name/steps.jsonl").read_text().splitlines()]
         self.assertEqual(journal, ["implement", "verify", "ship", "rework", "verify", "ship"])
 
     def test_later_steps_follow_the_branch_the_implementing_skill_moved_the_work_to(self):
@@ -119,15 +121,23 @@ class StepRunnerTest(unittest.TestCase):
             time.sleep(0.1)
         self.assertIn("running implement attempt 1", status)
         self.assertIn("already running", self.program(project, "run", bench.TICKET).stderr)
-        self.assertIn("Stopped 01-greet-by-name", self.program(project, "stop", bench.TICKET).stdout)
+        self.assertIn("Stopped greeting-01-greet-by-name", self.program(project, "stop", bench.TICKET).stdout)
         status = self.program(project, "wait", bench.TICKET).stdout
-        self.assertIn("01-greet-by-name\tready\tnot running\tlast: implement attempt 1 stopped", status)
+        self.assertIn("greeting-01-greet-by-name\tready\tnot running\tlast: implement attempt 1 stopped", status)
 
     def test_a_tracker_reference_keeps_its_stage_in_the_run_state_and_each_client_spells_the_skill_its_way(self):
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary).resolve()
             task = factory.Task(project, "#42")
             self.assertEqual((task.name, task.stage()), ("42", None))
+            for feature in ("pay", "auth"):  # ticket numbers restart in every feature
+                (project / f".scratch/{feature}/issues").mkdir(parents=True)
+                (project / f".scratch/{feature}/issues/01-setup.md").write_text("# Setup\n")
+            self.assertEqual([factory.Task(project, f".scratch/{feature}/issues/01-setup.md").name for feature in ("pay", "auth")],
+                             ["pay-01-setup", "auth-01-setup"])
+            factory.Task(project, "42").update()
+            with self.assertRaises(factory.FactoryError):
+                factory.Task(project, "#42")
             task.set_stage("verify")
             self.assertEqual(factory.Task(project, "#42").stage(), "verify")
             self.assertEqual((project / ".factory/.gitignore").read_text(), "*\n")
