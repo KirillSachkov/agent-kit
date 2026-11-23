@@ -1,0 +1,10 @@
+# Testing strategy
+
+The seams this project agreed to test at. `tdd` treats them as pre-agreed. A kind of change
+missing from the table is a question for the owner; add the answer as a new row.
+
+| Kind of change | Where it is checked | Kind of test | Not tested |
+| --- | --- | --- | --- |
+| Command-line behaviour | `greet.py` run as a subprocess: stdout, stderr, exit code | integration, `unittest` under `tests/` | internal helper functions |
+
+Data and services tests may use: none; the CLI is self-contained.

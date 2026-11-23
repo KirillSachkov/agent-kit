@@ -1,0 +1,35 @@
+# The chain between "tickets agreed" and "PR waits for the owner".
+# A step starts from the stage in `when`, runs one fresh agent session with `run`,
+# and moves the task to `then` when `check` exits 0. Exit 3 from a check means a retry cannot help.
+branch = "task/{name}"
+
+[[step]]
+name = "implement"
+when = "ready"
+run = "{invoke}implement {task}"
+check = """test -n "$(git log main..HEAD --oneline)" \
+  && test -z "$(git status --porcelain -- . ':!.scratch')" \
+  && python3 -m unittest discover -s tests -q"""
+attempts = 2
+then = "verify"
+
+[[step]]
+name = "verify"
+when = "verify"
+run = "Verify the behaviour of the task in {task} at the current commit with this project's verify skill. Check every acceptance criterion."
+check = """v=$(sed -n 's/^Verdict: //p' .evidence/report.md 2>/dev/null | head -1)
+case "$v" in
+  PASS|PASS+NOTES) exit 0 ;;
+  FAIL|BLOCKED) echo "verification verdict: $v"; exit 3 ;;
+  *) echo "no verification report"; exit 1 ;;
+esac"""
+attempts = 2
+then = "delivery"
+
+[[step]]
+name = "ship"
+when = "delivery"
+run = "Ship the committed work on this branch for the task in {task}."
+check = """gh pr view --json state -q .state | grep -q OPEN && gh pr checks --required >/dev/null"""
+attempts = 2
+then = "needs-owner"
