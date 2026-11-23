@@ -46,7 +46,7 @@ then = "needs-owner"
 [[task]]
 name = "rework"
 when = "rework"
-run = "Address the owner's unresolved feedback on this branch's pull request for the ticket in {ticket}: read its reviews and comments, change the code and commit."
+run = "Address the owner's unresolved feedback on this branch's pull request for the ticket in {ticket}: read its reviews and comments, change the code and commit. Then call the code-review skill on the changes since the commit you started from, and commit the fixes."
 check = """test -n "$(git log main..HEAD --oneline)" \
   && test -z "$(git status --porcelain -- . ':!.scratch')" \
   && python3 -m unittest discover -s tests -q"""
