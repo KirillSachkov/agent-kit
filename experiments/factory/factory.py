@@ -64,7 +64,8 @@ def agent_argv(agent, model, prompt):
                 "--dangerously-skip-permissions"]
     if agent == "codex":
         return ["codex", "exec", "--ignore-user-config", "--ephemeral", "--skip-git-repo-check",
-                "--sandbox", "workspace-write", "--disable", "apps", "--disable", "plugins",
+                # A delivery pushes to a remote and calls the host CLI, both outside the checkout.
+                "--sandbox", "danger-full-access", "--disable", "apps", "--disable", "plugins",
                 "--enable", "skip_host_skill_discovery", "-c", 'web_search="disabled"',
                 "-m", model, "--json", prompt]
     raise FactoryError(f"Unknown agent: {agent}")
