@@ -128,6 +128,19 @@ class OrchestratorTest(unittest.TestCase):
         status = self.program(project, "wait", bench.TICKET).stdout
         self.assertIn("greeting-01-greet-by-name\tready\tnot running\tlast: implement attempt 1 stopped", status)
 
+    def test_the_owners_word_at_the_start_chooses_what_runs_a_task_and_lasts_for_the_ticket(self):
+        root = Path(self.enterContext(tempfile.TemporaryDirectory())).resolve() / "trial"
+        root.mkdir()
+        project, env = bench.prepare(root, "verify-blocked")
+        self.env = env | {"FACTORY_AGENT": f"{sys.executable} {FACTORY / 'fake_agent.py'}"}
+        self.program(project, "run", bench.TICKET, "--model", "small", "--model", "verify=large", "--effort", "implement=high")
+        (root / "project-worktrees/greeting-01-greet-by-name/.verify-env").write_text("ready\n")
+        self.program(project, "run", bench.TICKET)  # continuing says nothing new
+        rows = [json.loads(line) for line in (project / ".factory/greeting-01-greet-by-name/runs.jsonl").read_text().splitlines()]
+        self.assertEqual([(row["task"], row["model"], row["effort"]) for row in rows],
+                         [("implement", "small", "high"), ("verify", "large", None), ("verify", "large", None), ("ship", "small", None)])
+        self.assertIn("No task named review", self.program(project, "run", bench.TICKET, "--model", "review=x").stderr)
+
     def test_a_tracker_reference_keeps_its_stage_in_the_run_state_and_each_client_spells_the_skill_its_way(self):
         with tempfile.TemporaryDirectory() as temporary:
             project = Path(temporary).resolve()
@@ -152,6 +165,11 @@ class OrchestratorTest(unittest.TestCase):
         self.assertEqual(orchestrator.agent_argv(pipeline, "codex", "m", "/ship")[-1], "$ship")
         with self.assertRaises(orchestrator.FactoryError):
             orchestrator.agent_argv({}, "unknown", "m", "hello")
+        self.assertEqual(orchestrator.agent_argv({}, "codex", "m", "go", "high")[-3:], ["-c", "model_reasoning_effort=high", "go"])
+        self.assertEqual(orchestrator.agent_argv({}, "claude", "m", "go", "low")[-2:], ["--effort", "low"])
+        for bad in (("opencode", "x/y", "go", "high"), ("codex", None, "go")):  # a client with no effort; no model at all
+            with self.assertRaises(orchestrator.FactoryError):
+                orchestrator.agent_argv(pipeline, *bad)
 
 
 if __name__ == "__main__":
