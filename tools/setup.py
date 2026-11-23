@@ -206,7 +206,7 @@ def build_plan(project, ref, client, owner_choice):
         roots[name] = sha(block.encode())
     for name, raw in sorted(templates.items()):
         before = read_optional(project, name)
-        after = render(raw, details)
+        after = render(raw, {})
         if name not in managed and before is not None:
             raise ERROR(f"Unmanaged project document already exists: {name}")
         if name in managed and (before is None or sha(before) != managed[name]):
