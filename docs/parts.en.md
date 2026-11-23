@@ -148,11 +148,11 @@ The reviewer reads the standards, not the implementer: the implementer's context
 
 Setup does not create `CODING_STANDARDS.md`. It grows through `retro`: a review missed a mistake, and `retro` proposes a check or a rule.
 
-The Kit block inside `AGENTS.md` and `WORKFLOW.md` take only what neither a skill nor a check can carry. Today the root block says where the settings are and what to do without them, that a question ends with its answer, how to take test seams, how to load a named skill and which skills are human-invoked. `WORKFLOW.md` has one rule: behaviour verification.
+The Kit block inside `AGENTS.md` and `WORKFLOW.md` take only what neither a skill nor a check can carry. Today the root block says where the settings are and what to do without them, that a question ends with its answer, how to take test seams, how to load a named skill and where implementation may start. `WORKFLOW.md` has one rule: behaviour verification.
 
 ## Who can start a skill
 
-The “Who starts it” column repeats the skills' own flags. A skill marked “you” is closed to the agent by two flags: `disable-model-invocation: true` for Claude Code and `allow_implicit_invocation: false` for Codex. `scripts/check.py` verifies that the two flags agree and that every borrowed skill is marked as its original is. The project's root instructions list the human-invoked skills by name and forbid the agent to bypass the flag by reading the skill file.
+The “Who starts it” column repeats the skills' own flags. A skill marked “you” is closed to the agent by two flags: `disable-model-invocation: true` for Claude Code and `allow_implicit_invocation: false` for Codex. `scripts/check.py` verifies that the two flags agree and that every borrowed skill is marked as its original is. The flags are the whole protection, as in Matt's original: the root instructions add nothing to them, so a pipeline the owner set up can name such a skill in a step.
 
 ## Still undecided
 

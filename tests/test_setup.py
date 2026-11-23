@@ -79,7 +79,7 @@ class SetupTest(unittest.TestCase):
         self.assertEqual(sorted(lock), ["files", "instruction_owner", "ref", "roots", "schema_version"])
         self.assertEqual(list(lock["files"]), ["WORKFLOW.md"])
         self.assertIn("WORKFLOW.md", (self.project / "AGENTS.md").read_text())
-        self.assertIn("Human-invoked skills: none.", (self.project / "AGENTS.md").read_text())
+        self.assertNotIn("Human-invoked", (self.project / "AGENTS.md").read_text())
         self.assertIn("tell the user to run the `setup-agent-kit` skill", (self.project / "AGENTS.md").read_text())
         self.assertFalse((self.project / "docs").exists())
         self.assertNotIn("Unselected", (self.project / "WORKFLOW.md").read_text())

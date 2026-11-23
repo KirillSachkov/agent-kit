@@ -171,7 +171,7 @@ You may use one of these, you may use several, it is unlikely you will use all o
 
 ### Verified
 
-One line and one piece of evidence per scenario. Take both from the verification report when there is one; otherwise show a before and after.
+One line and one piece of evidence per scenario. Take both from the verification report: a verifier in another session leaves `report.md` in the folder the project settings name. Without a report, show a before and after.
 
 Screenshots are S-tier - when the environment is set up for it and the change is visual.
 

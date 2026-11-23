@@ -47,11 +47,11 @@ The table uses Codex commands. In Claude Code, start the message with a slash co
 | Execute the agreed graph | `$implement-spec <spec>` | Implements the tickets on one branch and reviews it once. |
 | Implement one assigned issue | `$implement <issue>` | Implements, commits and reviews the work. |
 
-After a plain “I accept the spec”, the agent names the next command, `$to-tickets`, and stops. After ticket publication, start implementation separately. The agent does not start human-invoked skills itself: the skill flags and a line in the project's root instructions say so.
+After a plain “I accept the spec”, the agent names the next command, `$to-tickets`, and stops. After ticket publication, start implementation separately. The agent does not start human-invoked skills itself: the skill flags say so.
 
 ## What the agent reads
 
-- Root instructions point at the project settings and list the skills only you start. The short [workflow](../templates/project/WORKFLOW.md) holds the rules that connect skills, and the [parts map](parts.en.md) shows what each skill is for.
+- Root instructions point at the project settings and say where implementation may start. The short [workflow](../templates/project/WORKFLOW.md) holds the rules that connect skills, and the [parts map](parts.en.md) shows what each skill is for.
 - The spec describes the expected outcome. The project's `testing.md` or existing equivalent holds the testing strategy: the seam and kind of test for each kind of change. `to-spec` and `tdd` read it. The agent takes run commands from the project itself.
 - One PR or local delivery gets one `code-review` call. Parallel Standards and Spec reviews feed one correction pass, affected tests and, if required, one pass of the project's `verify-<app>` skill. A `FAIL` or `BLOCKED` verdict keeps delivery open.
 - `ship` opens the PR, gets the required checks green and confirms the merge really happened. It merges only when the project lets it. Verification evidence is stored the way the project settings say: as PR attachments (the default on GitHub), in a repository folder, in external storage, or as text only.

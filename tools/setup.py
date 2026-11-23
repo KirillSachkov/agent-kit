@@ -184,10 +184,7 @@ def build_plan(project, ref, client, owner_choice):
     items, skill_lock, _ = skills.plan(project, catalog, catalog_dir, manifest=manifest)
     changed = skills.preflight_changed(project, items, skill_lock)
     link = skills.client_discovery(project, manifest)
-    manual = [entry["skill"] for entry, _, _, files in items
-              if re.search(rb"\A---\n(?:.*\n)*?disable-model-invocation:\s*true\s*\n(?:.*\n)*?---", files["SKILL.md"][0])]
-    details = {"human_invoked": ", ".join(f"`{name}`" for name in manual) or "none"}
-    root_template = render(templates.pop("AGENTS.md"), details).decode().rstrip()
+    root_template = render(templates.pop("AGENTS.md"), {}).decode().rstrip()
     requested_roots = {canonical, "AGENTS.md"}
     if "claude" in manifest.get("clients", []) or "CLAUDE.md" in docs:
         requested_roots.add("CLAUDE.md")

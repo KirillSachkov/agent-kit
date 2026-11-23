@@ -1,5 +1,9 @@
 # Project settings
 
+## Read before implementing
+
+- Workplace: <worktree: implementation never starts on the base branch of the main checkout | current checkout>
+
 ## Read by `ship`
 
 - Delivery route: <local, main, pr, or the project's own rule>
@@ -11,10 +15,11 @@
 
 - Verification: <when behaviour is verified>
 - Verifier: <who verifies>
+- Verification report: <local folder where the verifier leaves `report.md` and the evidence files, such as `.evidence/`>
 
 ## Read by `pr`
 
-- Evidence: <where evidence files go>
+- Evidence: <where the PR stores the evidence files>
 
 ## Read when choosing tests
 

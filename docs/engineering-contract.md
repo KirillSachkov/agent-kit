@@ -34,9 +34,8 @@ Borrowed skills keep Matt's “call the Skill tool” wording. The starter's roo
 instructions tell a client without that tool to read the named `SKILL.md`.
 
 Human-invoked skills keep their invocation metadata as Matt and pstack set it, and
-`scripts/check.py` holds every borrowed skill to its original. The starter's root
-instructions tell the agent to name such a command and stop, never to read the skill
-file and follow it.
+`scripts/check.py` holds every borrowed skill to its original. The flags are the whole
+protection: the starter's root instructions add no rule of their own.
 
 ## Review, verification and delivery
 

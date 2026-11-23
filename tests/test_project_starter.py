@@ -61,9 +61,8 @@ class ProjectStarterTest(unittest.TestCase):
             )
             self.assertFalse((project / "evidence-manifest.json").exists())
             instructions = (project / "AGENTS.md").read_text()
-            for name in ("to-spec", "to-tickets", "implement", "implement-spec"):
-                self.assertRegex(instructions, r"Human-invoked skills: [^.]*`" + name + "`")
-            self.assertNotRegex(instructions, r"Human-invoked skills: [^.]*`(code-review|tdd|ship)`")
+            self.assertNotIn("Human-invoked", instructions)  # the skills' own flags carry that
+            self.assertIn("read the workplace the settings name", instructions)
 
             for skill in ("grill-me", "to-spec", "to-tickets", "implement", "implement-spec",
                           "create-verification-skill"):
