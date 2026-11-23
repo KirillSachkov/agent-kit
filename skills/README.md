@@ -26,7 +26,7 @@ One editable source folder per skill. The [parts map](../docs/parts.en.md) shows
 | [prototype](engineering/prototype/SKILL.md) | Available for explicit selection |
 | [research](engineering/research/SKILL.md) | Available for explicit selection |
 | [retro](engineering/retro/SKILL.md) | Available for explicit selection |
-| [setup-agent-kit](engineering/setup-agent-kit/SKILL.md) | Available for explicit selection |
+| [setup-project](engineering/setup-project/SKILL.md) | Available for explicit selection |
 | [ship](engineering/ship/SKILL.md) | Available for explicit selection |
 | [tdd](engineering/tdd/SKILL.md) | Available for explicit selection |
 | [teach](engineering/teach/SKILL.md) | Available for explicit selection |

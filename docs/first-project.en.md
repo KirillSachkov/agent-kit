@@ -16,11 +16,11 @@ python3 tools/setup.py --project "$project" --ref "$kit_ref" --apply
 python3 tools/skills.py check --project "$project"
 ```
 
-The first command shows what will change: one line per skill and the diff of the root instructions; `--full` prints the complete diff. The second applies it. The command installs the skills and a pointer block in the root instructions. It makes no project decisions. It leaves your instructions and files alone, and repeating it with the same SHA gives an empty diff. Add `--client both` for two clients. When both `AGENTS.md` and `CLAUDE.md` carry their own instructions, name the owner with `--instruction-owner`. To take just one skill, use [selection with dependencies](distribution.md).
+The first command shows what will change: one line per skill; `--full` prints the complete diff. The second applies it. The command installs the skills only. It makes no project decisions, and the setup skill writes `AGENTS.md` in the next step. It leaves your instructions and files alone, and repeating it with the same SHA gives an empty diff. Add `--client both` for two clients. To take just one skill, use [selection with dependencies](distribution.md).
 
 ## Configure the project
 
-Open a session in the project and invoke `$setup-agent-kit`. The skill explores the project and runs a short interview, leading each section with an answer you can accept in a word:
+Open a session in the project and invoke `$setup-project`. The skill explores the project and runs a short interview, leading each section with an answer you can accept in a word:
 
 | Section | What is decided |
 | --- | --- |

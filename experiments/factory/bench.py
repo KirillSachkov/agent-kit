@@ -68,7 +68,7 @@ def prepare(root, situation, ref=None, agent="claude", model="sonnet"):
         (project / "README.md").write_text((project / "README.md").read_text() + USAGE)
     if situation == "verify-blocked":
         (project / ".verify-env").unlink()
-    shutil.copy(KIT / "skills/engineering/setup-agent-kit/issue-tracker-local.md", project / "docs/agents/issue-tracker.md")
+    shutil.copy(KIT / "skills/engineering/setup-project/issue-tracker-local.md", project / "docs/agents/issue-tracker.md")
     pipeline = project / "docs/agents/pipeline.toml"
     text = pipeline.read_text()
     for key, value in (("agent", agent), ("model", model)):

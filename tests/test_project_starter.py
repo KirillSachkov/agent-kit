@@ -51,7 +51,7 @@ class ProjectStarterTest(unittest.TestCase):
             self.run_command([sys.executable, str(KIT / "tools/skills.py"), "check",
                               "--project", str(project)], KIT)
             self.assertIn("No changes.", self.run_command(setup, KIT))
-            self.assertIn("docs/agents/project-settings.md", (project / "AGENTS.md").read_text())
+            self.assertFalse((project / "AGENTS.md").exists())  # the setup skill writes the root instructions
             self.assertEqual(
                 (project / ".claude/skills").resolve(), (project / ".agents/skills").resolve(),
             )
@@ -60,9 +60,6 @@ class ProjectStarterTest(unittest.TestCase):
                 self.git(KIT, "show", f"{ref}:skills/engineering/create-verification-skill/SKILL.md") + "\n",
             )
             self.assertFalse((project / "evidence-manifest.json").exists())
-            instructions = (project / "AGENTS.md").read_text()
-            self.assertNotIn("Human-invoked", instructions)  # the skills' own flags carry that
-            self.assertIn("read the workplace the settings name", instructions)
 
             for skill in ("grill-me", "to-spec", "to-tickets", "implement", "implement-spec",
                           "create-verification-skill"):

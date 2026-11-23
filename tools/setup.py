@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Preview or install the pinned Agent Kit skills and root instructions in a project directory.
+"""Preview or install the pinned skills in a project directory.
 
 Project decisions belong to the setup skill, which runs inside the project.
 """
@@ -26,7 +26,7 @@ MANIFEST = ".agents/skills-manifest.json"
 # The setup skill writes and maintains these; an earlier starter installed them.
 HANDED_OVER = ("docs/agents/project-settings.md",)
 # The starter's templates and this tool change together; another starter needs its own tool.
-STARTER_VERSION = 4
+STARTER_VERSION = 5
 BEGIN = "<!-- agent-kit project instructions -->"
 END = "<!-- end agent-kit project instructions -->"
 ERROR = skills.SkillsError
@@ -63,7 +63,7 @@ def pinned_templates(ref):
         if mode != "100644" or kind != "blob" or any(p.lower() == ".git" for p in Path(name).parts):
             raise ERROR(f"Unsupported project template: {name}")
         result[name] = skills.git(KIT, "cat-file", "blob", oid)
-    if "AGENTS.md" not in result:
+    if not result:
         raise ERROR(f"No project starter at {ref}")
     return result
 
@@ -74,63 +74,14 @@ def render(raw, settings):
     return re.sub(r"@@([a-z_]+)@@", replace, raw.decode()).encode()
 
 
-def root_documents(project):
-    """Support the common root alias while refusing to follow other managed symlinks."""
-    documents = {}
-    for name, other in (("AGENTS.md", "CLAUDE.md"), ("CLAUDE.md", "AGENTS.md")):
-        path = project / name
-        if path.is_symlink():
-            if path.resolve() != project / other or not (project / other).is_file():
-                raise ERROR(f"Unsupported project instruction link: {name}")
-            continue
-        data = read_optional(project, name)
-        if data is not None:
-            documents[name] = data
-    return documents
-
-
-def root_parts(data):
+def handed_over(data):
+    """An earlier release kept a marked block in the root instructions. The text is the project's now:
+    return it without the marks, or None when there were none."""
     text = data.decode()
     if BEGIN not in text and END not in text:
-        return text, ""
-    if text.count(BEGIN) != 1 or text.count(END) != 1:
-        raise ERROR("Conflicting Agent Kit instruction markers")
-    first, block = text.split(BEGIN)
-    managed, rest = block.split(END)
-    if rest.strip():
-        return first + rest, BEGIN + managed + END
-    return first, BEGIN + managed + END
-
-
-def instruction_owner(project, docs, previous, choice):
-    # root_documents validated every root symlink. Canonicalize before checking delegation.
-    if choice:
-        choice = (project / choice).resolve().name
-    if previous:
-        previous = (project / previous).resolve().name
-    delegates = {}
-    for name, raw in docs.items():
-        other = "CLAUDE.md" if name == "AGENTS.md" else "AGENTS.md"
-        outside, _ = root_parts(raw)
-        if re.search(r"(?:@|\b(?:read|see|follow|import|use|смотри|см\.|читай)\s+.{0,60})"
-                     + re.escape(other) + r"\b", outside, re.I):
-            delegates[name] = other
-    if len(delegates) == 2:
-        raise ERROR("Instruction cycle between AGENTS.md and CLAUDE.md; reconcile their project-owned pointers")
-    if any((project / target).is_symlink() for target in delegates.values()):
-        raise ERROR("Instruction cycle through the root instruction alias; reconcile its project-owned pointer")
-    if delegates:
-        owner = next(iter(delegates.values()))
-        if choice and choice != owner:
-            raise ERROR(f"Existing root instructions delegate to {owner}; reconcile the pointer before changing its owner")
-    elif choice or previous:
-        owner = choice or previous
-    elif len(docs) > 1:
-        raise ERROR("AGENTS.md and CLAUDE.md both contain project instructions. "
-                    "Choose the owner with --instruction-owner.")
-    else:
-        owner = next(iter(docs), "AGENTS.md")
-    return owner, delegates
+        return None
+    lines = [line for line in text.splitlines(keepends=True) if line.strip() not in (BEGIN, END)]
+    return "".join(lines).encode()
 
 
 @dataclass
@@ -154,7 +105,7 @@ class SetupPlan:
         return self.link and not self.link[1].is_symlink()
 
 
-def build_plan(project, ref, client, owner_choice):
+def build_plan(project, ref, client):
     templates = pinned_templates(ref)
     starter = json.loads(templates.pop("starter.json", b"{}")).get("starter_version", 1)
     if starter != STARTER_VERSION:
@@ -167,16 +118,13 @@ def build_plan(project, ref, client, owner_choice):
     notes = []
     if state.get("decisions"):
         notes.append("Decisions an earlier release recorded now live in docs/agents/project-settings.md; "
-                     "run the setup-agent-kit skill to bring that file to its current form")
+                     "run the setup-project skill to bring that file to its current form")
     edits = []
     managed = dict(state.get("files", {}))
     def add(name, before, after):
         skills.safe_path(project, name)
         if before != after:
             edits.append(Edit(name, before, after))
-    docs = root_documents(project)
-    roots = dict(state.get("roots", {}))
-    canonical, delegates = instruction_owner(project, docs, state.get("instruction_owner"), owner_choice)
     catalog_dir = KIT / "skills"
     catalog = skills.read_json(catalog_dir / "catalog.json")
     manifest = skills.select_manifest(project, catalog, catalog_dir, "agent-kit", ref, None, client)
@@ -195,26 +143,13 @@ def build_plan(project, ref, client, owner_choice):
         skill_lock["skills"].pop(destination, None)
     changed = skills.preflight_changed(project, items, skill_lock)
     link = skills.client_discovery(project, manifest)
-    root_template = render(templates.pop("AGENTS.md"), {}).decode().rstrip()
-    requested_roots = {canonical, "AGENTS.md"}
-    if "claude" in manifest.get("clients", []) or "CLAUDE.md" in docs:
-        requested_roots.add("CLAUDE.md")
-    for name in sorted(requested_roots):
-        if (project / name).is_symlink() or (name in delegates and name not in roots):
-            continue
-        before = docs.get(name)
-        outside, old_block = root_parts(before or b"")
-        if roots.get(name) != (sha(old_block.encode()) if old_block else None):
-            raise ERROR(f"Reconcile edited Agent Kit instruction block in {name}")
-        snippet = root_template if name == canonical else f"Read [{canonical}]({canonical}) for the project instructions."
-        block = f"{BEGIN}\n{snippet}\n{END}"
-        if old_block:
-            after = before.decode().replace(old_block, block).encode()
-        else:
-            separator = "" if not outside or outside.endswith("\n\n") else "\n" if outside.endswith("\n") else "\n\n"
-            after = (outside + separator + block + "\n").encode()
-        add(name, before, after)
-        roots[name] = sha(block.encode())
+    for name in ("AGENTS.md", "CLAUDE.md"):
+        before = None if (project / name).is_symlink() else read_optional(project, name)
+        after = handed_over(before) if before is not None else None
+        if after is not None:
+            add(name, before, after)
+            notes.append(f"{name}: the instruction block an earlier release managed is now the project's own text; "
+                         "run the setup-project skill to shape it")
     for name, raw in sorted(templates.items()):
         before = read_optional(project, name)
         after = render(raw, {})
@@ -228,7 +163,7 @@ def build_plan(project, ref, client, owner_choice):
         current = read_optional(project, name)
         if name in HANDED_OVER:
             if current is not None:
-                notes.append(f"{name}: now the project's own file; the setup-agent-kit skill maintains it")
+                notes.append(f"{name}: now the project's own file; the setup-project skill maintains it")
         elif current is not None and sha(current) == managed[name]:
             edits.append(Edit(name, current, None))
             notes.append(f"{name}: no longer part of the starter; removed, as the project never edited it")
@@ -236,7 +171,7 @@ def build_plan(project, ref, client, owner_choice):
             notes.append(f"{name}: no longer part of the starter; the project edited it, so it stays")
         del managed[name]
     add(MANIFEST, read_optional(project, MANIFEST), encoded(manifest))
-    state = dict(schema_version=1, ref=ref, roots=roots, instruction_owner=canonical, files=managed)
+    state = dict(schema_version=1, ref=ref, files=managed)
     add(LOCK, old_state, encoded(state))
     notes += [f"{destination}: no longer in the Kit; removed, as the project never edited it" for destination in retired]
     return SetupPlan(edits, items, changed, skill_lock, link, notes, retired)
@@ -330,8 +265,6 @@ def main(argv=None):
     parser.add_argument("--project", required=True, type=Path, help="existing project directory (may be empty)")
     parser.add_argument("--ref", required=True, help="full locally available Agent Kit commit SHA")
     parser.add_argument("--client", choices=("codex", "claude", "both"), help="project skill discovery clients")
-    parser.add_argument("--instruction-owner", choices=("AGENTS.md", "CLAUDE.md"),
-                        help="the root file that owns shared instructions when both carry their own")
     parser.add_argument("--apply", action="store_true", help="write the complete setup after preflight")
     parser.add_argument("--full", action="store_true", help="print every skill file difference, not one line per skill")
     args = parser.parse_args(argv)
@@ -342,7 +275,7 @@ def main(argv=None):
         guard = skills.safe_path(project, ".agents/skills-sync.lock")
         if guard.exists():
             raise ERROR("Another installation holds skills-sync.lock; reconcile its owner before retrying")
-        result = build_plan(project, args.ref, args.client, args.instruction_owner)
+        result = build_plan(project, args.ref, args.client)
         describe(result, project, args.ref, full=args.full)
         if not args.apply:
             return 0
@@ -355,7 +288,7 @@ def main(argv=None):
             except FileExistsError:
                 pass
             with skills.installation_guard(project):
-                latest = build_plan(project, args.ref, args.client, args.instruction_owner)
+                latest = build_plan(project, args.ref, args.client)
                 if latest != result:
                     raise ERROR("Project changed during setup; preview the updated plan")
                 if latest.edits or latest.changed or latest.needs_link():

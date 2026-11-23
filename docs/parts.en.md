@@ -21,7 +21,7 @@ The Kit has eight parts. Each part works alone: it has its own skills, input and
 
 ## Skills by part
 
-“Setup skill name” in the Source column marks one mechanical edit: the original sends the user to `/setup-matt-pocock-skills`, ours to `/setup-agent-kit`.
+“Setup skill name” in the Source column marks one mechanical edit: the original sends the user to `/setup-matt-pocock-skills`, ours to `/setup-project`.
 
 ### 1. Intake
 
@@ -105,7 +105,7 @@ The edit in `improve-codebase-architecture`: the report language comes from the 
 
 | Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
 | --- | --- | --- | --- | --- | --- | --- |
-| `setup-agent-kit` | you | One project setup by interview: language, tracker, labels, domain docs, delivery and workplace, verification, owner gate, testing strategy, existing rules, the shape of the root instructions | the remote, root instructions, check commands and CI, `docs/agents/` | everything in `docs/agents/`, a block in the root instructions | none | Matt, extended with Kit sections |
+| `setup-project` | you | One project setup by interview: language, tracker, labels, domain docs, delivery and workplace, verification, owner gate, testing strategy, existing rules, the shape of the root instructions | the remote, root instructions, check commands and CI, `docs/agents/` | everything in `docs/agents/`, a block in the root instructions | none | Matt, extended with Kit sections |
 | `handoff` | you | Hand work to another session | the conversation | a file in the temp directory | none | Matt |
 | `wait-what` | you | Ask for a plainer restatement | `GLOSSARY.md` | nothing | none | Matt |
 | `wizard` | agent | A script for steps only a human can take | `.env`, config, CI workflows | a bash script, and through it `.env` and secrets | none | Matt, template changed |
@@ -119,13 +119,13 @@ The change in `wizard`: `SKILL.md` matches the original and only `template.sh` d
 
 | File | Written by | Read by | Part |
 | --- | --- | --- | --- |
-| The Kit block in `AGENTS.md` | `tools/setup.py` | every session | pointer to the rest |
-| `docs/agents/project-settings.md` | `setup-agent-kit` from your answers | `ship`, the verify step, `pr`, test choice; settings are grouped by reader | verification, evidence, delivery |
-| `docs/agents/testing.md` | `setup-agent-kit` creates it, then you and the agent | `to-spec`, `tdd` through the root pointer | design, execution |
+| `AGENTS.md` | `setup-project` from your answers, then you | every session | pointers to the rest |
+| `docs/agents/project-settings.md` | `setup-project` from your answers | `ship`, the verify step, `pr`, test choice; settings are grouped by reader | verification, evidence, delivery |
+| `docs/agents/testing.md` | `setup-project` creates it, then you and the agent | `to-spec`, `tdd` through the root pointer | design, execution |
 | `verify-<app>` | `create-verification-skill` | the agent at the verify step | verification |
-| `docs/agents/owner-gate.md` | `setup-agent-kit` creates it at the “conditions” level, then only you | `owner-gate` | acceptance |
+| `docs/agents/owner-gate.md` | `setup-project` creates it at the “conditions” level, then only you | `owner-gate` | acceptance |
 | `.github/pull_request_template.md` | the project, when it has its own | `pr` | evidence |
-| `docs/agents/issue-tracker.md`, `triage-labels.md`, `domain.md` | `setup-agent-kit` | `to-spec`, `to-tickets`, `triage`, `implement-spec`, `code-review` | intake, design, execution |
+| `docs/agents/issue-tracker.md`, `triage-labels.md`, `domain.md` | `setup-project` | `to-spec`, `to-tickets`, `triage`, `implement-spec`, `code-review` | intake, design, execution |
 | `GLOSSARY.md`, `docs/adr/` | `domain-modeling` | most of Matt's skills | design |
 | `CODING_STANDARDS.md` | the project | `code-review` | review |
 
@@ -147,7 +147,7 @@ The reviewer reads the standards, not the implementer: the implementer's context
 
 Setup does not create `CODING_STANDARDS.md`. It grows through `retro`: a review missed a mistake, and `retro` proposes a check or a rule.
 
-The Kit block inside `AGENTS.md` takes only what neither a skill nor a check can carry. Today the root block says where the settings are and what to do without them, how to take test seams, how to load a named skill and where implementation may start. `ship` itself carries the rule that behaviour is verified before delivery; the Kit installs no separate workflow file.
+`AGENTS.md` takes only what neither a skill nor a check can carry: the language and pointers to the tracker, domain docs, delivery, workplace and testing strategy. The whole file is the project's: `setup-project` writes it, it carries no name or mark of the Kit, and any line can be edited. `ship` itself carries the rule that behaviour is verified before delivery; the Kit installs no separate workflow file.
 
 ## Who can start a skill
 

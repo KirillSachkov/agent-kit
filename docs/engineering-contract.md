@@ -15,7 +15,7 @@ The target project's `AGENTS.md` and its applicable pointers own:
 - human acceptance, delivery mode, current CI, merge, deployment and cleanup gates.
 
 Resolve those rules from the target root and relevant descendants. Inline rules are
-valid; the `setup-agent-kit` interview records them in `docs/agents/project-settings.md`. A missing
+valid; the `setup-project` interview records them in `docs/agents/project-settings.md`. A missing
 required decision remains unresolved, but an absent optional filename is not a reason
 to invent another approval, worktree or setup task.
 
@@ -35,7 +35,7 @@ instructions tell a client without that tool to read the named `SKILL.md`.
 
 Human-invoked skills keep their invocation metadata as Matt and pstack set it, and
 `scripts/check.py` holds every borrowed skill to its original. The flags are the whole
-protection: the starter's root instructions add no rule of their own.
+protection: the root instructions add no rule of their own.
 
 ## Review, verification and delivery
 

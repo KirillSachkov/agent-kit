@@ -25,7 +25,7 @@
         "prototype": "skills/engineering/prototype",
         "research": "skills/engineering/research",
         "retro": "skills/engineering/retro",
-        "setup-agent-kit": "skills/engineering/setup-agent-kit",
+        "setup-project": "skills/engineering/setup-project",
         "ship": "skills/engineering/ship",
         "tdd": "skills/engineering/tdd",
         "teach": "skills/engineering/teach",
@@ -240,9 +240,9 @@
     },
     {
       "provider": "agent-kit",
-      "skill": "setup-agent-kit",
+      "skill": "setup-project",
       "group": "engineering",
-      "source": "engineering/setup-agent-kit",
+      "source": "engineering/setup-project",
       "internal": false
     },
     {

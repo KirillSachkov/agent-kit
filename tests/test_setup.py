@@ -77,11 +77,10 @@ class SetupTest(unittest.TestCase):
         self.assertEqual(list(self.project.iterdir()), [])
         self.setup("--client", "both", "--apply")
         lock = json.loads((self.project / ".agents/setup-lock.json").read_text())
-        self.assertEqual(sorted(lock), ["files", "instruction_owner", "ref", "roots", "schema_version"])
+        self.assertEqual(sorted(lock), ["files", "ref", "schema_version"])
         self.assertEqual(list(lock["files"]), ["WORKFLOW.md"])
-        self.assertIn("docs/agents/project-settings.md", (self.project / "AGENTS.md").read_text())
-        self.assertNotIn("Human-invoked", (self.project / "AGENTS.md").read_text())
-        self.assertIn("tell the user to run the `setup-agent-kit` skill", (self.project / "AGENTS.md").read_text())
+        for name in ("AGENTS.md", "CLAUDE.md"):  # the root instructions are the project's and its setup skill's
+            self.assertFalse((self.project / name).exists())
         self.assertFalse((self.project / "docs").exists())
         self.assertNotIn("Unselected", (self.project / "WORKFLOW.md").read_text())
         self.assertEqual((self.project / ".agents/skills/probe/reference.txt").read_text(), "v1\n")
@@ -94,37 +93,28 @@ class SetupTest(unittest.TestCase):
         self.assertEqual((self.project / "WORKFLOW.md").read_text(), "Unselected workflow")
         self.assertEqual((self.project / ".agents/skills/probe/reference.txt").read_text(), "Unselected skill")
 
-    def test_existing_instructions_and_client_settings_are_preserved(self):
+    def test_existing_instructions_and_client_settings_are_left_alone(self):
         (self.project / ".claude").mkdir()
         (self.project / ".claude/settings.json").write_text('{"private": true}')
         rules = "Use [testing](docs/checks.md). Submit a pull request for delivery.\n"
         (self.project / "CLAUDE.md").write_text(rules)
-        (self.project / "docs").mkdir()
-        (self.project / "docs/checks.md").write_text("Run `make verify` from src using the fixture database.\n")
-        preview = self.setup("--client", "both", "--apply")
-        self.assertNotIn("fixture database", preview)
-        self.assertTrue((self.project / "CLAUDE.md").read_text().startswith(rules))
-        self.assertIn("docs/agents/project-settings.md", (self.project / "CLAUDE.md").read_text())
-        self.assertIn("CLAUDE.md", (self.project / "AGENTS.md").read_text())
-        self.assertEqual(sorted(p.name for p in (self.project / "docs").iterdir()), ["checks.md"])
+        (self.project / "AGENTS.md").symlink_to("CLAUDE.md")
+        self.setup("--client", "both", "--apply")
+        self.assertEqual((self.project / "CLAUDE.md").read_text(), rules)
+        self.assertTrue((self.project / "AGENTS.md").is_symlink())
         self.assertEqual((self.project / ".claude/settings.json").read_text(), '{"private": true}')
         self.assertIn("No changes.", self.setup())
 
-    def test_instruction_owner_through_root_alias(self):
-        for canonical, alias in (("AGENTS.md", "CLAUDE.md"), ("CLAUDE.md", "AGENTS.md")):
-            self.project = self.base / canonical.removesuffix(".md")
-            self.project.mkdir()
-            (self.project / canonical).write_text("Project-owned rule.\n")
-            link = self.project / alias
-            link.symlink_to(canonical)
-            args = ("--instruction-owner", alias)
-            self.setup(*args, "--client", "both", "--apply")
-            self.assertTrue(link.is_symlink())
-            self.assertIn("docs/agents/project-settings.md", (self.project / canonical).read_text())
-            lock = json.loads((self.project / ".agents/setup-lock.json").read_text())
-            self.assertEqual(lock["instruction_owner"], canonical)
-            self.assertIn("No changes.", self.setup(*args, "--apply"))
-            self.assertIn("No changes.", self.setup())
+    def test_a_block_an_earlier_release_managed_becomes_the_projects_own_text(self):
+        begin, end = "<!-- agent-kit project instructions -->", "<!-- end agent-kit project instructions -->"
+        (self.project / "AGENTS.md").write_text(f"# Shop\n\n{begin}\n## Agent Kit\n\nRead the settings.\n{end}\n\nOwn rule.\n")
+        (self.project / "CLAUDE.md").write_text(f"{begin}\nRead [AGENTS.md](AGENTS.md) for the project instructions.\n{end}\n")
+        report = self.setup("--apply")
+        self.assertIn("AGENTS.md: the instruction block an earlier release managed is now the project's own text", report)
+        self.assertEqual((self.project / "AGENTS.md").read_text(), "# Shop\n\n## Agent Kit\n\nRead the settings.\n\nOwn rule.\n")
+        self.assertEqual((self.project / "CLAUDE.md").read_text(), "Read [AGENTS.md](AGENTS.md) for the project instructions.\n")
+        (self.project / "AGENTS.md").write_text("# Shop\n\nRewritten by the owner.\n")
+        self.assertIn("No changes.", self.setup("--apply"))
 
     def test_preserves_local_edits_and_unmanaged_destinations(self):
         self.setup("--apply")
@@ -176,7 +166,7 @@ class SetupTest(unittest.TestCase):
         (self.provider / "templates/project/starter.json").unlink()
         self.ref = self.release("A pin from before starter versions")
         report = self.setup(status=1)
-        self.assertIn("is version 1; this tool installs version 4", report)
+        self.assertIn("is version 1; this tool installs version 5", report)
         self.assertIn(f"show {self.ref}:tools/setup.py", report)
         self.assertEqual(list(self.project.iterdir()), [])
 
@@ -191,24 +181,6 @@ class SetupTest(unittest.TestCase):
         self.assertIn("Another installation", self.setup("--apply", status=1))
         self.assertTrue(lock.exists())
         self.assertFalse((self.project / "AGENTS.md").exists())
-
-    def test_two_instruction_roots_delegate_or_require_an_explicit_owner(self):
-        wrapper = self.project / "AGENTS.md"
-        canonical = self.project / "CLAUDE.md"
-        canonical.write_text("Use the project tracker.\n")
-        wrapper.write_text("Implement in the assigned worktree.\n")
-        self.assertIn("--instruction-owner", self.setup("--apply", status=1))
-        self.assertFalse((self.project / ".agents").exists())
-        source = "Read [the canonical instructions](CLAUDE.md).\n"
-        wrapper.write_text(source)
-        self.setup("--apply")
-        self.assertEqual(wrapper.read_text(), source)
-        self.assertIn("docs/agents/project-settings.md", canonical.read_text())
-        self.assertIn("No changes.", self.setup())
-        altered = canonical.read_text() + "\nLocal addition after the Kit section.\n"
-        canonical.write_text(altered)
-        self.setup("--apply")
-        self.assertEqual(canonical.read_text(), altered)
 
     def test_known_backup_obstacle_blocks_preview_and_apply(self):
         root = self.project / "AGENTS.md"
