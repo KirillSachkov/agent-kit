@@ -32,6 +32,7 @@ Open a session in the project and invoke `$setup-agent-kit`. The skill explores 
 | Verification | when it is needed, who runs it, where evidence is kept |
 | Owner gate | every delivery waits for you, by a conditions page, or none |
 | Testing strategy | where each kind of change is tested, when the project has no such document yet |
+| Root instructions | what stays in `AGENTS.md`, what moves to the settings and what goes as a repeat or a broken pointer |
 | Existing rules | what stays where the project's rules differ from the skills |
 
 The skill shows a draft before writing. The result lives in `docs/agents/`: settings, tracker, labels, domain docs, testing strategy. Invoke the skill again to change a decision: it shows the current ones and asks only about what changes and about settings new in this Kit version. When the project needs behaviour checks, invoke `$create-verification-skill` afterwards.

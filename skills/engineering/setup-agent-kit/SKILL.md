@@ -104,11 +104,20 @@ Offer **multi-context** (a root `GLOSSARY-MAP.md` pointing to per-context `GLOSS
 
 **Section H: Existing rules.** When the project's instructions prescribe something these skills do differently (a second review after fixes, verification repeated after every CI fix, a PR opened before any work), quote each rule with its file and ask which stays. Record what the user keeps.
 
+**Section I: Root instructions.** The root instructions are a table of contents and the rules that always hold: decisions live in `docs/agents/`, procedures in skills, and the root file retells neither. Its shape is a line or two on what the project is, the Language block, the `## Agent skills` block, the Agent Kit block the installer manages, and a `## Project rules` section of the project's own. Read every section outside those blocks and propose one fate for each, with its reason:
+
+- **Keep** under `## Project rules`: a rule particular to this project that nothing else carries.
+- **Move to the settings**: a decision about delivery, verification, the owner gate or the workplace.
+- **Remove as a repeat**: a skill, a skill's invocation flag or the settings already say it.
+- **Remove as broken**: a pointer to a file that is missing or is being replaced in this run.
+
+The owner confirms each fate. A file under `docs/agents/` whose every decision moved or was dropped is proposed for deletion the same way. When the result runs past about sixty lines, propose what could move to `docs/agents/`.
+
 ### 3. Confirm and edit
 
 Show the user a draft of:
 
-- The selected Language block and the `## Agent skills` block to add to whichever of `CLAUDE.md` / `AGENTS.md` is being edited (see step 4 for selection rules)
+- The selected Language block and the `## Agent skills` block to add to whichever of `CLAUDE.md` / `AGENTS.md` is being edited (see step 4 for selection rules), and the root instructions as they will read after Section I
 - The contents of `docs/agents/issue-tracker.md`, `docs/agents/domain.md`, and `docs/agents/triage-labels.md` (the last only when `triage` is installed)
 - The contents of `docs/agents/project-settings.md`, and of the testing strategy and owner-gate conditions when they are new
 

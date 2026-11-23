@@ -105,7 +105,7 @@ The edit in `improve-codebase-architecture`: the report language comes from the 
 
 | Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
 | --- | --- | --- | --- | --- | --- | --- |
-| `setup-agent-kit` | you | One project setup by interview: language, tracker, labels, domain docs, delivery and workplace, verification, owner gate, testing strategy, existing rules | the remote, root instructions, check commands and CI, `docs/agents/` | everything in `docs/agents/`, a block in the root instructions | none | Matt, extended with Kit sections |
+| `setup-agent-kit` | you | One project setup by interview: language, tracker, labels, domain docs, delivery and workplace, verification, owner gate, testing strategy, existing rules, the shape of the root instructions | the remote, root instructions, check commands and CI, `docs/agents/` | everything in `docs/agents/`, a block in the root instructions | none | Matt, extended with Kit sections |
 | `handoff` | you | Hand work to another session | the conversation | a file in the temp directory | none | Matt |
 | `wait-what` | you | Ask for a plainer restatement | `GLOSSARY.md` | nothing | none | Matt |
 | `wizard` | agent | A script for steps only a human can take | `.env`, config, CI workflows | a bash script, and through it `.env` and secrets | none | Matt, template changed |
