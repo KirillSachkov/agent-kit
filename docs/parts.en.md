@@ -130,6 +130,24 @@ The change in `wizard`: `SKILL.md` matches the original and only `template.sh` d
 
 `testing.md` holds only the testing strategy: for each kind of change the seam and kind of test, what stays untested, and the data and services tests may use. Run commands stay in `package.json` or the `Makefile`. Required delivery checks and CI are recorded in the project settings.
 
+## Where a rule lives
+
+The split is Matt's (`code-review` and `retro` are his originals here), extended with two Kit files.
+
+| File | What it holds | When it is read |
+| --- | --- | --- |
+| `AGENTS.md` | pointers and what every session needs | every session |
+| `CODING_STANDARDS.md` | judgement rules about code | at review, by the Standards axis |
+| Linter, hooks, CI | mechanical rules | automatically |
+| `docs/agents/testing.md` | the seam and kind of test to use | when choosing tests |
+| `GLOSSARY.md` | the project's terms | in design and in code |
+
+The reviewer reads the standards, not the implementer: the implementer's context is busy with exploration and debugging, while the reviewer receives a finished diff. A violation is classified first. A mechanical one (a banned API, an import shape, a file location) gets a deterministic check. `CODING_STANDARDS.md` takes only judgement calls no tool can replace. Even with no documents the Standards axis applies a baseline of Fowler's code smells; a project rule overrides the baseline, and the reviewer skips whatever tooling enforces.
+
+Setup does not create `CODING_STANDARDS.md`. It grows through `retro`: a review missed a mistake, and `retro` proposes a check or a rule.
+
+The Kit block inside `AGENTS.md` and `WORKFLOW.md` take only what neither a skill nor a check can carry. Today that is three rules in the root block (the testing strategy, loading a named skill, human-invoked skills) and one in `WORKFLOW.md` (behaviour verification).
+
 ## Who can start a skill
 
 The “Who starts it” column repeats the skills' own flags. A skill marked “you” is closed to the agent by two flags: `disable-model-invocation: true` for Claude Code and `allow_implicit_invocation: false` for Codex. `scripts/check.py` verifies that the two flags agree and that every borrowed skill is marked as its original is. The project's root instructions list the human-invoked skills by name and forbid the agent to bypass the flag by reading the skill file.
