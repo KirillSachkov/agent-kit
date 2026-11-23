@@ -8,7 +8,7 @@ It starts with a small workflow and evolves through real tasks and experiments.
 ## Start
 
 Open this repository with a coding agent that can read project skills.
-Ask it to use `setup-matt-pocock-skills` and choose English or Russian.
+Ask it to use `setup-agent-kit` and choose English or Russian.
 The setup is a conversation, not an installer.
 It preserves existing settings and shows proposed changes before writing.
 

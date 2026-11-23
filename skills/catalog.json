@@ -25,7 +25,7 @@
         "prototype": "skills/engineering/prototype",
         "research": "skills/engineering/research",
         "retro": "skills/engineering/retro",
-        "setup-matt-pocock-skills": "skills/engineering/setup-matt-pocock-skills",
+        "setup-agent-kit": "skills/engineering/setup-agent-kit",
         "ship": "skills/engineering/ship",
         "tdd": "skills/engineering/tdd",
         "teach": "skills/engineering/teach",
@@ -240,9 +240,9 @@
     },
     {
       "provider": "agent-kit",
-      "skill": "setup-matt-pocock-skills",
+      "skill": "setup-agent-kit",
       "group": "engineering",
-      "source": "engineering/setup-matt-pocock-skills",
+      "source": "engineering/setup-agent-kit",
       "internal": false
     },
     {

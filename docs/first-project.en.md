@@ -20,7 +20,7 @@ The first command shows what will change: one line per skill and the diff of the
 
 ## Configure the project
 
-Open a session in the project and invoke `$setup-matt-pocock-skills`. The skill explores the project and runs a short interview, leading each section with an answer you can accept in a word:
+Open a session in the project and invoke `$setup-agent-kit`. The skill explores the project and runs a short interview, leading each section with an answer you can accept in a word:
 
 | Section | What is decided |
 | --- | --- |

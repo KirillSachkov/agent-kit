@@ -168,7 +168,7 @@ def build_plan(project, ref, client, owner_choice):
     notes = []
     if state.get("decisions"):
         notes.append("Decisions an earlier release recorded now live in docs/agents/project-settings.md; "
-                     "run the setup-matt-pocock-skills skill to bring that file to its current form")
+                     "run the setup-agent-kit skill to bring that file to its current form")
     edits = []
     managed = dict(state.get("files", {}))
     def add(name, before, after):
@@ -220,7 +220,7 @@ def build_plan(project, ref, client, owner_choice):
         current = read_optional(project, name)
         if name in HANDED_OVER:
             if current is not None:
-                notes.append(f"{name}: now the project's own file; the setup-matt-pocock-skills skill maintains it")
+                notes.append(f"{name}: now the project's own file; the setup-agent-kit skill maintains it")
         elif current is not None and sha(current) == managed[name]:
             edits.append(Edit(name, current, None))
             notes.append(f"{name}: no longer part of the starter; removed, as the project never edited it")

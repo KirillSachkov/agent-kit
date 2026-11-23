@@ -1,10 +1,10 @@
 ---
-name: setup-matt-pocock-skills
+name: setup-agent-kit
 description: "Configure this repo for the engineering skills: language, issue tracker, triage labels, domain docs, delivery, verification and the owner gate. Run once before first use, and again to change a decision."
 disable-model-invocation: true
 ---
 
-# Setup Matt Pocock's Skills
+# Setup Agent Kit
 
 Scaffold missing configuration:
 

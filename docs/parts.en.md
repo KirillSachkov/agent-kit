@@ -21,12 +21,14 @@ The Kit has eight parts. Each part works alone: it has its own skills, input and
 
 ## Skills by part
 
+“Setup skill name” in the Source column marks one mechanical edit: the original sends the user to `/setup-matt-pocock-skills`, ours to `/setup-agent-kit`.
+
 ### 1. Intake
 
 | Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
 | --- | --- | --- | --- | --- | --- | --- |
 | `ask` | you | Suggest which skill and what size of work fits | root instructions, the SKILL.md of the skill in question | nothing | none | Matt, reworked |
-| `triage` | you | Sort incoming issues and PRs into readiness roles | tracker, labels, `.out-of-scope/` | labels, comments, `.out-of-scope/` | `grilling`, `domain-modeling` | Matt |
+| `triage` | you | Sort incoming issues and PRs into readiness roles | tracker, labels, `.out-of-scope/` | labels, comments, `.out-of-scope/` | `grilling`, `domain-modeling` | Matt, setup skill name |
 | `diagnosing-bugs` | agent | Find the cause on a reproducible case, then fix it with a regression test | `GLOSSARY.md`, ADRs | code and a test | none | Matt |
 
 ### 2. Design
@@ -39,8 +41,8 @@ The Kit has eight parts. Each part works alone: it has its own skills, input and
 | `domain-modeling` | agent | Sharpen terms and record decisions | `GLOSSARY.md`, ADRs, code | `GLOSSARY.md`, `docs/adr/` | none | Matt |
 | `research` | agent | Gather facts from primary sources with a background agent | external sources | a Markdown file in the project | none | Matt |
 | `prototype` | agent | Throwaway code that answers a design question | nearby code | a prototype on its own branch, a verdict | none | Matt |
-| `wayfinder` | you | A decision map for a large, unclear effort | tracker | the map and decision tickets | `grilling`, `domain-modeling`, `research`, `prototype` | Matt |
-| `to-spec` | you | Write what was agreed into a spec | conversation, tracker, testing strategy | a spec in the tracker | none | Matt |
+| `wayfinder` | you | A decision map for a large, unclear effort | tracker | the map and decision tickets | `grilling`, `domain-modeling`, `research`, `prototype` | Matt, setup skill name |
+| `to-spec` | you | Write what was agreed into a spec | conversation, tracker, testing strategy | a spec in the tracker | none | Matt, setup skill name |
 | `to-tickets` | you | Split a spec into vertical tickets with dependencies | spec, tracker | tickets in the tracker | none | Matt, one edit |
 
 The edit in `to-tickets`: after publishing it shows the ready tickets and stops. Implementation is a separate assignment.
@@ -50,7 +52,7 @@ The edit in `to-tickets`: after publishing it shows the ready tickets and stops.
 | Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
 | --- | --- | --- | --- | --- | --- | --- |
 | `implement` | you | Implement one task, commit it and review it | the task or ticket | code, tests, commits | `tdd`, `code-review` | Matt, one edit |
-| `implement-spec` | you | Implement a whole spec along its ticket graph on one branch | spec, tickets | a branch, commits, a draft PR | `tdd`, `code-review`, subagents | Matt |
+| `implement-spec` | you | Implement a whole spec along its ticket graph on one branch | spec, tickets | a branch, commits, a draft PR | `tdd`, `code-review`, subagents | Matt, setup skill name |
 | `tdd` | agent | The red-green loop at pre-agreed seams | `GLOSSARY.md`, testing strategy | tests and code | `codebase-design` | Matt |
 
 The edit in `implement`: the work is committed before review, and the review reads the changes since the starting commit. The original has the opposite order, which hands `code-review` an empty diff ([Matt's bug #511](https://github.com/mattpocock/skills/issues/511)).
@@ -59,7 +61,7 @@ The edit in `implement`: the work is committed before review, and the review rea
 
 | Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
 | --- | --- | --- | --- | --- | --- | --- |
-| `code-review` | agent | Two independent axes: coding standards and fidelity to the spec | the diff from a fixed point, project standards, the spec | a report | two subagents | Matt |
+| `code-review` | agent | Two independent axes: coding standards and fidelity to the spec | the diff from a fixed point, project standards, the spec | a report | two subagents | Matt, setup skill name |
 
 `implement` and `implement-spec` call it themselves, once, on the finished work.
 
@@ -103,7 +105,7 @@ The edit in `improve-codebase-architecture`: the report language comes from the 
 
 | Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
 | --- | --- | --- | --- | --- | --- | --- |
-| `setup-matt-pocock-skills` | you | One project setup by interview: language, tracker, labels, domain docs, delivery, verification, owner gate, existing rules | the remote, root instructions, check commands and CI, `docs/agents/` | everything in `docs/agents/`, a block in the root instructions | none | Matt, extended with Kit sections |
+| `setup-agent-kit` | you | One project setup by interview: language, tracker, labels, domain docs, delivery, verification, owner gate, existing rules | the remote, root instructions, check commands and CI, `docs/agents/` | everything in `docs/agents/`, a block in the root instructions | none | Matt, extended with Kit sections |
 | `handoff` | you | Hand work to another session | the conversation | a file in the temp directory | none | Matt |
 | `wait-what` | you | Ask for a plainer restatement | `GLOSSARY.md` | nothing | none | Matt |
 | `wizard` | agent | A script for steps only a human can take | `.env`, config, CI workflows | a bash script, and through it `.env` and secrets | none | Matt, template changed |
@@ -119,12 +121,12 @@ The change in `wizard`: `SKILL.md` matches the original and only `template.sh` d
 | --- | --- | --- | --- |
 | The Kit block in `AGENTS.md` | `tools/setup.py` | every session | pointer to the rest |
 | `WORKFLOW.md` | `tools/setup.py` | the agent at the verify step | rules connecting skills |
-| `docs/agents/project-settings.md` | `setup-matt-pocock-skills` from your answers | `ship`, the verify step, `pr`, test choice; settings are grouped by reader | verification, evidence, delivery |
-| `docs/agents/testing.md` | `setup-matt-pocock-skills` creates it, then you and the agent | `to-spec`, `tdd` through the root pointer | design, execution |
+| `docs/agents/project-settings.md` | `setup-agent-kit` from your answers | `ship`, the verify step, `pr`, test choice; settings are grouped by reader | verification, evidence, delivery |
+| `docs/agents/testing.md` | `setup-agent-kit` creates it, then you and the agent | `to-spec`, `tdd` through the root pointer | design, execution |
 | `verify-<app>` | `create-verification-skill` | the agent at the verify step | verification |
-| `docs/agents/owner-gate.md` | `setup-matt-pocock-skills` creates it at the “conditions” level, then only you | `owner-gate` | acceptance |
+| `docs/agents/owner-gate.md` | `setup-agent-kit` creates it at the “conditions” level, then only you | `owner-gate` | acceptance |
 | `.github/pull_request_template.md` | the project, when it has its own | `pr` | evidence |
-| `docs/agents/issue-tracker.md`, `triage-labels.md`, `domain.md` | `setup-matt-pocock-skills` | `to-spec`, `to-tickets`, `triage`, `implement-spec`, `code-review` | intake, design, execution |
+| `docs/agents/issue-tracker.md`, `triage-labels.md`, `domain.md` | `setup-agent-kit` | `to-spec`, `to-tickets`, `triage`, `implement-spec`, `code-review` | intake, design, execution |
 | `GLOSSARY.md`, `docs/adr/` | `domain-modeling` | most of Matt's skills | design |
 | `CODING_STANDARDS.md` | the project | `code-review` | review |
 
@@ -155,7 +157,7 @@ The “Who starts it” column repeats the skills' own flags. A skill marked “
 ## Still undecided
 
 - How the workflow is assembled. Today `WORKFLOW.md` is deliberately minimal: it holds only rules no skill can carry. The earlier full route is kept as a [candidate](../experiments/workflow-candidates/full-route.md), and options are compared on the test bench.
-- The name of the single setup skill. It is still `setup-matt-pocock-skills`, because six of Matt's originals send the user to it by that name ([#9](https://github.com/KirillSachkov/agent-kit/issues/9)).
+- Event-driven runs and the way skills are connected into a workflow: see the test bench issue ([#11](https://github.com/KirillSachkov/agent-kit/issues/11)).
 - Reworking `ask` into a navigator of practices ([#8](https://github.com/KirillSachkov/agent-kit/issues/8)).
 - Starting sessions from tracker events.
 
