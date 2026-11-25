@@ -258,7 +258,8 @@ class SetupTest(unittest.TestCase):
     def test_upgrade_names_pin_only_changed_and_retired_skills(self):
         catalog = self.provider / "skills/catalog.json"
         inventory = json.loads(catalog.read_bytes())
-        inventory["skills"].append({"provider": "agent-kit", "skill": "retired", "group": "engineering"})
+        inventory["skills"].append({"provider": "agent-kit", "skill": "retired", "group": "engineering",
+                                    "dependencies": [{"skill": "probe", "reason": "It called a skill that stays."}]})
         retired = self.provider / "skills/engineering/retired"
         retired.mkdir()
         (retired / "SKILL.md").write_text("---\nname: retired\ndescription: Leaves the catalog.\n---\n")

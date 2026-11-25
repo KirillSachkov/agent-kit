@@ -241,6 +241,10 @@ def select_manifest(project, catalog, catalog_dir, provider_name, ref, names, cl
             selected_features[destination] = sorted(enabled)
         else:
             selected_features.pop(destination, None)
+    # A skill that left this provider's catalog stays recorded at its old revision without pulling its
+    # old dependencies in; the setup tool removes it, or refuses when the project edited it.
+    left = [roots.pop(destination) for destination, entry in list(roots.items())
+            if select_all and entry["provider"] == provider_name and entry["skill"] not in rows]
     manifest["skills"] = list(roots.values())
     manifest.pop("dependency_reasons", None)
     if selected_features:
@@ -250,7 +254,9 @@ def select_manifest(project, catalog, catalog_dir, provider_name, ref, names, cl
     if client is not None:
         manifest["clients"] = ["codex", "claude"] if client == "both" else [client]
     client_discovery(project, manifest)
-    return resolve_manifest(manifest, catalog, catalog_dir)
+    resolved = resolve_manifest(manifest, catalog, catalog_dir)
+    resolved["skills"] += left
+    return resolved
 
 
 def explain_selection(manifest):

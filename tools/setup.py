@@ -135,6 +135,10 @@ def build_plan(project, ref, client):
                if entry["ref"] != ref and skills.safe_path(project, entry["destination"]).is_dir()
                and skills.digest(skills.folder_files(skills.safe_path(project, entry["destination"])))
                == recorded.get(entry["destination"], {}).get("sha256")]
+    for entry in manifest["skills"]:
+        if entry["ref"] != ref and entry["destination"] not in retired \
+                and skills.safe_path(project, entry["destination"]).is_dir():
+            raise skills.SkillsError(f"Refusing locally edited copy: {entry['destination']}")
     manifest["skills"] = [entry for entry in manifest["skills"] if entry["destination"] not in retired]
     for destination in retired:
         manifest.get("selection_features", {}).pop(destination, None)
