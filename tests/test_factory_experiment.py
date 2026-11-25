@@ -62,6 +62,14 @@ class OrchestratorTest(unittest.TestCase):
         self.assertTrue(facts["pass"], facts)
         self.assertIn("Blocked at verify: verification verdict: BLOCKED", (project / bench.TICKET).read_text())
         self.assertEqual(facts["sessions"], 3)
+        folder = project / ".factory/greeting-01-greet-by-name"
+        self.assertIn("verification verdict: BLOCKED", (folder / "verify-1.check.log").read_text())
+        (folder / "reported").unlink(missing_ok=True)  # as a session that has not asked yet
+        told = self.program(project, "wait", bench.TICKET).stdout.splitlines()
+        self.assertEqual(told[:2], ["implement attempt 1 passed",
+                                    "verify attempt 1 failed: verification verdict: BLOCKED (check output in verify-1.check.log)"])
+        self.assertIn("\tblocked\tnot running\tlast: verify attempt 1 failed: verification verdict: BLOCKED", told[2])
+        self.assertEqual(len(self.program(project, "wait", bench.TICKET).stdout.splitlines()), 1)
 
     def test_a_blocked_task_continues_from_the_step_that_blocked_it(self):
         root, project, facts = self.trial("verify-blocked")
@@ -73,6 +81,8 @@ class OrchestratorTest(unittest.TestCase):
         self.assertEqual(journal, ["implement", "verify", "verify", "ship"])
         logs = sorted(path.name for path in (project / ".factory/greeting-01-greet-by-name").glob("verify-*.jsonl"))
         self.assertEqual(logs, ["verify-1.jsonl", "verify-2.jsonl"])
+        attempts = [json.loads(line)["attempt"] for line in (project / ".factory/greeting-01-greet-by-name/runs.jsonl").read_text().splitlines()]
+        self.assertEqual(attempts, [1, 1, 2, 1])
 
     def test_a_fixable_ci_failure_is_fixed_and_an_outage_blocks_after_the_allowed_attempts(self):
         root, project, facts = self.trial("ci-fix")

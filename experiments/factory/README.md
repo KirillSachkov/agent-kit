@@ -22,7 +22,7 @@ The words are Matt Pocock's, from his `software-factory` skill. A **ticket** is 
 Two ways to work with the same skills and settings:
 
 - **By hand:** the owner runs `/implement` or `/implement-spec`, then `/ship`, each in a session of their own.
-- **Whole:** `/deliver <ticket>` starts the orchestrator. It gives the ticket a worktree, starts one run per task, runs each check and records the stage. It runs detached from the session that started it; `status`, `stop` and a second `run` work from any session, and a trigger can start it with no session at all.
+- **Whole:** `/deliver <ticket>` starts the orchestrator. It gives the ticket a worktree, starts one run per task, runs each check and records the stage. The session that started it follows the run with `wait`, which returns at each finished attempt, and tells the owner what happened. The run itself is detached from that session; `status`, `stop` and a second `run` work from any session, and a trigger can start it with no session at all.
 
 A third way was measured and removed: a session that led the chain itself and gave each task to a subagent (`conductor` in the results). A subagent receives `/implement` as plain text, so it wrote the code without the skill, and with it without the review; the leading session also lost track of the stage.
 
