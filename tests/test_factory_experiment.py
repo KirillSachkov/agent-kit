@@ -96,6 +96,24 @@ class OrchestratorTest(unittest.TestCase):
         journal = [json.loads(line)["task"] for line in (project / ".factory/greeting-01-greet-by-name/runs.jsonl").read_text().splitlines()]
         self.assertEqual(journal, ["implement", "verify", "ship", "rework", "verify", "ship"])
 
+    def test_finishing_a_merged_ticket_clears_its_worktree_and_refuses_unsaved_work(self):
+        root, project, facts = self.trial("happy")
+        work = root / "project-worktrees/greeting-01-greet-by-name"
+        pipeline = project / "docs/agents/pipeline.toml"
+        pipeline.write_text(pipeline.read_text().replace('base = "main"', 'cleanup = "touch ../cleared"\nbase = "main"', 1))
+        (work / "draft.txt").write_text("unsaved\n")
+        refused = self.program(project, "finish", bench.TICKET)
+        self.assertIn("uncommitted changes; nothing was removed", refused.stderr + refused.stdout)
+        self.assertTrue(work.is_dir())
+        (work / "draft.txt").unlink()
+        done = self.program(project, "finish", bench.TICKET)
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertIn("greeting-01-greet-by-name\tdone\tnot running", done.stdout)
+        self.assertFalse(work.exists())
+        self.assertTrue((root / "project-worktrees/cleared").is_file())
+        branches = subprocess.check_output(["git", "-C", str(project), "branch", "--list", "deliver/*"], text=True)
+        self.assertEqual(branches.strip(), "")
+
     def test_a_task_that_names_the_shared_checks_needs_the_pipeline_to_set_them(self):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
