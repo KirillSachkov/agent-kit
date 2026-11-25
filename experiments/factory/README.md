@@ -13,15 +13,15 @@ An experiment in leading an agreed ticket or spec from "ready" to "PR waits for 
 
 ## Words
 
-The words are Matt Pocock's, from his `software-factory` skill. A **ticket** is the work to deliver: a ticket or a spec with tickets. A **task** is a kind of work defined once in the pipeline: implement, verify, ship, rework. A **run** is one execution of a task, a fresh headless session of the client. The **orchestrator** starts runs and records them. The **runner** is the machine the runs execute on, here the owner's own.
+The words are Matt Pocock's, from his `software-factory` skill. A **ticket** is the work to deliver: a ticket or a spec with tickets. A **task** is a kind of work defined once in the pipeline: implement, verify, merge, rework. A **run** is one execution of a task, a fresh headless session of the client. The **orchestrator** starts runs and records them. The **runner** is the machine the runs execute on, here the owner's own.
 
 ## The pipeline
 
-`docs/agents/pipeline.toml` lists tasks. A task starts from the stage in `when`, gets one run with its instruction (`run`, or `run_spec` for a spec), and moves the ticket to `then` when its `check`, a shell command, exits 0. Exit 3 means a retry cannot help. The project's one command for all its checks is written once, as `checks` at the top, and a task's check names it as `{checks}`. The fixture's tasks are `implement` → `verify` → `ship`, with `rework` for the owner's feedback on the PR.
+`docs/agents/pipeline.toml` lists tasks. A task starts from the stage in `when`, gets one run with its instruction (`run`, or `run_spec` for a spec), and moves the ticket to `then` when its `check`, a shell command, exits 0. Exit 3 means a retry cannot help. The project's one command for all its checks is written once, as `checks` at the top, and a task's check names it as `{checks}`. The fixture's tasks are `implement` → `verify` → `merge`, with `rework` for the owner's feedback on the PR.
 
 Two ways to work with the same skills and settings:
 
-- **By hand:** the owner runs `/implement` or `/implement-spec`, then `/ship`, each in a session of their own.
+- **By hand:** the owner runs `/implement` or `/implement-spec`, then `/merge`, each in a session of their own.
 - **Whole:** `/deliver <ticket>` starts the orchestrator. It gives the ticket a worktree, starts one run per task, runs each check and records the stage. The session that started it follows the run with `wait`, which returns at each finished attempt, and tells the owner what happened. The run itself is detached from that session; `status`, `stop` and a second `run` work from any session, `finish` marks a merged ticket done, and a trigger can start it with no session at all.
 
 A third way was measured and removed: a session that led the chain itself and gave each task to a subagent (`conductor` in the results). A subagent receives `/implement` as plain text, so it wrote the code without the skill, and with it without the review; the leading session also lost track of the stage.

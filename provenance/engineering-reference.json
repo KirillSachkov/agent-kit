@@ -622,6 +622,7 @@
       "The starter carries a version; the setup tool installs only its own starter version and names the tool to run for another pin.",
       "One setup: tools/setup.py installs skills, the root pointer block and the workflow and makes no project decisions. setup-matt-pocock-skills gains Kit sections for delivery, verification, the owner gate and existing rules, and writes docs/agents/project-settings.md, the testing strategy and the owner-gate conditions from templates in its folder. The starter's defaults.json, settings and testing templates are removed.",
       "On 2026-11-23 the setup skill is renamed again, to setup-project, and writes the whole of the root instructions: the installer no longer keeps a marked block there.",
+      "On 2026-11-25 ship is renamed to merge: Claude Code 2.1.330 ships a bundled /ship and does not load a project skill of that name. The reference entry keeps the name it was recorded under.",
       "Rename setup-matt-pocock-skills to setup-agent-kit (recorded in RENAMES). to-spec, to-tickets, implement-spec, code-review, triage and wayfinder change only that name in their pointer to the setup skill."
     ],
     "matt_baseline_unchanged": true,

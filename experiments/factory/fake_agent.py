@@ -23,7 +23,7 @@ elif task == "verify":
     verdict = "PASS" if Path(".verify-env").exists() else "BLOCKED"
     Path(".evidence/report.md").write_text(f"Verdict: {verdict}\nCommit: {run('git', 'rev-parse', '--short', 'HEAD').stdout.strip()}\n")
     print('{"item":{"type":"command_execution","command":"cat .agents/skills/verify-greet/SKILL.md"}}')
-elif task == "ship":
+elif task == "merge":
     run("git", "push", "-q", "-u", "origin", "HEAD")
     run("gh", "pr", "create", "--title", "Greet by name", "--body", "## What changed\n\nGreets by name.", check=False)
     if run("gh", "pr", "checks", "--required", check=False).returncode and "usage line" in run("gh", "run", "view", "--log-failed").stdout:

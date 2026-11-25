@@ -46,7 +46,7 @@ class OrchestratorTest(unittest.TestCase):
         self.assertEqual((facts["sessions"], facts["ci_runs"], facts["merge_attempts"], facts["outside"]), (4, [True], 0, []))
         journal = [json.loads(line) for line in (project / ".factory/greeting-01-greet-by-name/runs.jsonl").read_text().splitlines()]
         self.assertEqual([(row["task"], row["attempt"], row["check_exit"]) for row in journal],
-                         [("implement", 1, 0), ("verify", 1, 0), ("ship", 1, 0)])
+                         [("implement", 1, 0), ("verify", 1, 0), ("merge", 1, 0)])
 
     def test_the_work_happens_in_a_worktree_of_its_own_and_the_project_stays_on_its_branch(self):
         root, project, facts = self.trial("happy")
@@ -54,7 +54,7 @@ class OrchestratorTest(unittest.TestCase):
         self.assertTrue((root / "project-worktrees/greeting-01-greet-by-name/greet.py").is_file())
         self.assertEqual(subprocess.check_output(["git", "-C", str(project), "branch", "--show-current"], text=True).strip(), "main")
         status = self.program(project, "status").stdout
-        self.assertIn("greeting-01-greet-by-name\tneeds-owner\tnot running\tlast: ship attempt 1 passed", status)
+        self.assertIn("greeting-01-greet-by-name\tneeds-owner\tnot running\tlast: merge attempt 1 passed", status)
 
     def test_a_blocked_verification_stops_the_chain_before_delivery_without_a_retry(self):
         root, project, facts = self.trial("verify-blocked")
@@ -78,7 +78,7 @@ class OrchestratorTest(unittest.TestCase):
         facts = bench.grade(root, project, "happy")
         self.assertEqual((facts["final_stage"], facts["pr_opened"]), ("needs-owner", True))
         journal = [json.loads(line)["task"] for line in (project / ".factory/greeting-01-greet-by-name/runs.jsonl").read_text().splitlines()]
-        self.assertEqual(journal, ["implement", "verify", "verify", "ship"])
+        self.assertEqual(journal, ["implement", "verify", "verify", "merge"])
         logs = sorted(path.name for path in (project / ".factory/greeting-01-greet-by-name").glob("verify-*.jsonl"))
         self.assertEqual(logs, ["verify-1.jsonl", "verify-2.jsonl"])
         attempts = [json.loads(line)["attempt"] for line in (project / ".factory/greeting-01-greet-by-name/runs.jsonl").read_text().splitlines()]
@@ -94,7 +94,7 @@ class OrchestratorTest(unittest.TestCase):
         root, project, facts = self.trial("rework")
         self.assertTrue(facts["pass"], facts)
         journal = [json.loads(line)["task"] for line in (project / ".factory/greeting-01-greet-by-name/runs.jsonl").read_text().splitlines()]
-        self.assertEqual(journal, ["implement", "verify", "ship", "rework", "verify", "ship"])
+        self.assertEqual(journal, ["implement", "verify", "merge", "rework", "verify", "merge"])
 
     def test_a_finished_ticket_is_marked_done_and_its_worktree_is_left_to_the_delivery_skill(self):
         root, project, facts = self.trial("happy")
@@ -169,7 +169,7 @@ class OrchestratorTest(unittest.TestCase):
         self.program(project, "run", bench.TICKET)  # continuing says nothing new
         rows = [json.loads(line) for line in (project / ".factory/greeting-01-greet-by-name/runs.jsonl").read_text().splitlines()]
         self.assertEqual([(row["task"], row["model"], row["effort"]) for row in rows],
-                         [("implement", "small", "high"), ("verify", "large", None), ("verify", "large", None), ("ship", "small", None)])
+                         [("implement", "small", "high"), ("verify", "large", None), ("verify", "large", None), ("merge", "small", None)])
         self.assertIn("No task named review", self.program(project, "run", bench.TICKET, "--model", "review=x").stderr)
 
     def test_a_tracker_reference_keeps_its_stage_in_the_run_state_and_each_client_spells_the_skill_its_way(self):
@@ -193,7 +193,7 @@ class OrchestratorTest(unittest.TestCase):
         saved = os.environ.pop("FACTORY_AGENT", None)
         self.addCleanup(lambda: saved and os.environ.update(FACTORY_AGENT=saved))
         self.assertEqual(orchestrator.agent_argv(pipeline, "opencode", "x/y", "/implement 42"), ["opencode", "run", "-m", "x/y", "@implement 42"])
-        self.assertEqual(orchestrator.agent_argv(pipeline, "codex", "m", "/ship")[-1], "$ship")
+        self.assertEqual(orchestrator.agent_argv(pipeline, "codex", "m", "/merge")[-1], "$merge")
         with self.assertRaises(orchestrator.FactoryError):
             orchestrator.agent_argv({}, "unknown", "m", "hello")
         self.assertEqual(orchestrator.agent_argv({}, "codex", "m", "go", "high")[-3:], ["-c", "model_reasoning_effort=high", "go"])
