@@ -17,7 +17,7 @@ The words are Matt Pocock's, from his `software-factory` skill. A **ticket** is 
 
 ## The pipeline
 
-`docs/agents/pipeline.toml` lists tasks. A task starts from the stage in `when`, gets one run with its instruction (`run`, or `run_spec` for a spec), and moves the ticket to `then` when its `check`, a shell command, exits 0. Exit 3 means a retry cannot help. The fixture's tasks are `implement` → `verify` → `ship`, with `rework` for the owner's feedback on the PR.
+`docs/agents/pipeline.toml` lists tasks. A task starts from the stage in `when`, gets one run with its instruction (`run`, or `run_spec` for a spec), and moves the ticket to `then` when its `check`, a shell command, exits 0. Exit 3 means a retry cannot help. The project's one command for all its checks is written once, as `checks` at the top, and a task's check names it as `{checks}`. The fixture's tasks are `implement` → `verify` → `ship`, with `rework` for the owner's feedback on the PR.
 
 Two ways to work with the same skills and settings:
 

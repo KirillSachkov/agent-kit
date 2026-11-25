@@ -86,6 +86,18 @@ class OrchestratorTest(unittest.TestCase):
         journal = [json.loads(line)["task"] for line in (project / ".factory/greeting-01-greet-by-name/runs.jsonl").read_text().splitlines()]
         self.assertEqual(journal, ["implement", "verify", "ship", "rework", "verify", "ship"])
 
+    def test_a_task_that_names_the_shared_checks_needs_the_pipeline_to_set_them(self):
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        project = Path(temporary.name)
+        (project / "docs/agents").mkdir(parents=True)
+        task = '[[task]]\nname = "implement"\nwhen = "ready"\nrun = "go"\ncheck = "true && {checks}"\nthen = "done"\n'
+        (project / "docs/agents/pipeline.toml").write_text(task)
+        with self.assertRaisesRegex(orchestrator.FactoryError, "sets no `checks`"):
+            orchestrator.load_pipeline(project)
+        (project / "docs/agents/pipeline.toml").write_text('checks = "make check"\n' + task)
+        self.assertEqual("true && ( make check )", orchestrator.load_pipeline(project)[1][0]["check"])
+
     def test_later_steps_follow_the_branch_the_implementing_skill_moved_the_work_to(self):
         root = Path(self.enterContext(tempfile.TemporaryDirectory())).resolve() / "trial"
         root.mkdir()

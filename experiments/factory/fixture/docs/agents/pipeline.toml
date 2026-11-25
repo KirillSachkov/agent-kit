@@ -7,6 +7,7 @@ base = "main"               # a ticket started on this branch gets a worktree of
 worktrees = "../{project}-worktrees"
 branch = "deliver/{name}"
 # setup = "npm ci"          # run once in a new worktree
+checks = "python3 -m unittest discover -s tests -q"   # the project's one command for all its checks; a task's check names it as {checks}
 
 [[task]]
 name = "implement"
@@ -15,7 +16,7 @@ run = "/implement {ticket}"
 run_spec = "/implement-spec {ticket}"
 check = """test -n "$(git log main..HEAD --oneline)" \
   && test -z "$(git status --porcelain -- . ':!.scratch')" \
-  && python3 -m unittest discover -s tests -q"""
+  && {checks}"""
 attempts = 2
 then = "verify"
 
@@ -49,6 +50,6 @@ when = "rework"
 run = "Address the owner's unresolved feedback on this branch's pull request for the ticket in {ticket}: read its reviews and comments, change the code and commit. Then call the code-review skill on the changes since the commit you started from, and commit the fixes."
 check = """test -n "$(git log main..HEAD --oneline)" \
   && test -z "$(git status --porcelain -- . ':!.scratch')" \
-  && python3 -m unittest discover -s tests -q"""
+  && {checks}"""
 attempts = 2
 then = "verify"
