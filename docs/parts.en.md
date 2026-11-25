@@ -28,7 +28,7 @@ The Kit has eight parts. Each part works alone: it has its own skills, input and
 | Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
 | --- | --- | --- | --- | --- | --- | --- |
 | `ask` | you | Suggest which skill and what size of work fits | root instructions, the SKILL.md of the skill in question | nothing | none | Matt: the main flow is his; added reading the project's situation, working with `/deliver` and the references |
-| `triage` | you | Sort incoming issues and PRs into readiness roles | tracker, labels, `.out-of-scope/` | labels, comments, `.out-of-scope/` | `grilling`, `domain-modeling` | Matt, setup skill name |
+| `triage` | you | Sort incoming issues and PRs into readiness roles | tracker, labels, `.out-of-scope/` | labels, comments, `.out-of-scope/` | `grilling`, `domain-modeling` | Matt, setup skill name, no AI disclaimer on its comments |
 | `diagnosing-bugs` | agent | Find the cause on a reproducible case, then fix it with a regression test | `GLOSSARY.md`, ADRs | code and a test | none | Matt |
 
 ### 2. Design
@@ -78,7 +78,7 @@ The edits in `create-verification-skill`: the feature-map and maintenance steps 
 
 | Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
 | --- | --- | --- | --- | --- | --- | --- |
-| `pr` | agent | Write a PR body the owner reads in a minute: what is needed from them, what changed, what was verified, merge danger | the diff, the verification report, the evidence storage setting, the project's PR template | the PR text and attachments | none | Matt and Inside Platform |
+| `pr` | agent | Write a PR body the owner reads in a minute: what is needed from them, what changed, what was verified, merge danger, and a collapsed diagram of how the change works | the diff, the verification report, the evidence storage setting, the project's PR template | the PR text and attachments | none | Matt and Inside Platform |
 
 The `pr` format joins two sources. From Matt: the visuals of the change and the merge danger section. From Inside Platform: the owner's action first, one line and one attachment per scenario, the 70-word limit and collapsed Details for agents. The project's PR template takes priority. `verify-<app>` produces the evidence: screenshots, recordings and a short `report.md` beside them. `pr` attaches them the way the project settings say, by default with `gh --attach`.
 
@@ -86,7 +86,7 @@ The `pr` format joins two sources. From Matt: the visuals of the change and the 
 
 | Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
 | --- | --- | --- | --- | --- | --- | --- |
-| `merge` | agent | Take committed work to a merged PR or a local delivery: make sure behaviour is verified when the settings call for it, open the PR, get checks green, confirm the merge | the route, required checks and merge authority from the project settings | the PR, the merge, the closed task | `pr` | Kit |
+| `merge` | agent | Take committed work to a merged PR or a local delivery: make sure behaviour is verified when the settings call for it, open the PR, get checks green, confirm the merge, then clear what the work left | the route, required checks, merge authority and the after-merge list from the project settings | the PR, the merge, the closed task, a report of what was cleared | `pr` | Kit |
 | `owner-gate` | agent | Decide whether the owner is needed before delivery: a status, a reason and the questions for them | the task, the diff, the verification report, the project's conditions page | nothing, only its answer | none | Kit, after Inside Platform |
 
 Acceptance has three levels, set by the “Owner gate” line in the project settings. `owner`: every delivery waits for the owner and the agent never merges; this is the default and the skill does not run. `conditions`: a fresh agent judges the change once against the conditions page and returns a status; a status that needs no owner permits the merge. `none`: the agent merges by itself. The conditions page has a “Cases from history” section where the owner adds examples of a status that turned out wrong.
@@ -105,7 +105,7 @@ The edit in `improve-codebase-architecture`: the report language comes from the 
 
 | Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
 | --- | --- | --- | --- | --- | --- | --- |
-| `setup-project` | you | One project setup by interview: language, tracker, labels, domain docs, delivery and workplace, verification, owner gate, testing strategy, existing rules, the shape of the root instructions | the remote, root instructions, check commands and CI, `docs/agents/` | everything in `docs/agents/`, a block in the root instructions | none | Matt, extended with Kit sections |
+| `setup-project` | you | One project setup by interview: language, tracker, labels, domain docs, delivery and workplace, verification, owner gate, testing strategy, existing rules, the shape of the root instructions, code rules as checks | the remote, root instructions, check commands and CI, `docs/agents/` | everything in `docs/agents/`, a block in the root instructions, linter checks and `CODING_STANDARDS.md` lines for the owner's code rules | none | Matt, extended with Kit sections |
 | `handoff` | you | Hand work to another session | the conversation | a file in the temp directory | none | Matt |
 | `wait-what` | you | Ask for a plainer restatement | `GLOSSARY.md` | nothing | none | Matt |
 | `wizard` | agent | A script for steps only a human can take | `.env`, config, CI workflows | a bash script, and through it `.env` and secrets | none | Matt, template changed |
