@@ -17,12 +17,12 @@ The words are Matt Pocock's, from his `software-factory` skill. A **ticket** is 
 
 ## The pipeline
 
-`docs/agents/pipeline.toml` lists tasks. A task starts from the stage in `when`, gets one run with its instruction (`run`, or `run_spec` for a spec), and moves the ticket to `then` when its `check`, a shell command, exits 0. Exit 3 means a retry cannot help. The project's one command for all its checks is written once, as `checks` at the top, and a task's check names it as `{checks}`. The fixture's tasks are `implement` → `verify` → `merge`, with `rework` for the owner's feedback on the PR.
+`docs/agents/pipeline.toml` lists tasks. A task starts from the stage in `when`, gets one run with its instruction (`run`, or `run_spec` for a spec), and moves the ticket to `then` after the worker and the project's shell check succeed. A reported scope blocker, a worker failure or a changed ticket branch stops the attempt before the shell check. Verification uses a new `FACTORY_REPORT` per attempt and the full commit ID. A delivery task with `reverify` may return a CI fix to the specified stage once before handing it to the owner. Exit 3 means a retry cannot help. The project's one command for all its checks is written once, as `checks` at the top, and a task's check names it as `{checks}`. The fixture's tasks are `implement` → `verify` → `merge`, with `rework` for the owner's feedback on the PR.
 
 Two ways to work with the same skills and settings:
 
 - **By hand:** the owner runs `/implement` or `/implement-spec`, then `/merge`, each in a session of their own.
-- **Whole:** `/deliver <ticket>` starts the orchestrator. It gives the ticket a worktree, starts one run per task, runs each check and records the stage. The session that started it follows the run with `wait`, which returns at each finished attempt, and tells the owner what happened. The run itself is detached from that session; `status`, `stop` and a second `run` work from any session, `finish` marks a merged ticket done, and a trigger can start it with no session at all.
+- **Whole:** `/deliver <ticket>` starts the orchestrator. It gives the ticket a worktree, starts one run per task, checks each attempt and records the stage. The session that started it follows the run with `wait`, which returns at each finished attempt, and tells the owner what happened. The run itself is detached from that session; `status`, `stop` and a second `run` work from any session, `finish` records completion and reports any pending cleanup, and a trigger can start it with no session at all.
 
 A third way was measured and removed: a session that led the chain itself and gave each task to a subagent (`conductor` in the results). A subagent receives `/implement` as plain text, so it wrote the code without the skill, and with it without the review; the leading session also lost track of the stage.
 

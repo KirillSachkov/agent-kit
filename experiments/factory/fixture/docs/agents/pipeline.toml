@@ -38,9 +38,14 @@ then = "delivery"
 
 [[task]]
 name = "merge"
+reverify = "verify"
 when = "delivery"
 run = "Deliver the committed work on this branch for the ticket in {ticket}."
-check = """gh pr view --json state -q .state | grep -q OPEN && gh pr checks --required >/dev/null"""
+check = """test "$(git rev-parse HEAD)" = "$FACTORY_VERIFIED_HEAD" &&
+test "$(gh pr view --json state -q .state)" = OPEN &&
+test "$(gh pr view --json baseRefName -q .baseRefName)" = main &&
+test "$(gh pr view --json headRefOid -q .headRefOid)" = "$FACTORY_VERIFIED_HEAD" &&
+gh pr checks --required >/dev/null"""
 attempts = 2
 then = "needs-owner"
 

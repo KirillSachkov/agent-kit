@@ -149,6 +149,18 @@ class OrchestratorTest(unittest.TestCase):
         self.assertFalse(ticket.state()["cleanup_pending"])
         self.assertEqual((ticket.folder / "report.md").read_text(), "final report")
 
+    def test_preserve_finds_legacy_records_before_linked_checkout_removal(self):
+        root, project, _ = self.trial("happy")
+        work = root / "project-worktrees/greeting-01-greet-by-name"
+        legacy = work / ".factory/36"
+        legacy.mkdir(parents=True)
+        (legacy / "state.json").write_text(json.dumps(dict(ref="#36", stage="needs-owner", worktree=str(work))))
+        archived = self.program(project, "preserve", "#36")
+        self.assertEqual(archived.returncode, 0, archived.stderr)
+        report = project / ".factory/36/legacy-verification.md"
+        self.assertEqual(report.read_text(), (work / ".evidence/report.md").read_text())
+        self.assertIn(str(report.parent), self.program(work, "status", "#36").stdout)
+
     def test_a_task_that_names_the_shared_checks_needs_the_pipeline_to_set_them(self):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
@@ -161,7 +173,7 @@ class OrchestratorTest(unittest.TestCase):
         (project / "docs/agents/pipeline.toml").write_text('checks = "make check"\n' + task)
         self.assertEqual("true && ( make check )", orchestrator.load_pipeline(project)[1][0]["check"])
 
-    def test_later_steps_follow_the_branch_the_implementing_skill_moved_the_work_to(self):
+    def test_worker_cannot_move_an_assigned_ticket_to_another_branch(self):
         root = Path(self.enterContext(tempfile.TemporaryDirectory())).resolve() / "trial"
         root.mkdir()
         project, env = bench.prepare(root, "happy")
@@ -173,8 +185,8 @@ class OrchestratorTest(unittest.TestCase):
         self.env = env | {"FACTORY_AGENT": f"{sys.executable} {mover}"}
         self.assertEqual(self.program(project, "run", bench.TICKET).returncode, 0)
         facts = bench.grade(root, project, "happy")
-        self.assertEqual((facts["final_stage"], facts["branch"]), ("needs-owner", "integration/greeting"))
-        self.assertEqual(json.loads((root / "gh-state.json").read_text())["prs"][0]["head"], "integration/greeting")
+        self.assertEqual((facts["final_stage"], facts["pr_opened"]), ("blocked", False))
+        self.assertIn("changed the assigned branch", self.program(project, "status", bench.TICKET).stdout)
 
     def test_a_ticket_started_off_the_base_branch_is_led_in_that_checkout(self):
         root = Path(self.enterContext(tempfile.TemporaryDirectory())).resolve() / "trial"
