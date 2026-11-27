@@ -102,8 +102,52 @@ class OrchestratorTest(unittest.TestCase):
         done = self.program(project, "finish", bench.TICKET)
         self.assertEqual(done.returncode, 0, done.stderr)
         self.assertIn("greeting-01-greet-by-name\tdone\tnot running", done.stdout)
-        self.assertNotIn(str(work), done.stdout)
+        self.assertIn(str(work), done.stdout)
+        self.assertIn("cleanup pending", done.stdout)
         self.assertTrue(work.is_dir())
+
+    def test_prior_reports_and_abbreviated_commits_cannot_pass_a_new_attempt(self):
+        root, project, _ = self.trial("happy")
+        work = root / "project-worktrees/greeting-01-greet-by-name"
+        self.assertIn("Verdict: PASS", (work / ".evidence/report.md").read_text())
+        agent = root / "stale.py"
+        self.env["FACTORY_AGENT"] = f"{sys.executable} {agent}"
+        for script in (
+            "pass",
+            "import os, pathlib, subprocess\n"
+            "sha = subprocess.check_output(['git','rev-parse','--short','HEAD'], text=True)\n"
+            "pathlib.Path(os.environ['FACTORY_REPORT']).write_text('Verdict: PASS\\nCommit: ' + sha)",
+        ):
+            agent.write_text(script)
+            self.program(project, "run", bench.TICKET, "--stage", "verify")
+            self.assertEqual(orchestrator.Ticket(project, bench.TICKET).stage(), "blocked")
+
+    def test_unrelated_blocker_stops_even_when_existing_work_satisfies_the_check(self):
+        root, project, _ = self.trial("happy")
+        agent = root / "blocked.py"
+        agent.write_text("import os, pathlib, sys\n"
+                         "assert 'before fixing it' in sys.argv[-1]\n"
+                         "pathlib.Path(os.environ['FACTORY_BLOCKER']).write_text('baseline lint failure')\n")
+        self.env["FACTORY_AGENT"] = f"{sys.executable} {agent}"
+        self.program(project, "run", bench.TICKET, "--stage", "ready")
+        status = self.program(project, "status", bench.TICKET).stdout
+        self.assertIn("blocked", status)
+        self.assertIn("baseline lint failure", status)
+
+    def test_host_ticket_report_survives_deferred_worktree_cleanup(self):
+        root, project, _ = self.trial("happy")
+        work = root / "project-worktrees/greeting-01-greet-by-name"
+        branch = "deliver/greeting-01-greet-by-name"
+        ticket = orchestrator.Ticket(work, "#36")
+        ticket.update(worktree=str(work), branch=branch)
+        (ticket.folder / "report.md").write_text("final report")
+        self.program(project, "finish", "#36", "--defer-cleanup", "active chat")
+        self.assertIn("active chat", self.program(project, "status", "#36").stdout)
+        subprocess.run(["git", "-C", str(project), "worktree", "remove", "--force", str(work)], check=True)
+        subprocess.run(["git", "-C", str(project), "branch", "-D", branch], check=True, capture_output=True)
+        self.program(project, "finish", "#36")
+        self.assertFalse(ticket.state()["cleanup_pending"])
+        self.assertEqual((ticket.folder / "report.md").read_text(), "final report")
 
     def test_a_task_that_names_the_shared_checks_needs_the_pipeline_to_set_them(self):
         temporary = tempfile.TemporaryDirectory()

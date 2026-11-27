@@ -22,11 +22,12 @@ then = "verify"
 
 [[task]]
 name = "verify"
+verification = true
 when = "verify"
 run = "Verify the behaviour of the ticket in {ticket} at the current commit with this project's verify skill. Check every acceptance criterion."
-check = """v=$(sed -n 's/^Verdict: //p' .evidence/report.md 2>/dev/null | head -1)
-c=$(sed -n 's/^Commit: //p' .evidence/report.md 2>/dev/null | head -1)
-case "$(git rev-parse HEAD)" in "${c:-none}"*) ;; *) echo "no verification report for this commit"; exit 1 ;; esac
+check = """v=$(sed -n 's/^Verdict: //p' "$FACTORY_REPORT" 2>/dev/null | head -1)
+c=$(sed -n 's/^Commit: //p' "$FACTORY_REPORT" 2>/dev/null | head -1)
+test "$c" = "$(git rev-parse HEAD)" || { echo "no verification report for this commit"; exit 1; }
 case "$v" in
   PASS|PASS+NOTES) exit 0 ;;
   FAIL|BLOCKED) echo "verification verdict: $v"; exit 3 ;;

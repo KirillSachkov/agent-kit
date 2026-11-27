@@ -21,7 +21,7 @@ Save each run's command and output to `.evidence/<scenario>.txt`. Exercise the r
 
 ## Report
 
-Write `.evidence/report.md` and return the same text. Its first line is `Verdict: PASS`, `Verdict: PASS+NOTES`, `Verdict: FAIL` or `Verdict: BLOCKED`. Then `Commit: <sha>`, and one line per scenario: what was run, what was observed, which evidence file shows it. `FAIL` means the product misbehaved; `BLOCKED` means the environment kept a scenario from running.
+Write the new report to `$FACTORY_REPORT` when set and keep a copy in `.evidence/report.md`. Otherwise write `.evidence/report.md` and return the same text. Its first line is `Verdict: PASS`, `Verdict: PASS+NOTES`, `Verdict: FAIL` or `Verdict: BLOCKED`. Then `Commit: <full SHA from git rev-parse HEAD>`, and one line per scenario: what was run, what was observed, which evidence file shows it. `FAIL` means the product misbehaved; `BLOCKED` means the environment kept a scenario from running.
 
 ## Cleanup
 

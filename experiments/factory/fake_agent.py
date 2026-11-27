@@ -21,7 +21,9 @@ if task == "implement":
 elif task == "verify":
     Path(".evidence").mkdir(exist_ok=True)
     verdict = "PASS" if Path(".verify-env").exists() else "BLOCKED"
-    Path(".evidence/report.md").write_text(f"Verdict: {verdict}\nCommit: {run('git', 'rev-parse', '--short', 'HEAD').stdout.strip()}\n")
+    report = f"Verdict: {verdict}\nCommit: {run('git', 'rev-parse', 'HEAD').stdout.strip()}\n"
+    Path(os.environ["FACTORY_REPORT"]).write_text(report)
+    Path(".evidence/report.md").write_text(report)
     print('{"item":{"type":"command_execution","command":"cat .agents/skills/verify-greet/SKILL.md"}}')
 elif task == "merge":
     run("git", "push", "-q", "-u", "origin", "HEAD")
