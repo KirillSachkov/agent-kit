@@ -187,6 +187,10 @@ class OrchestratorTest(unittest.TestCase):
         facts = bench.grade(root, project, "happy")
         self.assertEqual((facts["final_stage"], facts["pr_opened"]), ("blocked", False))
         self.assertIn("changed the assigned branch", self.program(project, "status", bench.TICKET).stdout)
+        self.env["FACTORY_AGENT"] = f"{sys.executable} {FACTORY / 'fake_agent.py'}"
+        resumed = self.program(project, "run", bench.TICKET)
+        self.assertEqual(resumed.returncode, 0, resumed.stderr)
+        self.assertEqual(orchestrator.Ticket(project, bench.TICKET).stage(), "needs-owner")
 
     def test_a_ticket_started_off_the_base_branch_is_led_in_that_checkout(self):
         root = Path(self.enterContext(tempfile.TemporaryDirectory())).resolve() / "trial"
