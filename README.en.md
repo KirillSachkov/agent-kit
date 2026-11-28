@@ -16,6 +16,8 @@ python3 tools/setup.py --project /path/to/project --ref "$kit_ref" --apply
 
 After setup, a fresh agent can read the project instructions and explain how to take the first task through the owner's decision. Requires Git and Python 3.11+. [Start a project](docs/first-project.en.md) · [Parts map](docs/parts.en.md)
 
+Use `$deliver` on a finished branch to run the checks and present the change for acceptance or merge it under the project’s rules. For an agreed ticket or spec, the experimental `$run-pipeline` leads the work from implementation to owner acceptance. [Two ways to work](experiments/factory/README.md)
+
 ## Select one skill
 
 ```bash

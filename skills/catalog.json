@@ -26,7 +26,7 @@
         "research": "skills/engineering/research",
         "retro": "skills/engineering/retro",
         "setup-project": "skills/engineering/setup-project",
-        "merge": "skills/engineering/merge",
+        "deliver": "skills/engineering/deliver",
         "tdd": "skills/engineering/tdd",
         "teach": "skills/engineering/teach",
         "to-questionnaire": "skills/engineering/to-questionnaire",
@@ -247,9 +247,9 @@
     },
     {
       "provider": "agent-kit",
-      "skill": "merge",
+      "skill": "deliver",
       "group": "engineering",
-      "source": "engineering/merge",
+      "source": "engineering/deliver",
       "internal": false,
       "dependencies": [
         {

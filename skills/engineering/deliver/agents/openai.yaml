@@ -1,0 +1,3 @@
+interface:
+  display_name: "Deliver"
+  short_description: "Prepare committed work for acceptance and complete authorized delivery"

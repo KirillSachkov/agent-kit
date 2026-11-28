@@ -1,3 +1,0 @@
-interface:
-  display_name: "Merge"
-  short_description: "Take committed work to a merged PR or a local delivery"

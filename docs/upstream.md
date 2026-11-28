@@ -2,7 +2,7 @@
 
 The engineering library retains Matt Pocock's pristine source at
 `a496f5513d4a4cf889bc48e189e579f4b0bdf6aa`. It is packed under
-`provenance/upstream/mattpocock`, outside skill discovery. `merge` is locally authored;
+`provenance/upstream/mattpocock`, outside skill discovery. `deliver` is locally authored;
 the rename map retains `ask-matt` → `ask` and
 `setup-matt-pocock-skills` → `setup-project`. AI-first is a local engineering reference,
 not a replacement upstream identity; see [the adaptation contract](engineering-contract.md).

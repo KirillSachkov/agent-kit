@@ -1,5 +1,5 @@
 ---
-name: deliver
+name: run-pipeline
 description: "Lead an agreed ticket or spec through the project's pipeline until it waits for the owner."
 disable-model-invocation: true
 ---
@@ -16,7 +16,7 @@ Call it by its path with Python 3.11 or newer, from the project root.
 - **Status:** when asked, run `python3 orchestrator.py status` and say each ticket's stage, the running task and the last result.
 - **Stop:** `python3 orchestrator.py stop <ticket>`. It returns when the run has ended.
 - **Feedback on the result:** post the owner's words as a comment on the ticket's PR, then start the ticket with `--stage rework`.
-- **Approval:** when the owner approves the result, run `python3 orchestrator.py preserve <ticket>` before cleanup so older worktree-local records survive. Then call the Skill tool with "merge" for the ticket's PR: it merges at the head the owner checked and clears what the work left, as the project settings say. Then `python3 orchestrator.py finish <ticket>` records completion. For an active checkout or other deferred cleanup, pass `--defer-cleanup "reason"`, report the retained path and branch, and repeat finish from the primary checkout after clearing them. Do the same when the owner drops the ticket instead: close its PR, clear by the same settings, then `finish`.
+- **Approval:** when the owner approves the result, run `python3 orchestrator.py preserve <ticket>` before cleanup so older worktree-local records survive. Then call the Skill tool with "deliver" for the ticket's PR: it merges at the head the owner checked and clears what the work left, as the project settings say. Then `python3 orchestrator.py finish <ticket>` records completion. For an active checkout or other deferred cleanup, pass `--defer-cleanup "reason"`, report the retained path and branch, and repeat finish from the primary checkout after clearing them. Do the same when the owner drops the ticket instead: close its PR, clear by the same settings, then `finish`.
 - **A changed ticket:** stop it, let the owner change the ticket in the tracker, then start it again.
 
 ## Findings outside the ticket

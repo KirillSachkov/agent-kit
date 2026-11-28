@@ -23,9 +23,9 @@ to invent another approval, worktree or setup task.
 
 The Kit is a set of parts that each work alone; the [parts map](parts.en.md) lists
 every skill and project file with its part. Matt Pocock's skills are the base, and the
-parts map names every edit to them. The Kit adds its own skills only where he has none: `merge`, `owner-gate`
+parts map names every edit to them. The Kit adds its own skills only where he has none: `deliver`, `owner-gate`
 and the pstack `create-verification-skill`. A rule about how parts connect lives in a
-skill the Kit owns, never inside a borrowed one: `merge` holds the rule that behaviour is
+skill the Kit owns, never inside a borrowed one: `deliver` holds the rule that behaviour is
 verified before delivery.
 
 ## Native clients
@@ -49,7 +49,7 @@ with a verdict beside it. The project settings say when verification is needed a
 who runs it; the workflow places it once before delivery. `pr` is the only writer of
 the PR body: it takes the report and attaches the evidence the way the project says.
 
-`merge` takes committed work to a merged PR or a local delivery: it opens the PR,
+`deliver` takes committed work to a merged PR or a local delivery: it opens the PR,
 gets the required checks green and confirms that the merge really happened. It reads
 the route, checks and merge authority from the project. [owner-gate](../skills/engineering/owner-gate/SKILL.md)
 judges whether the owner is needed before delivery. The “Owner gate” line in the project

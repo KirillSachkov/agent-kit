@@ -1,6 +1,6 @@
 ---
-name: merge
-description: "Take committed work to a merged PR or a local delivery. Use when the user asks to merge, ship or deliver finished work, open its PR, get its CI green or merge it."
+name: deliver
+description: "Deliver committed work for owner acceptance, authorized merge or local delivery. Use when asked to prepare a finished change for acceptance, open its PR, get CI green or complete delivery."
 ---
 
 Deliver the committed work on the current branch.

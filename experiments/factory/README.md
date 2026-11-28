@@ -4,7 +4,7 @@ An experiment in leading an agreed ticket or spec from "ready" to "PR waits for 
 
 ## What it holds
 
-- `skill/deliver/`: the `deliver` skill and `orchestrator.py`, the program that leads a ticket.
+- `skill/run-pipeline/`: the `run-pipeline` skill and `orchestrator.py`, the program that leads a ticket.
 - `fixture/` and `spec-fixture/`: a tiny project with a ticket, a spec with three tickets, a verify skill, a CI script and the tasks in `docs/agents/pipeline.toml`.
 - `bin/gh`: a local double of the GitHub CLI. It stores PRs, runs the fixture's CI on the pushed head and refuses every merge. `bin/orca` keeps trials away from the session application of the machine that runs them.
 - `bench.py`, `matrix.py`: prepare a disposable copy of the fixture with the Kit installed, run one trial, and grade it from git, the ticket file and the double's state. Nothing is graded from what an agent said.
@@ -13,16 +13,18 @@ An experiment in leading an agreed ticket or spec from "ready" to "PR waits for 
 
 ## Words
 
-The words are Matt Pocock's, from his `software-factory` skill. A **ticket** is the work to deliver: a ticket or a spec with tickets. A **task** is a kind of work defined once in the pipeline: implement, verify, merge, rework. A **run** is one execution of a task, a fresh headless session of the client. The **orchestrator** starts runs and records them. The **runner** is the machine the runs execute on, here the owner's own.
+The words are Matt Pocock's, from his `software-factory` skill. A **ticket** is the work to deliver: a ticket or a spec with tickets. A **task** is a kind of work defined once in the pipeline: implement, verify, deliver, rework. A **run** is one execution of a task, a fresh headless session of the client. The **orchestrator** starts runs and records them. The **runner** is the machine the runs execute on, here the owner's own.
 
 ## The pipeline
 
-`docs/agents/pipeline.toml` lists tasks. A task starts from the stage in `when`, gets one run with its instruction (`run`, or `run_spec` for a spec), and moves the ticket to `then` after the worker and the project's shell check succeed. A reported scope blocker, a worker failure or a changed ticket branch stops the attempt before the shell check. Verification uses a new `FACTORY_REPORT` per attempt and the full commit ID. A delivery task with `reverify` may return a CI fix to the specified stage once before handing it to the owner. Exit 3 means a retry cannot help. The project's one command for all its checks is written once, as `checks` at the top, and a task's check names it as `{checks}`. The fixture's tasks are `implement` → `verify` → `merge`, with `rework` for the owner's feedback on the PR.
+`docs/agents/pipeline.toml` lists tasks. A task starts from the stage in `when`, gets one run with its instruction (`run`, or `run_spec` for a spec), and moves the ticket to `then` after the worker and the project's shell check succeed. A reported scope blocker, a worker failure or a changed ticket branch stops the attempt before the shell check. Verification uses a new `FACTORY_REPORT` per attempt and the full commit ID. A delivery task with `reverify` may return a CI fix to the specified stage once before handing it to the owner. Exit 3 means a retry cannot help. The project's one command for all its checks is written once, as `checks` at the top, and a task's check names it as `{checks}`. The fixture's tasks are `implement` → `verify` → `deliver`, with `rework` for the owner's feedback on the PR.
 
 Two ways to work with the same skills and settings:
 
-- **By hand:** the owner runs `/implement` or `/implement-spec`, then `/merge`, each in a session of their own.
-- **Whole:** `/deliver <ticket>` starts the orchestrator. It gives the ticket a worktree, starts one run per task, checks each attempt and records the stage. The session that started it follows the run with `wait`, which returns at each finished attempt, and tells the owner what happened. The run itself is detached from that session; `status`, `stop` and a second `run` work from any session, `finish` records completion and reports any pending cleanup, and a trigger can start it with no session at all.
+- **By hand:** the owner runs `/implement` or `/implement-spec`, then `/deliver`, each in a session of their own.
+- **Whole:** `/run-pipeline <ticket>` starts the orchestrator. It gives the ticket a worktree, starts one run per task, checks each attempt and records the stage. The session that started it follows the run with `wait`, which returns at each finished attempt, and tells the owner what happened. The run itself is detached from that session; `status`, `stop` and a second `run` work from any session, `finish` records completion and reports any pending cleanup, and a trigger can start it with no session at all.
+
+When upgrading a project that previously copied the experimental skill into its own `.agents/skills/deliver`, finish any active runs first. Move that project-owned folder to `.agents/skills/run-pipeline`, reconcile local changes with the current experiment and update its pipeline commands before installing the new Kit pin. The Kit now installs the delivery skill at `.agents/skills/deliver`. Existing run records and branch names stay valid.
 
 A third way was measured and removed: a session that led the chain itself and gave each task to a subagent (`conductor` in the results). A subagent receives `/implement` as plain text, so it wrote the code without the skill, and with it without the review; the leading session also lost track of the stage.
 

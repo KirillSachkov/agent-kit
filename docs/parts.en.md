@@ -27,7 +27,7 @@ The Kit has eight parts. Each part works alone: it has its own skills, input and
 
 | Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
 | --- | --- | --- | --- | --- | --- | --- |
-| `ask` | you | Suggest which skill and what size of work fits | root instructions, the SKILL.md of the skill in question | nothing | none | Matt: the main flow is his; added reading the project's situation, working with `/deliver` and the references |
+| `ask` | you | Suggest which skill and what size of work fits | root instructions, the SKILL.md of the skill in question | nothing | none | Matt: the main flow is his; added reading the project's situation, working with `/run-pipeline` and the references |
 | `triage` | you | Sort incoming issues and PRs into readiness roles | tracker, labels, `.out-of-scope/` | labels, comments, `.out-of-scope/` | `grilling`, `domain-modeling` | Matt, setup skill name, no AI disclaimer on its comments |
 | `diagnosing-bugs` | agent | Find the cause on a reproducible case, then fix it with a regression test | `GLOSSARY.md`, ADRs | code and a test | none | Matt |
 
@@ -86,7 +86,7 @@ The `pr` format joins two sources. From Matt: the visuals of the change and the 
 
 | Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
 | --- | --- | --- | --- | --- | --- | --- |
-| `merge` | agent | Take committed work to a merged PR or a local delivery: make sure behaviour is verified when the settings call for it, open the PR, get checks green, confirm the merge, then clear what the work left | the route, required checks, merge authority and the after-merge list from the project settings | the PR, the merge, the closed task, a report of what was cleared | `pr` | Kit |
+| `deliver` | agent | Take committed work to a merged PR or a local delivery: make sure behaviour is verified when the settings call for it, open the PR, get checks green, confirm the merge, then clear what the work left | the route, required checks, merge authority and the after-merge list from the project settings | the PR, the merge, the closed task, a report of what was cleared | `pr` | Kit |
 | `owner-gate` | agent | Decide whether the owner is needed before delivery: a status, a reason and the questions for them | the task, the diff, the verification report, the project's conditions page | nothing, only its answer | none | Kit, after Inside Platform |
 
 Acceptance has three levels, set by the “Owner gate” line in the project settings. `owner`: every delivery waits for the owner and the agent never merges; this is the default and the skill does not run. `conditions`: a fresh agent judges the change once against the conditions page and returns a status; a status that needs no owner permits the merge. `none`: the agent merges by itself. The conditions page has a “Cases from history” section where the owner adds examples of a status that turned out wrong.
@@ -120,7 +120,7 @@ The change in `wizard`: `SKILL.md` matches the original and only `template.sh` d
 | File | Written by | Read by | Part |
 | --- | --- | --- | --- |
 | `AGENTS.md` | `setup-project` from your answers, then you | every session | pointers to the rest |
-| `docs/agents/project-settings.md` | `setup-project` from your answers | `merge`, the verify step, `pr`, test choice; settings are grouped by reader | verification, evidence, delivery |
+| `docs/agents/project-settings.md` | `setup-project` from your answers | `deliver`, the verify step, `pr`, test choice; settings are grouped by reader | verification, evidence, delivery |
 | `docs/agents/testing.md` | `setup-project` creates it, then you and the agent | `to-spec`, `tdd` through the root pointer | design, execution |
 | `verify-<app>` | `create-verification-skill` | the agent at the verify step | verification |
 | `docs/agents/owner-gate.md` | `setup-project` creates it at the “conditions” level, then only you | `owner-gate` | acceptance |
@@ -147,7 +147,7 @@ The reviewer reads the standards, not the implementer: the implementer's context
 
 Setup does not create `CODING_STANDARDS.md`. It grows through `retro`: a review missed a mistake, and `retro` proposes a check or a rule.
 
-`AGENTS.md` takes only what neither a skill nor a check can carry: the language and pointers to the tracker, domain docs, delivery, workplace and testing strategy. The whole file is the project's: `setup-project` writes it, it carries no name or mark of the Kit, and any line can be edited. `merge` itself carries the rule that behaviour is verified before delivery; the Kit installs no separate workflow file.
+`AGENTS.md` takes only what neither a skill nor a check can carry: the language and pointers to the tracker, domain docs, delivery, workplace and testing strategy. The whole file is the project's: `setup-project` writes it, it carries no name or mark of the Kit, and any line can be edited. `deliver` itself carries the rule that behaviour is verified before delivery; the Kit installs no separate workflow file.
 
 ## Who can start a skill
 
@@ -155,7 +155,7 @@ The “Who starts it” column repeats the skills' own flags. A skill marked “
 
 ## Still undecided
 
-- Moving `deliver` and the orchestrator from the [experiment](../experiments/factory/README.md) into the Kit: after a trial on a real project.
+- Moving `run-pipeline` and the orchestrator from the [experiment](../experiments/factory/README.md) into the Kit: after a trial on a real project.
 - Starting the orchestrator from tracker events or a schedule.
 
 ## Candidates from pstack

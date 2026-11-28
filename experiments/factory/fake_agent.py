@@ -25,7 +25,7 @@ elif task == "verify":
     Path(os.environ["FACTORY_REPORT"]).write_text(report)
     Path(".evidence/report.md").write_text(report)
     print('{"item":{"type":"command_execution","command":"cat .agents/skills/verify-greet/SKILL.md"}}')
-elif task == "merge":
+elif task == "deliver":
     run("git", "push", "-q", "-u", "origin", "HEAD")
     run("gh", "pr", "create", "--title", "Greet by name", "--body", "## What changed\n\nGreets by name.", check=False)
     if run("gh", "pr", "checks", "--required", check=False).returncode and "usage line" in run("gh", "run", "view", "--log-failed").stdout:

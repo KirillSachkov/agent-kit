@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Prepare a disposable fixture project, lead one ticket through a situation and grade the outcome.
 
-Entries: `deliver` says /deliver to one session, which starts the orchestrator.
+Entries: `run-pipeline` says /run-pipeline to one session, which starts the orchestrator.
 `direct` starts the orchestrator from a terminal.
 """
 import argparse
@@ -17,7 +17,7 @@ import time
 
 HERE = Path(__file__).resolve().parent
 KIT = HERE.parents[1]
-sys.path.insert(0, str(HERE / "skill/deliver"))
+sys.path.insert(0, str(HERE / "skill/run-pipeline"))
 import orchestrator  # noqa: E402
 
 TICKET = ".scratch/greeting/issues/01-greet-by-name.md"
@@ -45,7 +45,7 @@ command = '''codex exec --ignore-user-config --ephemeral --skip-git-repo-check -
 command = 'opencode run --standalone --archived --auto --format json -m {model} {prompt}'
 skill = "@"
 """
-ENTRIES = ("deliver", "direct")
+ENTRIES = ("run-pipeline", "direct", "deliver")  # deliver is the historical bench entry name
 
 
 def work(situation):
@@ -63,7 +63,7 @@ def prepare(root, situation, ref=None, agent="claude", model="sonnet"):
     scratch = HERE / ("spec-fixture" if situation == "spec" else "fixture") / "scratch"
     shutil.rmtree(project / "scratch")
     shutil.copytree(scratch, project / ".scratch")  # the Kit ignores .scratch, so the fixture stores it as scratch
-    shutil.copytree(HERE / "skill/deliver", project / ".agents/skills/deliver")
+    shutil.copytree(HERE / "skill/run-pipeline", project / ".agents/skills/run-pipeline")
     if situation != "ci-fix":
         (project / "README.md").write_text((project / "README.md").read_text() + USAGE)
     if situation == "verify-blocked":
@@ -107,12 +107,12 @@ def execute(project, env, entry, agent, model, timeout, ticket, situation="happy
     started = time.monotonic()
     logs = project / ".factory/_session"
     logs.mkdir(parents=True)
-    program = [sys.executable, str(project / ".agents/skills/deliver/orchestrator.py")]
+    program = [sys.executable, str(project / ".agents/skills/run-pipeline/orchestrator.py")]
     tail = [ticket, "--project", str(project), "--timeout", str(timeout)]
     if entry == "direct":
         argv = [*program, "run", *tail]
     else:
-        argv = orchestrator.agent_argv(orchestrator.load_pipeline(project)[0], agent, model, "/deliver " + ticket)
+        argv = orchestrator.agent_argv(orchestrator.load_pipeline(project)[0], agent, model, "/run-pipeline " + ticket)
     def call(argv, name):
         with (logs / f"{name}.jsonl").open("w") as out, (logs / f"{name}.stderr").open("w") as err:
             try:
@@ -245,7 +245,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("root", type=Path, help="new directory for this trial")
     parser.add_argument("--situation", choices=sorted(SITUATIONS), default="happy")
-    parser.add_argument("--entry", choices=ENTRIES, default="deliver")
+    parser.add_argument("--entry", choices=ENTRIES, default="run-pipeline")
     parser.add_argument("--agent", choices=("claude", "codex", "opencode"), default="claude")
     parser.add_argument("--model", default="sonnet")
     parser.add_argument("--timeout", type=int, default=1500)

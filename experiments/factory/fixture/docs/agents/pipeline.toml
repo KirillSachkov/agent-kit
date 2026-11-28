@@ -1,7 +1,7 @@
 # The tasks between "tickets agreed" and "PR waits for the owner".
 # A task starts from the stage in `when`, gets one run with the instruction in `run`,
 # and moves the ticket to `then` when `check` exits 0. Exit 3 from a check means a retry cannot help.
-agent = "claude"            # the client, model and effort of a task that names none; /deliver may name others at the start
+agent = "claude"            # the client, model and effort of a task that names none; /run-pipeline may name others at the start
 model = "sonnet"
 base = "main"               # a ticket started on this branch gets a worktree of its own
 worktrees = "../{project}-worktrees"
@@ -37,10 +37,10 @@ attempts = 2
 then = "delivery"
 
 [[task]]
-name = "merge"
+name = "deliver"
 reverify = "verify"
 when = "delivery"
-run = "Deliver the committed work on this branch for the ticket in {ticket}."
+run = "/deliver the committed work for {ticket}."
 check = """test "$(git rev-parse HEAD)" = "$FACTORY_VERIFIED_HEAD" &&
 test "$(gh pr view --json state -q .state)" = OPEN &&
 test "$(gh pr view --json baseRefName -q .baseRefName)" = main &&

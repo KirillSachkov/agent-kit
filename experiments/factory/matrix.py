@@ -24,7 +24,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("root", type=Path)
     parser.add_argument("--situations", nargs="+", default=["happy", "verify-blocked", "ci-fix", "ci-outage", "spec", "rework"])
-    parser.add_argument("--entries", nargs="+", default=["deliver"])
+    parser.add_argument("--entries", nargs="+", default=["run-pipeline"])
     parser.add_argument("--agent", default="claude")
     parser.add_argument("--models", nargs="+", default=["haiku", "sonnet"])
     parser.add_argument("--repeats", type=int, default=3)

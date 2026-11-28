@@ -4,7 +4,7 @@
 
 - Workplace: worktree: implementation never starts on the base branch of the main checkout
 
-## Read by `merge`
+## Read by `deliver`
 
 - Delivery route: pr
 - Delivery checks: `python3 -m unittest discover -s tests -q`
