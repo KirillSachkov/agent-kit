@@ -43,10 +43,10 @@ class OrchestratorTest(unittest.TestCase):
         root, project, facts = self.trial("happy")
         self.assertEqual(facts["final_stage"], "needs-owner")
         self.assertTrue(facts["pass"], facts)
-        self.assertEqual((facts["sessions"], facts["ci_runs"], facts["merge_attempts"], facts["outside"]), (4, [True], 0, []))
+        self.assertEqual((facts["sessions"], facts["ci_runs"], facts["merge_attempts"], facts["outside"]), (5, [True], 0, []))
         journal = [json.loads(line) for line in (project / ".factory/greeting-01-greet-by-name/runs.jsonl").read_text().splitlines()]
         self.assertEqual([(row["task"], row["attempt"], row["check_exit"]) for row in journal],
-                         [("implement", 1, 0), ("verify", 1, 0), ("deliver", 1, 0)])
+                         [("implement", 1, 0), ("ci", 1, 0), ("verify", 1, 0), ("deliver", 1, 0)])
 
     def test_the_work_happens_in_a_worktree_of_its_own_and_the_project_stays_on_its_branch(self):
         root, project, facts = self.trial("happy")
@@ -58,17 +58,17 @@ class OrchestratorTest(unittest.TestCase):
 
     def test_a_blocked_verification_stops_the_chain_before_delivery_without_a_retry(self):
         root, project, facts = self.trial("verify-blocked")
-        self.assertEqual((facts["final_stage"], facts["pr_opened"], facts["verdict"]), ("blocked", False, "Verdict: BLOCKED"))
+        self.assertEqual((facts["final_stage"], facts["pr_opened"], facts["verdict"]), ("blocked", True, "Verdict: BLOCKED"))
         self.assertTrue(facts["pass"], facts)
         self.assertIn("Blocked at verify: verification verdict: BLOCKED", (project / bench.TICKET).read_text())
-        self.assertEqual(facts["sessions"], 3)
+        self.assertEqual(facts["sessions"], 4)
         folder = project / ".factory/greeting-01-greet-by-name"
         self.assertIn("verification verdict: BLOCKED", (folder / "verify-1.check.log").read_text())
         (folder / "reported").unlink(missing_ok=True)  # as a session that has not asked yet
         told = self.program(project, "wait", bench.TICKET).stdout.splitlines()
-        self.assertEqual(told[:2], ["implement attempt 1 passed",
+        self.assertEqual(told[:3], ["implement attempt 1 passed", "ci attempt 1 passed",
                                     "verify attempt 1 failed: verification verdict: BLOCKED (check output in verify-1.check.log)"])
-        self.assertIn("\tblocked\tnot running\tlast: verify attempt 1 failed: verification verdict: BLOCKED", told[2])
+        self.assertIn("\tblocked\tnot running\tlast: verify attempt 1 failed: verification verdict: BLOCKED", told[3])
         self.assertEqual(len(self.program(project, "wait", bench.TICKET).stdout.splitlines()), 1)
 
     def test_a_blocked_task_continues_from_the_step_that_blocked_it(self):
@@ -78,23 +78,42 @@ class OrchestratorTest(unittest.TestCase):
         facts = bench.grade(root, project, "happy")
         self.assertEqual((facts["final_stage"], facts["pr_opened"]), ("needs-owner", True))
         journal = [json.loads(line)["task"] for line in (project / ".factory/greeting-01-greet-by-name/runs.jsonl").read_text().splitlines()]
-        self.assertEqual(journal, ["implement", "verify", "verify", "deliver"])
+        self.assertEqual(journal, ["implement", "ci", "verify", "verify", "deliver"])
         logs = sorted(path.name for path in (project / ".factory/greeting-01-greet-by-name").glob("verify-*.jsonl"))
         self.assertEqual(logs, ["verify-1.jsonl", "verify-2.jsonl"])
         attempts = [json.loads(line)["attempt"] for line in (project / ".factory/greeting-01-greet-by-name/runs.jsonl").read_text().splitlines()]
-        self.assertEqual(attempts, [1, 1, 2, 1])
+        self.assertEqual(attempts, [1, 1, 1, 2, 1])
+
+    def test_resuming_verify_on_an_unpushed_commit_does_not_start_the_verifier(self):
+        root, project, _ = self.trial("verify-blocked")
+        work = root / "project-worktrees/greeting-01-greet-by-name"
+        subprocess.run(["git", "commit", "--allow-empty", "-qm", "Changed since CI"], cwd=work, check=True)
+        marker = root / "verifier-started"
+        worker = root / "mark.py"
+        worker.write_text(f"from pathlib import Path\nPath({str(marker)!r}).touch()\n")
+        self.env["FACTORY_AGENT"] = f"{sys.executable} {worker}"
+        self.program(project, "run", bench.TICKET)
+        self.assertFalse(marker.exists())
+        self.assertIn("entry check failed", self.program(project, "status", bench.TICKET).stdout)
 
     def test_a_fixable_ci_failure_is_fixed_and_an_outage_blocks_after_the_allowed_attempts(self):
         root, project, facts = self.trial("ci-fix")
         self.assertEqual((facts["final_stage"], facts["ci_runs"]), ("needs-owner", [False, True]))
+        ticket = orchestrator.Ticket(project, bench.TICKET)
+        journal = [json.loads(line)["task"] for line in (ticket.folder / "runs.jsonl").read_text().splitlines()]
+        self.assertEqual(journal, ["implement", "ci", "verify", "deliver"])
+        state = json.loads((root / "gh-state.json").read_text())
+        self.assertTrue(state["runs"][ticket.state()["verified_head"]]["ok"])
+        self.assertTrue(facts["pr_cites_verification"])
         root, project, facts = self.trial("ci-outage")
-        self.assertEqual((facts["final_stage"], facts["ci_runs"], facts["sessions"]), ("blocked", [False], 5))
+        self.assertFalse(facts["verify_skill_loaded"])
+        self.assertEqual((facts["final_stage"], facts["ci_runs"], facts["sessions"]), ("blocked", [False], 4))
 
     def test_the_owners_feedback_on_the_pull_request_takes_the_work_through_the_chain_again(self):
         root, project, facts = self.trial("rework")
         self.assertTrue(facts["pass"], facts)
         journal = [json.loads(line)["task"] for line in (project / ".factory/greeting-01-greet-by-name/runs.jsonl").read_text().splitlines()]
-        self.assertEqual(journal, ["implement", "verify", "deliver", "rework", "verify", "deliver"])
+        self.assertEqual(journal, ["implement", "ci", "verify", "deliver", "rework", "ci", "verify", "deliver"])
 
     def test_a_finished_ticket_is_marked_done_and_its_worktree_is_left_to_the_delivery_skill(self):
         root, project, facts = self.trial("happy")
@@ -229,7 +248,7 @@ class OrchestratorTest(unittest.TestCase):
         self.program(project, "run", bench.TICKET)  # continuing says nothing new
         rows = [json.loads(line) for line in (project / ".factory/greeting-01-greet-by-name/runs.jsonl").read_text().splitlines()]
         self.assertEqual([(row["task"], row["model"], row["effort"]) for row in rows],
-                         [("implement", "small", "high"), ("verify", "large", None), ("verify", "large", None), ("deliver", "small", None)])
+                         [("implement", "small", "high"), ("ci", "small", None), ("verify", "large", None), ("verify", "large", None), ("deliver", "small", None)])
         self.assertIn("No task named review", self.program(project, "run", bench.TICKET, "--model", "review=x").stderr)
 
     def test_a_tracker_reference_keeps_its_stage_in_the_run_state_and_each_client_spells_the_skill_its_way(self):

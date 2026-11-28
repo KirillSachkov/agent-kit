@@ -321,6 +321,7 @@ def run_task(pipeline, tasks, ticket, timeout):
     )
     env["FACTORY_HANDOFF"] = str(ticket.folder / "handoff.md")
     env["FACTORY_VERIFIED_HEAD"] = ticket.state().get("verified_head") or ""
+    env["FACTORY_VERIFICATION_REPORT"] = ticket.state().get("verification_report") or ""
     if not ticket.spec:
         prompt += " Keep the assigned branch unchanged throughout this ticket."
     if task.get("verification"):
@@ -337,6 +338,15 @@ def run_task(pipeline, tasks, ticket, timeout):
         start_head = git(work, "rev-parse", "HEAD").stdout.strip()
         log = ticket.folder / f"{task['name']}-{attempt}.jsonl"
         running = dict(task=task["name"], attempt=attempt, started=int(time.time()), log=log.name)
+        if task.get("precheck"):
+            precheck = subprocess.run(task["precheck"], shell=True, cwd=work, env=env, capture_output=True, text=True)
+            if precheck.returncode:
+                detail = (precheck.stderr or precheck.stdout).strip() or task["precheck"]
+                reason = f"entry check failed before starting {task['name']}: {detail}"
+                log.touch()
+                log.with_suffix(".check.log").write_text(reason + "\n")
+                ticket.journal(task=task["name"], attempt=attempt, check_exit=precheck.returncode, log=log.name, reason=reason)
+                break
         ticket.update(running=running)
         started = time.monotonic()
         try:

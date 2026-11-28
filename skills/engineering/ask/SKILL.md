@@ -37,7 +37,7 @@ The route most work travels. You have an idea and want it built.
    - **By hand**, to take part in the work: **`/implement`** for one ticket, or **`/implement-spec`** for a whole spec, which runs implementer subagents across the ready **frontier** and lands everything on one **integration branch**. Then **`/deliver`** takes the committed work to a PR, gets its checks green and stops where the owner gate says; called again on the owner's approval, it merges and clears what the work left.
    - **Whole**, to receive a finished PR: **`/run-pipeline`**, when the project has a pipeline. See Working with `/run-pipeline`.
 
-   Either way the code is built with **`/tdd`** at the seams the testing strategy names and closes with **`/code-review`**, a two-axis review (Standards and Spec): `/implement` reviews each ticket, `/implement-spec` reviews the integration branch once. When the settings call for verification, the project's `verify-<app>` skill runs on the reviewed work before delivery, and a `FAIL` or `BLOCKED` verdict keeps delivery open. **`/pr`** writes the PR body, and **`/owner-gate`** judges the change when the project gates delivery by conditions.
+   Either way the code is built with **`/tdd`** at the seams the testing strategy names and closes with **`/code-review`**, a two-axis review (Standards and Spec): `/implement` reviews each ticket, `/implement-spec` reviews the integration branch once. When the settings call for verification, the project's `verify-<app>` skill runs once on the final revision after required CI or local checks pass, and a `FAIL` or `BLOCKED` verdict keeps delivery open. **`/pr`** writes the PR body, and **`/owner-gate`** judges the change when the project gates delivery by conditions.
 5. **The owner decides.** Feedback on the result goes on the PR; a change to what was asked goes on the ticket. Approval goes to the session, which merges and clears.
 6. **`/retro`** closes the loop. After a build, and especially one that went sideways, it suggests changes to the agent's environment, not the code: mechanical mistakes become checks, judgement calls become coding standards.
 
@@ -47,7 +47,7 @@ The route most work travels. You have an idea and want it built.
 
 - **Where it is:** ask the session, or run the orchestrator's `status`: the stage, the running task and the last result of each ticket.
 - **It stopped at `blocked`:** the session names the task, the cause and whether the work or the environment failed; the failed check's output lies in the ticket's folder under `.factory/`. Deal with the cause, then `/run-pipeline` the same ticket: it continues from that task.
-- **It reached `needs-owner`:** the PR waits. To ask for changes, tell the session; it records your words on the PR and the ticket goes through rework, verification and delivery again. To accept, tell the session: it merges through `/deliver`, which clears the stands, worktree and branches.
+- **It reached `needs-owner`:** the PR waits. To ask for changes, tell the session; it records your words on the PR and the ticket goes through rework, CI, verification and delivery again. To accept, tell the session: it merges through `/deliver`, which clears the stands, worktree and branches.
 - **It found something the ticket does not cover:** the session files it in the issue tracker and gives the link. It is fixed within this ticket only on your word.
 - **Stop it:** tell the session, or run the orchestrator's `stop`. The stage is kept.
 

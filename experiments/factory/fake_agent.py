@@ -25,7 +25,7 @@ elif task == "verify":
     Path(os.environ["FACTORY_REPORT"]).write_text(report)
     Path(".evidence/report.md").write_text(report)
     print('{"item":{"type":"command_execution","command":"cat .agents/skills/verify-greet/SKILL.md"}}')
-elif task == "deliver":
+elif task == "ci":
     run("git", "push", "-q", "-u", "origin", "HEAD")
     run("gh", "pr", "create", "--title", "Greet by name", "--body", "## What changed\n\nGreets by name.", check=False)
     if run("gh", "pr", "checks", "--required", check=False).returncode and "usage line" in run("gh", "run", "view", "--log-failed").stdout:
@@ -33,6 +33,9 @@ elif task == "deliver":
         readme.write_text(readme.read_text() + "\nUsage: `python3 greet.py <name>`\n")
         run("git", "commit", "-qam", "Document the usage line")
         run("git", "push", "-q")
+elif task == "deliver":
+    report = Path(os.environ["FACTORY_VERIFICATION_REPORT"]).read_text()
+    run("gh", "pr", "edit", "--body", "## Verified\n\n" + report)
 elif task == "rework":
     assert "Trim the name" in run("gh", "pr", "view", "--json", "comments").stdout
     greet = Path("greet.py")

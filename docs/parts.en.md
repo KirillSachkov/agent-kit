@@ -72,7 +72,7 @@ The edit in `implement`: the work is committed before review, and the review rea
 | `create-verification-skill` | you | Create the project's verification skill once | project code, ways to run it | `verify-<app>` in the project | none | pstack, three edits |
 | `verify-<app>` | agent | Launch the app, walk a scenario as a user and capture evidence | its own sections: launch, doctor, drive, evidence, report, cleanup | evidence files and a `report.md` with the verdict | none | generated in the project |
 
-The edits in `create-verification-skill`: the feature-map and maintenance steps are removed and a Report section with a verdict (`PASS`, `PASS+NOTES`, `FAIL`, `BLOCKED`) and one line per scenario is added. There is no generic verification skill. The project settings say when verification is needed and who runs it: by default when user-visible behaviour changes, by a fresh agent, once before delivery.
+The edits in `create-verification-skill`: the feature-map and maintenance steps are removed and a Report section with a verdict (`PASS`, `PASS+NOTES`, `FAIL`, `BLOCKED`) and one line per scenario is added. There is no generic verification skill. The project settings say when verification is needed and who runs it: by default when user-visible behaviour changes, by a fresh agent, once on the final commit after required CI or local checks pass.
 
 ### 6. Evidence
 
@@ -86,7 +86,7 @@ The `pr` format joins two sources. From Matt: the visuals of the change and the 
 
 | Skill | Who starts it | Purpose | Reads | Writes | Calls | Source |
 | --- | --- | --- | --- | --- | --- | --- |
-| `deliver` | agent | Take committed work to a merged PR or a local delivery: make sure behaviour is verified when the settings call for it, open the PR, get checks green, confirm the merge, then clear what the work left | the route, required checks, merge authority and the after-merge list from the project settings | the PR, the merge, the closed task, a report of what was cleared | `pr` | Kit |
+| `deliver` | agent | Take committed work to a merged PR or a local delivery: open the PR, get checks green, then verify the final commit when the settings call for it, confirm the merge, then clear what the work left | the route, required checks, merge authority and the after-merge list from the project settings | the PR, the merge, the closed task, a report of what was cleared | `pr` | Kit |
 | `owner-gate` | agent | Decide whether the owner is needed before delivery: a status, a reason and the questions for them | the task, the diff, the verification report, the project's conditions page | nothing, only its answer | none | Kit, after Inside Platform |
 
 Acceptance has three levels, set by the “Owner gate” line in the project settings. `owner`: every delivery waits for the owner and the agent never merges; this is the default and the skill does not run. `conditions`: a fresh agent judges the change once against the conditions page and returns a status; a status that needs no owner permits the merge. `none`: the agent merges by itself. The conditions page has a “Cases from history” section where the owner adds examples of a status that turned out wrong.

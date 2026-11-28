@@ -7,15 +7,13 @@ Deliver the committed work on the current branch.
 
 The project's delivery route, required checks and merge authority should have been provided to you. If not, ask the user.
 
-When the project settings call for verification and no verification report covers the current commit, have the verifier they name run the project's `verify-<app>` skill first. Deliver only on `PASS` or `PASS+NOTES`: a `FAIL` or `BLOCKED` verdict stops here, and so does a project with no verify skill, where the owner runs `create-verification-skill`.
+1. On a PR route, push the branch and open or reuse its PR so required CI can run. Use `pr` to mark verification pending in the PR body until evidence is available. Wait for the required checks on the pushed head. Fix failures caused by the change, run affected tests, push and wait again. Give a flaky check one rerun and diagnose a second failure from its log. On a local route, run the project's required checks. Stop on an unresolved failure.
 
-1. Push the branch and open a PR. Call the Skill tool with "pr" to write its body. On a local route, skip to step 4.
+2. Once the required checks pass, record the full commit SHA. If the project requires verification, use the passing report for that SHA if one exists. Otherwise have the designated verifier run the project's `verify-<app>` once on that commit. Accept `PASS` or `PASS+NOTES`. Stop on `FAIL` or `BLOCKED` and report the cause. If the skill is missing, the owner runs `create-verification-skill`.
 
-2. Wait for the required checks on the PR head. When a check fails because of the change, fix it, run the affected tests, push and wait again. A flake earns one rerun; diagnose a second failure from its log. Report a blocker you cannot fix.
+3. On the PR route, use `pr` to update the existing PR body with the result and evidence. Attach evidence or use the project’s evidence store while keeping the verified PR head intact. Confirm that the head to hand over or merge is still the checked commit and that its required checks are green. If the head changed, take the new revision through checks and verification before acceptance. In a pipeline with completed CI and verification stages, use their results for the same head and finish the handoff.
 
-3. Merge only when the project lets you; otherwise stop and say what the owner decides. After a merge, confirm on the host that the PR is merged at the head you checked: a queued merge is not a merge.
-
-4. On a local route, run the project's required checks. Merge the branch into its target only when the project lets you, and confirm the target points at the commit you checked.
+4. Follow the project's merge authority. When the owner must act, hand over the checked revision and say what they decide. After an authorized PR merge, confirm the host merged the checked head. On a local merge, confirm the target points at the checked commit.
 
 5. Close the task the way the issue tracker closes work.
 

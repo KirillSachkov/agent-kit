@@ -26,7 +26,7 @@ every skill and project file with its part. Matt Pocock's skills are the base, a
 parts map names every edit to them. The Kit adds its own skills only where he has none: `deliver`, `owner-gate`
 and the pstack `create-verification-skill`. A rule about how parts connect lives in a
 skill the Kit owns, never inside a borrowed one: `deliver` holds the rule that behaviour is
-verified before delivery.
+verified on the final revision after required checks pass.
 
 ## Native clients
 
@@ -46,7 +46,7 @@ Its two reviewers read the same diff in parallel.
 `create-verification-skill` generates a project-local `verify-<app>` skill that
 launches the app, drives it as a user, captures evidence and writes a short report
 with a verdict beside it. The project settings say when verification is needed and
-who runs it; the workflow places it once before delivery. `pr` is the only writer of
+who runs it; run it once after required PR CI (or local delivery checks) passes on the final head. A CI fix happens before this run. The PR receives the report before owner handoff or merge. `pr` is the only writer of
 the PR body: it takes the report and attaches the evidence the way the project says.
 
 `deliver` takes committed work to a merged PR or a local delivery: it opens the PR,

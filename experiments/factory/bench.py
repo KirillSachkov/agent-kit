@@ -236,7 +236,7 @@ def grade(root, project, situation):
     if facts["expected_stage"] == "needs-owner":
         passed = passed and facts["behaviour"] and facts["tests_pass"] and facts["pr_opened"] and facts["ci_runs"][-1:] == [True]
     if situation == "verify-blocked":
-        passed = passed and not facts["pr_opened"]
+        passed = passed and facts["pr_opened"] and facts["verdict"] == "Verdict: BLOCKED"
     facts["pass"] = passed
     return facts
 

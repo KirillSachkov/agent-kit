@@ -18,11 +18,20 @@ check = """test -n "$(git log main..HEAD --oneline)" \
   && test -z "$(git status --porcelain -- . ':!.scratch')" \
   && {checks}"""
 attempts = 2
+then = "ci"
+
+[[task]]
+name = "ci"
+when = "ci"
+run = "Push the branch for {ticket} and open or reuse its PR against main. Mark verification pending. Resolve change-related CI failures and wait for required checks on the final head. The next task owns verification. Leave the PR open."
+check = "sh ci/green-head.sh"
+attempts = 2
 then = "verify"
 
 [[task]]
 name = "verify"
 verification = true
+precheck = "sh ci/green-head.sh"
 when = "verify"
 run = "Verify the behaviour of the ticket in {ticket} at the current commit with this project's verify skill. Check every acceptance criterion."
 check = """v=$(sed -n 's/^Verdict: //p' "$FACTORY_REPORT" 2>/dev/null | head -1)
@@ -33,19 +42,15 @@ case "$v" in
   FAIL|BLOCKED) echo "verification verdict: $v"; exit 3 ;;
   *) echo "no verification report"; exit 1 ;;
 esac"""
-attempts = 2
+attempts = 1
 then = "delivery"
 
 [[task]]
 name = "deliver"
-reverify = "verify"
 when = "delivery"
-run = "/deliver the committed work for {ticket}."
-check = """test "$(git rev-parse HEAD)" = "$FACTORY_VERIFIED_HEAD" &&
-test "$(gh pr view --json state -q .state)" = OPEN &&
-test "$(gh pr view --json baseRefName -q .baseRefName)" = main &&
-test "$(gh pr view --json headRefOid -q .headRefOid)" = "$FACTORY_VERIFIED_HEAD" &&
-gh pr checks --required >/dev/null"""
+precheck = 'test -s "$FACTORY_VERIFICATION_REPORT" && test "$(git rev-parse HEAD)" = "$FACTORY_VERIFIED_HEAD" && sh ci/green-head.sh'
+run = "/deliver {ticket} using the completed CI and verification for this head. Read the accepted report at $FACTORY_VERIFICATION_REPORT, update the existing PR body with evidence, and leave the PR for the owner. If the revision changed, report a blocker."
+check = 'test "$(git rev-parse HEAD)" = "$FACTORY_VERIFIED_HEAD" && sh ci/green-head.sh'
 attempts = 2
 then = "needs-owner"
 
@@ -58,4 +63,4 @@ check = """test -n "$(git log main..HEAD --oneline)" \
   && test -z "$(git status --porcelain -- . ':!.scratch')" \
   && {checks}"""
 attempts = 2
-then = "verify"
+then = "ci"
