@@ -104,6 +104,8 @@ class OrchestratorTest(unittest.TestCase):
         self.assertEqual(journal, ["implement", "ci", "verify", "deliver"])
         state = json.loads((root / "gh-state.json").read_text())
         self.assertTrue(state["runs"][ticket.state()["verified_head"]]["ok"])
+        self.assertIn("Greets by name.", state["prs"][0]["body"])
+        self.assertIn(ticket.state()["verified_head"], state["prs"][0]["body"])
         self.assertTrue(facts["pr_cites_verification"])
         root, project, facts = self.trial("ci-outage")
         self.assertFalse(facts["verify_skill_loaded"])

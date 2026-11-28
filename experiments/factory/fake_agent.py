@@ -35,7 +35,8 @@ elif task == "ci":
         run("git", "push", "-q")
 elif task == "deliver":
     report = Path(os.environ["FACTORY_VERIFICATION_REPORT"]).read_text()
-    run("gh", "pr", "edit", "--body", "## Verified\n\n" + report)
+    body = run("gh", "pr", "view", "--json", "body", "-q", ".body").stdout.partition("## Verified")[0].rstrip()
+    run("gh", "pr", "edit", "--body", body + "\n\n## Verified\n\n" + report)
 elif task == "rework":
     assert "Trim the name" in run("gh", "pr", "view", "--json", "comments").stdout
     greet = Path("greet.py")

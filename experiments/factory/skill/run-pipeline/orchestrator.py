@@ -293,6 +293,10 @@ def start_run(argv, work, env, log, timeout):
                     pass
 
 
+def project_check(command, work, env):
+    return subprocess.run(["sh", "-c", command], cwd=work, env=env, capture_output=True, text=True)
+
+
 def run_task(pipeline, tasks, ticket, timeout):
     """Run the task the ticket's stage calls for. Return the new stage, or None when no task applies."""
     task = next((item for item in tasks if item["when"] == ticket.stage()), None)
@@ -339,13 +343,14 @@ def run_task(pipeline, tasks, ticket, timeout):
         log = ticket.folder / f"{task['name']}-{attempt}.jsonl"
         running = dict(task=task["name"], attempt=attempt, started=int(time.time()), log=log.name)
         if task.get("precheck"):
-            precheck = subprocess.run(task["precheck"], shell=True, cwd=work, env=env, capture_output=True, text=True)
+            precheck = project_check(task["precheck"], work, env)
             if precheck.returncode:
                 detail = (precheck.stderr or precheck.stdout).strip() or task["precheck"]
                 reason = f"entry check failed before starting {task['name']}: {detail}"
-                log.touch()
-                log.with_suffix(".check.log").write_text(reason + "\n")
-                ticket.journal(task=task["name"], attempt=attempt, check_exit=precheck.returncode, log=log.name, reason=reason)
+                output_path = attempt_dir / "precheck.log"
+                output_path.write_text(reason + "\n")
+                ticket.journal(task=task["name"], attempt=attempt, check_exit=precheck.returncode,
+                               precheck_log=str(output_path.relative_to(ticket.folder)), reason=reason)
                 break
         ticket.update(running=running)
         started = time.monotonic()
@@ -366,7 +371,7 @@ def run_task(pipeline, tasks, ticket, timeout):
             elif task.get("verification") and git(work, "rev-parse", "HEAD").stdout.strip() != start_head:
                 check = subprocess.CompletedProcess([], 1, "HEAD changed during verification", "")
             else:
-                check = subprocess.run(task["check"], shell=True, cwd=work, env=env, capture_output=True, text=True)
+                check = project_check(task["check"], work, env)
         finally:
             ticket.update(running=None)
         output = (check.stdout + check.stderr).strip()
@@ -465,6 +470,8 @@ def tickets_in(project, pattern):
 def event(entry):
     """One journal entry in words: what ran and how it ended."""
     name = f"{entry['task']} attempt {entry['attempt']}"
+    if entry.get("precheck_log"):
+        return f"{entry['reason']} (check output in {entry['precheck_log']})"
     if entry.get("stopped"):
         return f"{name} stopped"
     if entry.get("check_exit") == 0:
