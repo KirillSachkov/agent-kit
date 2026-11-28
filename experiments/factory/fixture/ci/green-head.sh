@@ -3,6 +3,9 @@
 set -eu
 head=$(git rev-parse HEAD)
 git diff --quiet HEAD -- . ':!.scratch'
+# The verifier may provision its local readiness marker when resuming a blocked run.
+untracked=$(git ls-files --others --exclude-standard -- . ':!.scratch' ':!.verify-env')
+test -z "$untracked"
 test "$(gh pr view --json state -q .state)" = OPEN
 test "$(gh pr view --json baseRefName -q .baseRefName)" = main
 test "$(gh pr view --json headRefOid -q .headRefOid)" = "$head"

@@ -349,7 +349,7 @@ def run_task(pipeline, tasks, ticket, timeout):
                 reason = f"entry check failed before starting {task['name']}: {detail}"
                 output_path = attempt_dir / "precheck.log"
                 output_path.write_text(reason + "\n")
-                ticket.journal(task=task["name"], attempt=attempt, check_exit=precheck.returncode,
+                ticket.journal(task=task["name"], check_exit=precheck.returncode,
                                precheck_log=str(output_path.relative_to(ticket.folder)), reason=reason)
                 break
         ticket.update(running=running)
@@ -469,9 +469,9 @@ def tickets_in(project, pattern):
 
 def event(entry):
     """One journal entry in words: what ran and how it ended."""
-    name = f"{entry['task']} attempt {entry['attempt']}"
     if entry.get("precheck_log"):
         return f"{entry['reason']} (check output in {entry['precheck_log']})"
+    name = f"{entry['task']} attempt {entry['attempt']}"
     if entry.get("stopped"):
         return f"{name} stopped"
     if entry.get("check_exit") == 0:

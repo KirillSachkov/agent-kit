@@ -84,14 +84,20 @@ class OrchestratorTest(unittest.TestCase):
         attempts = [json.loads(line)["attempt"] for line in (project / ".factory/greeting-01-greet-by-name/runs.jsonl").read_text().splitlines()]
         self.assertEqual(attempts, [1, 1, 1, 2, 1])
 
-    def test_resuming_verify_on_an_unpushed_commit_does_not_start_the_verifier(self):
+    def test_resuming_verify_only_starts_on_the_green_source_tree(self):
         root, project, _ = self.trial("verify-blocked")
         work = root / "project-worktrees/greeting-01-greet-by-name"
-        subprocess.run(["git", "commit", "--allow-empty", "-qm", "Changed since CI"], cwd=work, check=True)
         marker = root / "verifier-started"
         worker = root / "mark.py"
         worker.write_text(f"from pathlib import Path\nPath({str(marker)!r}).touch()\n")
         self.env["FACTORY_AGENT"] = f"{sys.executable} {worker}"
+        helper = work / "untracked_helper.py"
+        helper.write_text("value = 1\n")
+        self.program(project, "run", bench.TICKET)
+        self.assertFalse(marker.exists())
+        self.assertIn("entry check failed", self.program(project, "status", bench.TICKET).stdout)
+        subprocess.run(["git", "add", helper.name], cwd=work, check=True)
+        subprocess.run(["git", "commit", "-qm", "Changed since CI"], cwd=work, check=True)
         self.program(project, "run", bench.TICKET)
         self.assertFalse(marker.exists())
         self.assertIn("entry check failed", self.program(project, "status", bench.TICKET).stdout)
